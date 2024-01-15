@@ -1,0 +1,20 @@
+version: '3.4'
+
+services:
+  debtbot:
+    image: ${DOCKER_REGISTRY-}debtbot
+    build:
+      context: .
+      dockerfile: DebtBot/Dockerfile
+
+  db:
+    image: postgres:14.1-alpine
+    restart: always
+    container_name: debtstoragebot_postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - '5432:5432'
+    volumes:
+       - ./data:/var/lib/postgresql/data
