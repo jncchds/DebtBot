@@ -1,0 +1,6 @@
+@DebtBot_HostAddress = http://localhost:5098
+
+GET {{DebtBot_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
