@@ -105,7 +105,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "API Structure.md",
+                "file": "Entities structure.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -122,7 +122,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "API Structure.md",
+                "file": "Entities structure.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -145,7 +145,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "API Structure.md"
+                "file": "Entities structure.md"
               }
             }
           }
@@ -166,10 +166,10 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "b12e7417ac49f153",
+  "active": "bdb31b1236f72780",
   "lastOpenFiles": [
-    "Entities structure.md",
     "API Structure.md",
+    "Entities structure.md",
     "Diagram.svg",
     "User stories/Actors story.md",
     "Use cases.md",

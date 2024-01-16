@@ -1,4 +1,4 @@
-## Event
+# Event
 - Id
 - Date
 - Event parameter
@@ -19,6 +19,7 @@
 - SubordinateUserId
 - DisplayName
 
+# Money records
 ## Ledger
 - CreditorUserId
 - DebtorUserId
@@ -47,6 +48,7 @@
 - Description
 - Date
 
+# View tables
 ## Debt
 - CreditorUserId
 - DebtorUserId
