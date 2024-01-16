@@ -6,6 +6,7 @@
       {
         "id": "b42991b46c2b9a8d",
         "type": "tabs",
+        "dimension": 42.95685279187818,
         "children": [
           {
             "id": "bdb31b1236f72780",
@@ -14,6 +15,25 @@
               "type": "markdown",
               "state": {
                 "file": "Entities structure.md",
+                "mode": "source",
+                "source": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "6da9303d55391f5e",
+        "type": "tabs",
+        "dimension": 57.04314720812182,
+        "children": [
+          {
+            "id": "b12e7417ac49f153",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "API Structure.md",
                 "mode": "source",
                 "source": false
               }
@@ -85,7 +105,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Entities structure.md",
+                "file": "API Structure.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -102,7 +122,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Entities structure.md",
+                "file": "API Structure.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -125,7 +145,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Entities structure.md"
+                "file": "API Structure.md"
               }
             }
           }
@@ -146,13 +166,13 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "bdb31b1236f72780",
+  "active": "b12e7417ac49f153",
   "lastOpenFiles": [
-    "Diagram.svg",
+    "Entities structure.md",
     "API Structure.md",
+    "Diagram.svg",
     "User stories/Actors story.md",
     "Use cases.md",
-    "Entities structure.md",
     "Diagram.svg.xml",
     "Welcome.md",
     "Understanding actors.md",

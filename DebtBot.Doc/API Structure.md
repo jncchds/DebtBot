@@ -12,15 +12,15 @@
 			- Amount
 			- Currency
 3) Get all the debt entries to one user
-4) Store information about a transaction:
-	- Currency
-	- Description
-	- List of:
-		- Person Id
-		- Amount they've paid
-	- List of:
-		- Person Id
-		- Fraction over absolute amount they've consumed
+4) ~~Store information about a transaction:~~
+	- ~~Currency~~
+	- ~~Description~~
+	- ~~List of:~~
+		- ~~Person Id~~
+		- ~~Amount they've paid~~
+	- ~~List of:~~
+		- ~~Person Id~~
+		- ~~Fraction over absolute amount they've consumed~~
 5) Store information about a bill as transaction:
 	- Currency
 	- Description
