@@ -482,5 +482,5 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
-/DebtBot/data
-/DebtBot/DebtBot/appsettings.Development.json
+/data
+/DebtBot/appsettings.Development.json
