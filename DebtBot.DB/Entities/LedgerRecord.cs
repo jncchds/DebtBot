@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace DebtBot.DB.Entities
 {
-    public class Ledger
+    public class LedgerRecord
     {
         public Guid CreditorUserId { get; set; }
         [ForeignKey(nameof(CreditorUserId))]

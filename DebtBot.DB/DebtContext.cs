@@ -12,9 +12,13 @@ namespace DebtBot.DB
         public DbSet<Currency> Currencies { get; set; }
         public DbSet<Event> Events { get; set; }
         public DbSet<Debt> Debts { get; set; }
-        public DbSet<Ledger> Ledgers { get; set; }
+        public DbSet<LedgerRecord> Ledgers { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<UserSubordinate> UserSubordinates { get; set; }
+
+        public DebtContext(DbContextOptions<DebtContext> options) : base(options)
+        {
+        }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -26,7 +30,7 @@ namespace DebtBot.DB
             base.OnModelCreating(modelBuilder);
 
             modelBuilder.Entity<BillPayment>().HasKey(bp => new { bp.BillId, bp.UserId });
-            modelBuilder.Entity<Ledger>().HasKey(l => new { l.CreditorUserId, l.DebtorUserId, l.Currency });
+            modelBuilder.Entity<LedgerRecord>().HasKey(l => new { l.CreditorUserId, l.DebtorUserId, l.Currency });
             modelBuilder.Entity<UserSubordinate>().HasKey(us => new { us.UserId, us.SubordinateUserId });
         }
     }

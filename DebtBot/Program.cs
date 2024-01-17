@@ -1,5 +1,8 @@
 using DebtBot.DB;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations.Internal;
+using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
 
@@ -24,8 +27,13 @@ builder.Services.AddDbContext<DebtContext>(options =>
 {
     options.UseNpgsql(builder.Configuration.GetConnectionString("DebtBot"));
 });
-
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<DebtContext>();
+    db.Database.Migrate();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

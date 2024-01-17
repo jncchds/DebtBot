@@ -9,7 +9,7 @@ namespace DebtBot.DB.Entities
 {
     public class BillPayment
     {
-        public long BillId { get; set; }
+        public Guid BillId { get; set; }
 
         public Guid UserId { get; set; }
 

@@ -13,7 +13,7 @@ namespace DebtBot.DB.Entities
         [Key]
         public Guid Id { get; set; }
 
-        public long BillId { get; set; }
+        public Guid BillId { get; set; }
 
         public string ItemDescription { get; set; }
         public decimal Subtotal { get; set; }
