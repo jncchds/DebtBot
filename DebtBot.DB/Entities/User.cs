@@ -11,6 +11,7 @@ namespace DebtBot.DB.Entities
     public class User
     {
         [Key]
+        //[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public Guid Id { get; set; }
         public string DisplayName { get; set; }
         public long? TelegramId { get; set; }
