@@ -1,35 +1,44 @@
-﻿using DebtBot.DB;
+﻿using AutoMapper;
+using DebtBot.DB;
 using DebtBot.DB.Entities;
+using DebtBot.Models;
 
 namespace DebtBot.Services
 {
     public class UserService : IUserService
     {
         private readonly DebtContext _db;
+        private readonly IMapper _mapper;
 
-        public UserService(DebtContext db)
+        public UserService(DebtContext db, IMapper mapper)
         {
             _db = db;
-        }
-        public IEnumerable<User> GetUsers()
-        {
-            return _db.Users.ToList();
+            _mapper = mapper;
         }
 
-        public User? GetUserById(Guid id)
+        public IEnumerable<UserModel> GetUsers()
         {
-            return _db.Users.FirstOrDefault(u => u.Id == id);
+            var users = _db.Users.ToList();
+            return _mapper.Map<IEnumerable<UserModel>>(users);
         }
 
-        public void AddUser(User user)
+        public UserModel? GetUserById(Guid id)
         {
-            _db.Users.Add(user);
+            var user = _db.Users.FirstOrDefault(u => u.Id == id);
+            return _mapper.Map<UserModel>(user);
+        }
+
+        public void AddUser(UserModel user)
+        {
+            var entity = _mapper.Map<User>(user);
+            _db.Users.Add(entity);
             _db.SaveChanges();
         }
 
-        public void UpdateUser(User user)
+        public void UpdateUser(UserModel user)
         {
-            _db.Users.Update(user);
+            var entity = _mapper.Map<User>(user);
+            _db.Users.Update(entity);
             _db.SaveChanges();
         }
 
@@ -41,8 +50,6 @@ namespace DebtBot.Services
                 _db.Users.Remove(user);
                 _db.SaveChanges();
             }
-        }
-
-
+        }
     }
 }
