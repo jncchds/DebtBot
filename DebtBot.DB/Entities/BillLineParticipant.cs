@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
@@ -9,7 +10,8 @@ namespace DebtBot.DB.Entities
 {
     public class BillLineParticipant
     {
-        public long BillLineId { get; set; }
+        [Key]
+        public Guid BillLineId { get; set; }
         public Guid UserId { get; set; }
 
         [Column(TypeName = "decimal(10, 4)")]

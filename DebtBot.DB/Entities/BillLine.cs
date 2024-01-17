@@ -11,7 +11,7 @@ namespace DebtBot.DB.Entities
     public class BillLine
     {
         [Key]
-        public long Id { get; set; }
+        public Guid Id { get; set; }
 
         public long BillId { get; set; }
 
