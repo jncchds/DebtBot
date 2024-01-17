@@ -1,6 +1,6 @@
 ﻿using DebtBot.Models;
 
-namespace DebtBot.Services
+namespace DebtBot.ServiceInterfaces
 {
     public interface IUserService
     {

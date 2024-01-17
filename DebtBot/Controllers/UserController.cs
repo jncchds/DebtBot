@@ -1,6 +1,7 @@
 ﻿using DebtBot.DB;
 using DebtBot.DB.Entities;
 using DebtBot.Models;
+using DebtBot.ServiceInterfaces;
 using DebtBot.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -8,20 +9,20 @@ using Microsoft.AspNetCore.Mvc;
 namespace DebtBot.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/v1/[controller]")]
     public class UserController : Controller
     {
-        public IUserService _userService { get; }
+        private IUserService userService;
 
         public UserController(IUserService userService)
         {
-            _userService = userService;
+            this.userService = userService;
         }
 
         [HttpGet("{id}")]
         public IActionResult Get(Guid id)
         {
-            var user = _userService.GetUserById(id);
+            var user = userService.GetUserById(id);
 
             if (user == null)
                 return NotFound();
@@ -32,7 +33,7 @@ namespace DebtBot.Controllers
         [HttpGet()]
         public IActionResult Get()
         {
-            var users = _userService.GetUsers();
+            var users = userService.GetUsers();
 
             if (users?.Any() ?? false)
                 return Ok(users);
@@ -43,7 +44,7 @@ namespace DebtBot.Controllers
         [HttpPost()]
         public ActionResult Post(UserModel user)
         {
-            _userService.AddUser(user);
+            userService.AddUser(user);
 
             return Ok();
         }
@@ -51,7 +52,7 @@ namespace DebtBot.Controllers
         [HttpDelete("{id}")]
         public ActionResult Delete(Guid id)
         {
-            _userService.DeleteUser(id);
+            userService.DeleteUser(id);
 
             return Ok();
         }

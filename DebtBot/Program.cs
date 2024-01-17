@@ -1,4 +1,5 @@
 using DebtBot.DB;
+using DebtBot.ServiceInterfaces;
 using DebtBot.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
@@ -12,6 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IUserSubordinateService, UserSubordinateService>();
 
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 

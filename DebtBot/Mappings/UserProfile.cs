@@ -8,8 +8,7 @@ namespace DebtBot.Mapping
     {
         public UserProfile()
         {
-            CreateMap<User, UserModel>();
-            CreateMap<UserModel, User>();
+            CreateMap<User, UserModel>().ReverseMap();
         }
     }
 }
