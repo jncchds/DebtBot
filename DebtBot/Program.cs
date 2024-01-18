@@ -8,9 +8,9 @@ using System.Reflection;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IUserSubordinateService, UserSubordinateService>();
+builder.Services.AddScoped<IUserContactService, UserContactService>();
+builder.Services.AddScoped<IBillService, BillService>();
 
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
@@ -33,6 +33,7 @@ builder.Services.AddDbContext<DebtContext>(options =>
 });
 var app = builder.Build();
 
+// Migrate database
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<DebtContext>();
