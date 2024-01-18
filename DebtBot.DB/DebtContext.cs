@@ -14,7 +14,7 @@ public class DebtContext : DbContext
     public DbSet<Debt> Debts { get; set; }
     public DbSet<LedgerRecord> Ledgers { get; set; }
     public DbSet<User> Users { get; set; }
-    public DbSet<UserSubordinate> UserSubordinates { get; set; }
+    public DbSet<UserContactLink> UserContactsLinks { get; set; }
 
     public DebtContext(DbContextOptions<DebtContext> options) : base(options)
     {
@@ -26,6 +26,6 @@ public class DebtContext : DbContext
 
         modelBuilder.Entity<BillPayment>().HasKey(bp => new { bp.BillId, bp.UserId });
         modelBuilder.Entity<LedgerRecord>().HasKey(l => new { l.CreditorUserId, l.DebtorUserId, l.Currency });
-        modelBuilder.Entity<UserSubordinate>().HasKey(us => new { us.UserId, us.SubordinateUserId });
+        modelBuilder.Entity<UserContactLink>().HasKey(us => new { us.UserId, us.ContactUserId });
     }
 }
