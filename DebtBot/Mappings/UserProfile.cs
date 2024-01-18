@@ -2,13 +2,12 @@ using AutoMapper;
 using DebtBot.DB.Entities;
 using DebtBot.Models;
 
-namespace DebtBot.Mapping
+namespace DebtBot.Mapping;
+
+public class UserProfile : Profile
 {
-    public class UserProfile : Profile
+    public UserProfile()
     {
-        public UserProfile()
-        {
-            CreateMap<User, UserModel>().ReverseMap();
-        }
+        CreateMap<User, UserModel>().ReverseMap();
     }
 }

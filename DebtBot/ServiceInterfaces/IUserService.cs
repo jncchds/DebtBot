@@ -1,13 +1,12 @@
 ﻿using DebtBot.Models;
 
-namespace DebtBot.ServiceInterfaces
+namespace DebtBot.ServiceInterfaces;
+
+public interface IUserService
 {
-    public interface IUserService
-    {
-        void AddUser(UserModel user);
-        void DeleteUser(Guid id);
-        UserModel? GetUserById(Guid id);
-        IEnumerable<UserModel> GetUsers();
-        void UpdateUser(UserModel user);
-    }
+    void AddUser(UserModel user);
+    void DeleteUser(Guid id);
+    UserModel? GetUserById(Guid id);
+    IEnumerable<UserModel> GetUsers();
+    void UpdateUser(UserModel user);
 }

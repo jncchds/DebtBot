@@ -2,9 +2,6 @@ using DebtBot.DB;
 using DebtBot.ServiceInterfaces;
 using DebtBot.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Migrations;
-using Microsoft.EntityFrameworkCore.Migrations.Internal;
-using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
 

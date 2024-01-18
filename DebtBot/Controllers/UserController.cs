@@ -1,60 +1,55 @@
-﻿using DebtBot.DB;
-using DebtBot.DB.Entities;
-using DebtBot.Models;
+﻿using DebtBot.Models;
 using DebtBot.ServiceInterfaces;
-using DebtBot.Services;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace DebtBot.Controllers
+namespace DebtBot.Controllers;
+
+[ApiController]
+[Route("api/v1/[controller]")]
+public class UserController : ControllerBase
 {
-    [ApiController]
-    [Route("api/v1/[controller]")]
-    public class UserController : Controller
+    private readonly IUserService _userService;
+
+    public UserController(IUserService userService)
     {
-        private IUserService userService;
+       _userService = userService;
+    }
 
-        public UserController(IUserService userService)
-        {
-            this.userService = userService;
-        }
+    [HttpGet("{id}")]
+    public IActionResult Get(Guid id)
+    {
+        var user = _userService.GetUserById(id);
 
-        [HttpGet("{id}")]
-        public IActionResult Get(Guid id)
-        {
-            var user = userService.GetUserById(id);
-
-            if (user == null)
-                return NotFound();
-
-            return Ok(user);
-        }
-
-        [HttpGet()]
-        public IActionResult Get()
-        {
-            var users = userService.GetUsers();
-
-            if (users?.Any() ?? false)
-                return Ok(users);
-
+        if (user == null)
             return NotFound();
-        }
 
-        [HttpPost()]
-        public ActionResult Post(UserModel user)
-        {
-            userService.AddUser(user);
+        return Ok(user);
+    }
 
-            return Ok();
-        }
+    [HttpGet()]
+    public IActionResult Get()
+    {
+        var users = _userService.GetUsers();
 
-        [HttpDelete("{id}")]
-        public ActionResult Delete(Guid id)
-        {
-            userService.DeleteUser(id);
+        if (users?.Any() ?? false)
+            return Ok(users);
 
-            return Ok();
-        }
+        return NotFound();
+    }
+
+    [HttpPost()]
+    public ActionResult Post(UserModel user)
+    {
+        _userService.AddUser(user);
+
+        return Ok();
+    }
+
+    [HttpDelete("{id}")]
+    public ActionResult Delete(Guid id)
+    {
+        _userService.DeleteUser(id);
+
+        return Ok();
     }
 }

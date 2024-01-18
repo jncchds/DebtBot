@@ -3,80 +3,78 @@ using DebtBot.DB;
 using DebtBot.DB.Entities;
 using DebtBot.Models;
 using DebtBot.ServiceInterfaces;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace DebtBot.Services
+namespace DebtBot.Services;
+
+public class UserSubordinateService : IUserSubordinateService
 {
-    public class UserSubordinateService : IUserSubordinateService
+    private readonly DebtContext _debtContext;
+    private readonly IMapper _mapper;
+
+    public UserSubordinateService(DebtContext debtContext, IMapper mapper)
     {
-        private readonly DebtContext debtContext;
-        private readonly IMapper mapper;
+        _debtContext = debtContext;
+        _mapper = mapper;
+    }
 
-        public UserSubordinateService(DebtContext debtContext, IMapper mapper)
+    public IEnumerable<UserModel> Get()
+    {
+        var subordinates = _debtContext.UserSubordinates.Include(t => t.SubordinateUser).ToList();
+        var res = _mapper.Map<IEnumerable<UserModel>>(subordinates);
+        return res;
+    }
+
+    public IEnumerable<UserModel> Get(Guid id)
+    {
+        var user = _debtContext.Users
+            .Include(t => t.UserSubordinates)
+            .ThenInclude(t => t.SubordinateUser)
+            .FirstOrDefault(t => t.Id == id);
+        if (user == null)
         {
-            this.debtContext = debtContext;
-            this.mapper = mapper;
+            return null;
         }
 
-        public IEnumerable<UserModel> Get()
+        var subordinates = user.UserSubordinates;
+        return _mapper.Map<IEnumerable<UserModel>>(subordinates);
+    }
+
+    public void AddSubordinate(Guid id, UserModel subordinate)
+    {
+        var user = _debtContext.Users.FirstOrDefault(t => t.Id == id);
+        if (user == null)
         {
-            var subordinates = debtContext.UserSubordinates.Include(t => t.SubordinateUser).ToList();
-            var res = mapper.Map<IEnumerable<UserModel>>(subordinates);
-            return res;
+            return;
         }
 
-        public IEnumerable<UserModel> Get(Guid id)
-        {
-            var user = debtContext.Users
-                .Include(t => t.UserSubordinates)
-                .ThenInclude(t => t.SubordinateUser)
-                .FirstOrDefault(t => t.Id == id);
-            if (user == null)
-            {
-                return null;
-            }
+        var subordinateModel = _mapper.Map<User>(subordinate);
 
-            var subordinates = user.UserSubordinates;
-            return mapper.Map<IEnumerable<UserModel>>(subordinates);
+        var subordinateUser = FindUser(subordinateModel);
+        if (subordinateUser == null)
+        {
+            _debtContext.Users.Add(subordinateModel);
+            subordinateUser = subordinateModel;
         }
 
-        public void AddSubordinate(Guid id, UserModel subordinate)
+        var link = new UserSubordinate()
         {
-            var user = debtContext.Users.FirstOrDefault(t => t.Id == id);
-            if (user == null)
-            {
-                return;
-            }
+            DisplayName = subordinate.DisplayName,
+            User = user,
+            SubordinateUser = subordinateUser
+        };
 
-            var subordinateModel = mapper.Map<User>(subordinate);
+        _debtContext.UserSubordinates.Add(link);
 
-            var subordinateUser = FindUser(subordinateModel);
-            if (subordinateUser == null)
-            {
-                debtContext.Users.Add(subordinateModel);
-                subordinateUser = subordinateModel;
-            }
+        _debtContext.SaveChanges();
+    }
 
-            var link = new UserSubordinate()
-            {
-                DisplayName = subordinate.DisplayName,
-                User = user,
-                SubordinateUser = subordinateUser
-            };
-
-            debtContext.UserSubordinates.Add(link);
-
-            debtContext.SaveChanges();
-        }
-
-        private User? FindUser(User user)
-        {
-            return debtContext.Users.FirstOrDefault(t =>
-                (t.Id == user.Id) ||
-                (t.TelegramId ?? -1) == user.TelegramId ||
-                (t.Phone ?? "N/A") == user.Phone ||
-                (t.Email ?? "N/A") == user.Email);
-        }
+    private User? FindUser(User user)
+    {
+        return _debtContext.Users.FirstOrDefault(t =>
+            (t.Id == user.Id) ||
+            (t.TelegramId ?? -1) == user.TelegramId ||
+            (t.Phone ?? "N/A") == user.Phone ||
+            (t.Email ?? "N/A") == user.Email);
     }
 }
