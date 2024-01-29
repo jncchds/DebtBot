@@ -5,6 +5,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
 
+const int retryCount = 3;
+const int retryDelay = 3000;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -34,10 +37,30 @@ builder.Services.AddDbContext<DebtContext>(options =>
 var app = builder.Build();
 
 // Migrate database
-using (var scope = app.Services.CreateScope())
+for (int i = 0; i < retryCount; i++)
 {
-    var db = scope.ServiceProvider.GetRequiredService<DebtContext>();
-    db.Database.Migrate();
+    try
+    {
+        using (var scope = app.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<DebtContext>();
+            db.Database.Migrate();
+            break;
+        }
+    }
+    catch (Exception ex)
+    {
+        if (i < retryCount)
+        {
+            Console.WriteLine($"Error migrating database: {ex.Message}");
+            Console.WriteLine("Retrying...");
+            Thread.Sleep(retryDelay);
+        }
+        else
+        {
+            throw;
+        }
+    }
 }
 
 // Configure the HTTP request pipeline.

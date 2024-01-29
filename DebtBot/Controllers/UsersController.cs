@@ -6,11 +6,11 @@ namespace DebtBot.Controllers;
 
 [ApiController]
 [Route("api/v1/[controller]")]
-public class UserController : ControllerBase
+public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
 
-    public UserController(IUserService userService)
+    public UsersController(IUserService userService)
     {
        _userService = userService;
     }
@@ -49,6 +49,14 @@ public class UserController : ControllerBase
     public ActionResult Delete(Guid id)
     {
         _userService.DeleteUser(id);
+
+        return Ok();
+    }
+
+    [HttpPut()]
+    public ActionResult Put(UserModel user)
+    {
+        _userService.UpdateUser(user);
 
         return Ok();
     }

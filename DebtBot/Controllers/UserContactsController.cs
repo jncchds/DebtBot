@@ -6,11 +6,11 @@ namespace DebtBot.Controllers;
 
 [Route("api/v1/[controller]")]
 [ApiController]
-public class UserContactController : ControllerBase
+public class UserContactsController : ControllerBase
 {
     private readonly IUserContactService _userContactService;
 
-    public UserContactController(IUserContactService userContactService)
+    public UserContactsController(IUserContactService userContactService)
     {
         _userContactService = userContactService;
     }

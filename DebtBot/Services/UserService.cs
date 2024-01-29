@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using DebtBot.DB;
 using DebtBot.DB.Entities;
 using DebtBot.Models;
@@ -19,14 +20,14 @@ public class UserService : IUserService
 
     public IEnumerable<UserModel> GetUsers()
     {
-        var users = _debtContext.Users.ToList();
-        return _mapper.Map<IEnumerable<UserModel>>(users);
+        var users = _debtContext.Users.ProjectTo<UserModel>(_mapper.ConfigurationProvider).ToList();
+        return users;
     }
 
     public UserModel? GetUserById(Guid id)
     {
-        var user = _debtContext.Users.FirstOrDefault(u => u.Id == id);
-        return _mapper.Map<UserModel>(user);
+        var user = _debtContext.Users.Where(u => u.Id == id).ProjectTo<UserModel>(_mapper.ConfigurationProvider).FirstOrDefault();
+        return user;
     }
 
     public void AddUser(UserModel user)

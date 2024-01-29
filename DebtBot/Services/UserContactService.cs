@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using DebtBot.DB;
 using DebtBot.DB.Entities;
 using DebtBot.Models;
@@ -20,24 +21,26 @@ public class UserContactService : IUserContactService
 
     public IEnumerable<UserModel> Get()
     {
-        var contactLinks = _debtContext.UserContactsLinks.Include(t => t.ContactUser).ToList();
-        var res = _mapper.Map<IEnumerable<UserModel>>(contactLinks);
-        return res;
+        var contactLinks = _debtContext
+            .UserContactsLinks
+            .Include(t => t.ContactUser)
+            .ProjectTo<UserModel>(_mapper.ConfigurationProvider)
+            .ToList();
+
+        return contactLinks;
     }
 
     public IEnumerable<UserModel> Get(Guid id)
     {
-        var user = _debtContext.Users
+        var contacts = _debtContext.Users
             .Include(t => t.UserContacts)
             .ThenInclude(t => t.ContactUser)
-            .FirstOrDefault(t => t.Id == id);
-        if (user == null)
-        {
-            return null;
-        }
+            .Where(t => t.Id == id)
+            .Select(t => t.UserContacts)
+            .ProjectTo<UserModel>(_mapper.ConfigurationProvider)
+            .ToList();
 
-        var contacts = user.UserContacts;
-        return _mapper.Map<IEnumerable<UserModel>>(contacts);
+        return contacts;
     }
 
     public void AddContact(Guid id, UserModel contact)

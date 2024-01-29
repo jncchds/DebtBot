@@ -6,11 +6,11 @@ namespace DebtBot.Controllers;
 
 [ApiController]
 [Route("api/v1/[controller]")]
-public class BillController : ControllerBase
+public class BillsController : ControllerBase
 {
 	private readonly IBillService _billService;
 
-	public BillController(IBillService billService)
+	public BillsController(IBillService billService)
 	{
 		_billService = billService;
 	}

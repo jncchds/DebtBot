@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using DebtBot.DB;
 using DebtBot.DB.Entities;
 using DebtBot.Models;
@@ -32,8 +33,9 @@ public class BillService : IBillService
 			.ThenInclude(q => q.User)
 			.Include(q => q.Payments)
 			.ThenInclude(q => q.User)
+			.ProjectTo<BillModel>(_mapper.ConfigurationProvider)
 			.ToList();
-		return _mapper.Map<List<BillModel>>(bills);
+		return bills;
 	}
 	
 	public void AddBill(BillModel billModel)

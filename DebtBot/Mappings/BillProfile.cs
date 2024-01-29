@@ -7,8 +7,19 @@ namespace DebtBot.Mappings;
 public class BillProfile : Profile
 {
 	public BillProfile()
-	{
-		CreateMap<Bill, BillModel>().ReverseMap();
+    {
+        CreateProjection<Bill, BillModel>();
+
+        CreateProjection<BillPayment, BillPaymentModel>();
+
+        CreateProjection<BillLine, BillLineModel>();
+
+        CreateProjection<BillLineParticipant, BillLineParticipantModel>()
+            .ForMember(q => q.UserDisplayName, opt => opt.MapFrom(w => w.User.DisplayName));
+
+        CreateProjection<BillLineParticipantModel, BillLineParticipant>();
+        
+        CreateMap<Bill, BillModel>().ReverseMap();
 
 		CreateMap<BillPayment, BillPaymentModel>().ReverseMap();
 
