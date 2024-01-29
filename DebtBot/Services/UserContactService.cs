@@ -36,7 +36,7 @@ public class UserContactService : IUserContactService
             .Include(t => t.UserContacts)
             .ThenInclude(t => t.ContactUser)
             .Where(t => t.Id == id)
-            .Select(t => t.UserContacts)
+            .SelectMany(t => t.UserContacts)
             .ProjectTo<UserModel>(_mapper.ConfigurationProvider)
             .ToList();
 
