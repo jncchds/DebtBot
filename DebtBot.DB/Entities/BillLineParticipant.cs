@@ -5,7 +5,6 @@ namespace DebtBot.DB.Entities;
 
 public class BillLineParticipant
 {
-    [Key]
     public Guid BillLineId { get; set; }
     public Guid UserId { get; set; }
     
