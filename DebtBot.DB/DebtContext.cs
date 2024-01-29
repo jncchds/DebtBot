@@ -12,7 +12,7 @@ public class DebtContext : DbContext
     public DbSet<Currency> Currencies { get; set; }
     public DbSet<Event> Events { get; set; }
     public DbSet<Debt> Debts { get; set; }
-    public DbSet<LedgerRecord> Ledgers { get; set; }
+    public DbSet<LedgerRecord> LedgerRecords { get; set; }
     public DbSet<User> Users { get; set; }
     public DbSet<UserContactLink> UserContactsLinks { get; set; }
 
@@ -25,7 +25,7 @@ public class DebtContext : DbContext
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.Entity<BillPayment>().HasKey(bp => new { bp.BillId, bp.UserId });
-        modelBuilder.Entity<LedgerRecord>().HasKey(l => new { l.CreditorUserId, l.DebtorUserId, l.Currency });
+        modelBuilder.Entity<LedgerRecord>().HasKey(l => new { l.CreditorUserId, l.DebtorUserId, l.BillId });
         modelBuilder.Entity<UserContactLink>().HasKey(us => new { us.UserId, us.ContactUserId });
         modelBuilder.Entity<BillLineParticipant>().HasKey(bp => new { bp.BillLineId, bp.UserId });
     }

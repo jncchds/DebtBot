@@ -3,6 +3,7 @@ using System;
 using DebtBot.DB;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DebtBot.DB.Migrations
 {
     [DbContext(typeof(DebtContext))]
-    partial class DebtContextModelSnapshot : ModelSnapshot
+    [Migration("20240129150740_BillStatus")]
+    partial class BillStatus
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -182,26 +185,22 @@ namespace DebtBot.DB.Migrations
                     b.Property<Guid>("DebtorUserId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("BillId")
-                        .HasColumnType("uuid");
+                    b.Property<string>("Currency")
+                        .HasColumnType("text");
 
                     b.Property<decimal>("Amount")
                         .HasColumnType("decimal(10, 4)");
 
-                    b.Property<string>("CurrencyCode")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<Guid>("BillId")
+                        .HasColumnType("uuid");
 
-                    b.Property<byte>("Status")
-                        .HasColumnType("smallint");
-
-                    b.HasKey("CreditorUserId", "DebtorUserId", "BillId");
+                    b.HasKey("CreditorUserId", "DebtorUserId", "Currency");
 
                     b.HasIndex("BillId");
 
                     b.HasIndex("DebtorUserId");
 
-                    b.ToTable("LedgerRecords");
+                    b.ToTable("Ledgers");
                 });
 
             modelBuilder.Entity("DebtBot.DB.Entities.User", b =>

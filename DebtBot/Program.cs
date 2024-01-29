@@ -1,5 +1,7 @@
 using DebtBot.DB;
-using DebtBot.ServiceInterfaces;
+using DebtBot.Interfaces;
+using DebtBot.Interfaces.Services;
+using DebtBot.Processors;
 using DebtBot.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
@@ -16,6 +18,10 @@ builder.Services.AddScoped<IUserContactService, UserContactService>();
 builder.Services.AddScoped<IBillService, BillService>();
 
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
+builder.Services.AddScoped<IProcessor, BillProcessor>();
+
+builder.Services.AddHostedService<ProcessorRunner>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
