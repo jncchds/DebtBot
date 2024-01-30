@@ -2,58 +2,35 @@
 
 namespace DebtBot.Processors
 {
-    public class ProcessorRunner : IHostedService
+    public class ProcessorRunner<T> : BackgroundService
+        where T : IProcessor
     {
-        private readonly ILogger<ProcessorRunner> _logger;
+        private readonly ILogger<ProcessorRunner<T>> _logger;
         private readonly IServiceProvider _serviceProvider;
-        private readonly IServiceScope _serviceScope;
+        
 
-        public ProcessorRunner(ILogger<ProcessorRunner> logger, IServiceProvider serviceProvider)
+        public ProcessorRunner(ILogger<ProcessorRunner<T>> logger, IServiceProvider serviceProvider)
         {
             _logger = logger;
             _serviceProvider = serviceProvider;
-            _serviceScope = _serviceProvider.CreateScope();
         }
 
-        public async Task StartAsync(CancellationToken cancellationToken)
+        protected override async Task ExecuteAsync(CancellationToken token)
         {
-            var processors = _serviceScope.ServiceProvider.GetRequiredService<IEnumerable<IProcessor>>();
-            foreach (var processor in processors)
+            await DoWork(token);
+        }
+
+        private async Task DoWork(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
             {
-                _ = Task.Run(async () =>
+                using (var scope = _serviceProvider.CreateScope())
                 {
-                    while (true)
-                    {
-                        try
-                        {
-                            _logger.LogInformation("Running processor {Processor}", processor.GetType().Name);
-                            await processor.Run(cancellationToken);
-                        }
-                        catch (Exception e)
-                        {
-                            _logger.LogError(e, "Error while running processor {Processor}", processor.GetType().Name);
-                        }
-
-                        if (cancellationToken.IsCancellationRequested)
-                        {
-                            break;
-                        }
-
-                        await Task.Delay(processor.Delay, cancellationToken);
-
-                        if (cancellationToken.IsCancellationRequested)
-                        {
-                            break;
-                        }
-                    }
-                }, cancellationToken);
+                    IProcessor processor = scope.ServiceProvider.GetRequiredService<T>();
+                    await processor.Run(token);
+                    await Task.Delay(processor.Delay, token);
+                }
             }
-        }
-
-        public Task StopAsync(CancellationToken cancellationToken)
-        {
-            _serviceScope.Dispose();
-            return Task.CompletedTask;
         }
     }
 }

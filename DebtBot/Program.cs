@@ -1,6 +1,5 @@
 using DebtBot;
 using DebtBot.DB;
-using DebtBot.Interfaces;
 using DebtBot.Interfaces.Services;
 using DebtBot.Processors;
 using DebtBot.Services;
@@ -18,10 +17,11 @@ builder.Services.AddScoped<IBillService, BillService>();
 
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
-builder.Services.AddScoped<IProcessor, BillProcessor>();
-builder.Services.AddScoped<IProcessor, LedgerProcessor>();
+builder.Services.AddScoped<BillProcessor>();
+builder.Services.AddScoped<LedgerProcessor>();
 
-builder.Services.AddHostedService<ProcessorRunner>();
+builder.Services.AddHostedService<ProcessorRunner<BillProcessor>>();
+builder.Services.AddHostedService<ProcessorRunner<LedgerProcessor>>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -34,6 +34,11 @@ builder.Services.AddSwaggerGen(c =>
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     c.IncludeXmlComments(xmlPath);
+});
+
+builder.Services.AddDbContextFactory<DebtContext>(options =>
+{
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DebtBot"));
 });
 
 builder.Services.AddDbContext<DebtContext>(options =>

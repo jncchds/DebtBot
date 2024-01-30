@@ -2,14 +2,19 @@
 {
     public class DebtBotConfiguration
     {
-        public Retries Migration { get; set; }
-        public Retries LedgerProcessor { get; set; }
-        public Retries BillProcessor { get; set; }
+        public RetryConfiguration Migration { get; set; }
+        public ProcessorConfiguration LedgerProcessor { get; set; }
+        public ProcessorConfiguration BillProcessor { get; set; }
     }
 
-    public class Retries
+    public class RetryConfiguration
     {
         public int RetryCount { get; set; }
         public int RetryDelay { get; set; }
+    }
+
+    public class ProcessorConfiguration : RetryConfiguration
+    {
+        public int ProcessorDelay { get; set; }
     }
 }

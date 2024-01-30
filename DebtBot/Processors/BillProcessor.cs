@@ -2,37 +2,41 @@
 using DebtBot.DB.Entities;
 using DebtBot.DB.Enums;
 using DebtBot.Interfaces;
-using DebtBot.Interfaces.Services;
-using DebtBot.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace DebtBot.Processors
 {
     public class BillProcessor : IProcessor
     {
         private DebtContext _debtContext;
+        private ProcessorConfiguration _retryConfig;
+        private readonly IDbContextFactory<DebtContext> _contextFactory;
 
-        public BillProcessor(DebtContext debtContext)
+        public BillProcessor(IDbContextFactory<DebtContext> contextFactory, IOptions<DebtBotConfiguration> debtBotConfig)
         {
-            this._debtContext = debtContext;
+            _contextFactory = contextFactory;
+            _retryConfig = debtBotConfig.Value.BillProcessor;
         }
 
-        public int Delay => 2000;
+        public int Delay => _retryConfig.ProcessorDelay;
 
         public async Task Run(CancellationToken token)
         {
-            var billId = GetUnprocessedBill();
+            using var debtContext = _contextFactory.CreateDbContext();
+
+            var billId = GetUnprocessedBill(debtContext);
             if (billId is null)
             {
                 return;
             }
 
-            var bill = _debtContext
+            var bill = debtContext
                 .Bills
                 .Include(t => t.Lines)
                 .ThenInclude(t => t.Participants)
                 .Include(t => t.Payments)
-                .FirstOrDefault(t => t.Id == billId);
+                .First(t => t.Id == billId);
 
             decimal amount = bill.Lines.Sum(t => t.Subtotal);
             decimal paid = bill.Payments.Sum(t => t.Amount);
@@ -87,18 +91,18 @@ namespace DebtBot.Processors
 
                 try
                 {
-                    var contact = _debtContext.UserContactsLinks.FirstOrDefault(t => t.UserId == sponsor && t.ContactUserId == item.Key);
+                    var contact = debtContext.UserContactsLinks.FirstOrDefault(t => t.UserId == sponsor && t.ContactUserId == item.Key);
                     if (contact is null)
                     {
-                        var debtor = _debtContext.Users.First(t => t.Id == item.Key);
+                        var debtor = debtContext.Users.First(t => t.Id == item.Key);
                         contact = new UserContactLink()
                         {
                             UserId = sponsor,
                             ContactUserId = item.Key,
                             DisplayName = debtor.DisplayName ?? debtor.Id.ToString()
                         };
-                        _debtContext.UserContactsLinks.Add(contact);
-                        _debtContext.SaveChanges();
+                        debtContext.UserContactsLinks.Add(contact);
+                        debtContext.SaveChanges();
                     }
                 }
                 catch (Exception ex)
@@ -107,16 +111,16 @@ namespace DebtBot.Processors
                 }
             }
 
-            _debtContext.LedgerRecords.AddRange(records);
+            debtContext.LedgerRecords.AddRange(records);
             bill.Status = ProcessingState.Processed;
-            _debtContext.SaveChanges();
+            debtContext.SaveChanges();
         }
 
-        private Guid? GetUnprocessedBill()
+        private Guid? GetUnprocessedBill(DebtContext debtContext)
         {
-            using var transaction = _debtContext.Database.BeginTransaction(System.Data.IsolationLevel.Serializable);
+            using var transaction = debtContext.Database.BeginTransaction(System.Data.IsolationLevel.Serializable);
 
-            var bill = _debtContext
+            var bill = debtContext
                 .Bills
                 .FirstOrDefault(t => t.Status == ProcessingState.Ready);
 
@@ -125,7 +129,7 @@ namespace DebtBot.Processors
 
             bill.Status = ProcessingState.Processing;
 
-            _debtContext.SaveChanges();
+            debtContext.SaveChanges();
 
             transaction.Commit();
 

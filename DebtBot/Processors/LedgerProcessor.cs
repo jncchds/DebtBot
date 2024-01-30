@@ -10,19 +10,21 @@ namespace DebtBot.Processors
     public class LedgerProcessor : IProcessor
     {
         private DebtContext _debtContext;
-        private Retries _retryConfig;
+        private ProcessorConfiguration _retryConfig;
+        private readonly IDbContextFactory<DebtContext> _contextFactory;
 
-        public LedgerProcessor(DebtContext debtContext, IOptions<DebtBotConfiguration> debtBotConfig)
+        public LedgerProcessor(IDbContextFactory<DebtContext> contextFactory, IOptions<DebtBotConfiguration> debtBotConfig)
         {
-            this._debtContext = debtContext;
+            this._contextFactory = contextFactory;
             this._retryConfig = debtBotConfig.Value.LedgerProcessor;
         }
 
-        public int Delay => 2000;
+        public int Delay => _retryConfig.ProcessorDelay;
 
         public async Task Run(CancellationToken token)
         {
-            var ledgerRecordIds = GetUnprocessedLedgerRecordId();
+            using var debtContext = _contextFactory.CreateDbContext();
+            var ledgerRecordIds = GetUnprocessedLedgerRecordId(debtContext);
             if (ledgerRecordIds is null)
             {
                 return;
@@ -30,30 +32,28 @@ namespace DebtBot.Processors
 
             var (creditorId, debtorId, billId) = ledgerRecordIds.Value;
 
-            var ledgerRecord = await _debtContext
+            var ledgerRecord = debtContext
                 .LedgerRecords
                 .Include(t => t.CreditorUser)
                 .Include(t => t.DebtorUser)
                 .Include(t => t.Bill)
-                .FirstAsync(t => t.CreditorUserId == creditorId
+                .First(t => t.CreditorUserId == creditorId
                                    && t.DebtorUserId == debtorId
-                                   && t.BillId == billId,
-                                   token);
+                                   && t.BillId == billId);
 
             Debt? creditorDebt, debtorDebt;
 
-            using var transaction = await _debtContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, token);
+            using var transaction = debtContext.Database.BeginTransaction(System.Data.IsolationLevel.Serializable);
 
             for (int retry = 0; retry < _retryConfig.RetryCount; retry++)
             {
                 try
                 {
-                    creditorDebt = await _debtContext
+                    creditorDebt = debtContext
                         .Debts
-                        .FirstOrDefaultAsync(t => t.CreditorUserId == creditorId 
-                            && t.DebtorUserId == debtorId 
-                            && t.CurrencyCode == ledgerRecord.CurrencyCode, 
-                            token);
+                        .FirstOrDefault(t => t.CreditorUserId == creditorId
+                            && t.DebtorUserId == debtorId
+                            && t.CurrencyCode == ledgerRecord.CurrencyCode);
 
                     if (creditorDebt == null)
                     {
@@ -65,15 +65,14 @@ namespace DebtBot.Processors
                             CurrencyCode = ledgerRecord.CurrencyCode
                         };
 
-                        _debtContext.Debts.Add(creditorDebt);
+                        debtContext.Debts.Add(creditorDebt);
                     }
 
-                    debtorDebt = await _debtContext
+                    debtorDebt = debtContext
                         .Debts
-                        .FirstOrDefaultAsync(t => t.CreditorUserId == debtorId 
-                            && t.DebtorUserId == creditorId 
-                            && t.CurrencyCode == ledgerRecord.CurrencyCode,
-                            token);
+                        .FirstOrDefault(t => t.CreditorUserId == debtorId
+                            && t.DebtorUserId == creditorId
+                            && t.CurrencyCode == ledgerRecord.CurrencyCode);
 
                     if (debtorDebt == null)
                     {
@@ -85,14 +84,14 @@ namespace DebtBot.Processors
                             CurrencyCode = ledgerRecord.CurrencyCode
                         };
 
-                        _debtContext.Debts.Add(debtorDebt);
+                        debtContext.Debts.Add(debtorDebt);
                     }
 
                     creditorDebt.Amount += ledgerRecord.Amount;
                     debtorDebt.Amount -= ledgerRecord.Amount;
                     ledgerRecord.Status = ProcessingState.Processed;
 
-                    await _debtContext.SaveChangesAsync(token);
+                    debtContext.SaveChanges();
 
                     break;
                 }
@@ -102,22 +101,22 @@ namespace DebtBot.Processors
                     if (retry == _retryConfig.RetryCount)
                     {
                         ledgerRecord.Status = ProcessingState.Ready;
-                        await _debtContext.SaveChangesAsync(token);
+                        debtContext.SaveChanges();
                         throw;
                     }
                     await Task.Delay(_retryConfig.RetryDelay);
                 }
             }
 
-            await transaction.CommitAsync(token);
+            transaction.Commit();
         }
 
-        private (Guid creditorId, Guid debtorId, Guid billId)? GetUnprocessedLedgerRecordId()
+        private (Guid creditorId, Guid debtorId, Guid billId)? GetUnprocessedLedgerRecordId(DebtContext debtContext)
         {
-            using (var transaction = _debtContext.Database.BeginTransaction(System.Data.IsolationLevel.Serializable))
+            using (var transaction = debtContext.Database.BeginTransaction(System.Data.IsolationLevel.Serializable))
             {
 
-                var ledgerRecord = _debtContext
+                var ledgerRecord = debtContext
                     .LedgerRecords
                     .FirstOrDefault(t => t.Status == ProcessingState.Ready);
 
@@ -126,7 +125,7 @@ namespace DebtBot.Processors
 
                 ledgerRecord.Status = ProcessingState.Processing;
 
-                _debtContext.SaveChanges();
+                debtContext.SaveChanges();
 
                 transaction.Commit();
 
