@@ -10,6 +10,7 @@ public class BillLine
     public Guid BillId { get; set; }
     
     public string ItemDescription { get; set; }
+    [Column(TypeName = "decimal(10, 4)")]
     public decimal Subtotal { get; set; }
     
     [ForeignKey(nameof(BillId))]

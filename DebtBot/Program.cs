@@ -14,6 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IUserContactService, UserContactService>();
 builder.Services.AddScoped<IBillService, BillService>();
+builder.Services.AddScoped<IDebtService, DebtService>();
 
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
