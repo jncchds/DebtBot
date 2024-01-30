@@ -1,14 +1,13 @@
+using DebtBot;
 using DebtBot.DB;
 using DebtBot.Interfaces;
 using DebtBot.Interfaces.Services;
 using DebtBot.Processors;
 using DebtBot.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
-
-const int retryCount = 3;
-const int retryDelay = 3000;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +19,7 @@ builder.Services.AddScoped<IBillService, BillService>();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 builder.Services.AddScoped<IProcessor, BillProcessor>();
+builder.Services.AddScoped<IProcessor, LedgerProcessor>();
 
 builder.Services.AddHostedService<ProcessorRunner>();
 
@@ -40,10 +40,16 @@ builder.Services.AddDbContext<DebtContext>(options =>
 {
     options.UseNpgsql(builder.Configuration.GetConnectionString("DebtBot"));
 });
+
+builder.Services.Configure<DebtBotConfiguration>(
+    builder.Configuration.GetSection(nameof(DebtBotConfiguration)));
+
 var app = builder.Build();
 
+var debtBotConfig = app.Services.GetRequiredService<IOptions<DebtBotConfiguration>>().Value;
+
 // Migrate database
-for (int i = 0; i < retryCount; i++)
+for (int i = 0; i < debtBotConfig.Migration.RetryCount; i++)
 {
     try
     {
@@ -56,11 +62,11 @@ for (int i = 0; i < retryCount; i++)
     }
     catch (Exception ex)
     {
-        if (i < retryCount)
+        if (i < debtBotConfig.Migration.RetryCount)
         {
             Console.WriteLine($"Error migrating database: {ex.Message}");
             Console.WriteLine("Retrying...");
-            Thread.Sleep(retryDelay);
+            Thread.Sleep(debtBotConfig.Migration.RetryDelay);
         }
         else
         {
