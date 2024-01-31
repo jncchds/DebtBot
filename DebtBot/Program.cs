@@ -1,12 +1,17 @@
 using DebtBot;
 using DebtBot.DB;
+using DebtBot.Identity;
 using DebtBot.Interfaces.Services;
 using DebtBot.Processors;
 using DebtBot.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Swashbuckle.AspNetCore.Filters;
 using System.Reflection;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,6 +40,30 @@ builder.Services.AddSwaggerGen(c =>
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     c.IncludeXmlComments(xmlPath);
+
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        In = ParameterLocation.Header,
+        Description = "Please insert JWT with Bearer into field",
+        Name = "Authorization",
+        Type = SecuritySchemeType.ApiKey
+    });
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+
+    //c.OperationFilter<SecurityRequirementsOperationFilter>();
 });
 
 builder.Services.AddDbContextFactory<DebtContext>(options =>
@@ -49,6 +78,30 @@ builder.Services.AddDbContext<DebtContext>(options =>
 
 builder.Services.Configure<DebtBotConfiguration>(
     builder.Configuration.GetSection(nameof(DebtBotConfiguration)));
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(x =>
+    {
+        x.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+        {
+            ValidIssuer = builder.Configuration["DebtBotConfiguration:JwtConfiguration:Issuer"],
+            ValidAudience = builder.Configuration["DebtBotConfiguration:JwtConfiguration:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(
+                    builder.Configuration["DebtBotConfiguration:JwtConfiguration:Key"]!)),
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+        };
+    });
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(IdentityData.AdminUserPolicyName, 
+        policy => policy.RequireClaim(IdentityData.AdminUserClaimName));
+});
 
 var app = builder.Build();
 
