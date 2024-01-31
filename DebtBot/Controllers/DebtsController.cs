@@ -1,4 +1,6 @@
-﻿using DebtBot.Interfaces.Services;
+﻿using DebtBot.Identity;
+using DebtBot.Interfaces.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DebtBot.Controllers;
@@ -14,6 +16,7 @@ public class DebtsController : ControllerBase
         _debtService = debtService;
     }
 
+    [Authorize(IdentityData.AdminUserPolicyName)]
     [HttpGet()]
     public IActionResult Get()
     {

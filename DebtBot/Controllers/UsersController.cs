@@ -1,9 +1,12 @@
-﻿using DebtBot.Interfaces.Services;
+﻿using DebtBot.Identity;
+using DebtBot.Interfaces.Services;
 using DebtBot.Models.User;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DebtBot.Controllers;
 
+[Authorize(IdentityData.AdminUserPolicyName)]
 [ApiController]
 [Route("api/v1/[controller]")]
 public class UsersController : ControllerBase
