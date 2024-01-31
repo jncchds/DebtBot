@@ -1,7 +1,9 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DebtBot.DB.Entities;
 
+[PrimaryKey(nameof(UserId), nameof(ContactUserId))]
 public class UserContactLink
 {
     public Guid UserId { get; set; }

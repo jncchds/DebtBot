@@ -19,14 +19,4 @@ public class DebtContext : DbContext
     public DebtContext(DbContextOptions<DebtContext> options) : base(options)
     {
     }
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        base.OnModelCreating(modelBuilder);
-
-        modelBuilder.Entity<BillPayment>().HasKey(bp => new { bp.BillId, bp.UserId });
-        modelBuilder.Entity<LedgerRecord>().HasKey(l => new { l.CreditorUserId, l.DebtorUserId, l.BillId });
-        modelBuilder.Entity<UserContactLink>().HasKey(us => new { us.UserId, us.ContactUserId });
-        modelBuilder.Entity<BillLineParticipant>().HasKey(bp => new { bp.BillLineId, bp.UserId });
-    }
 }

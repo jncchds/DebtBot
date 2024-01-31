@@ -1,8 +1,10 @@
 ﻿using DebtBot.DB.Enums;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DebtBot.DB.Entities;
 
+[PrimaryKey(nameof(CreditorUserId), nameof(DebtorUserId), nameof(BillId))]
 public class LedgerRecord
 {
     public Guid CreditorUserId { get; set; }

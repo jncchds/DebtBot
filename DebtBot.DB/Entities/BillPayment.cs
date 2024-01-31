@@ -1,7 +1,9 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DebtBot.DB.Entities;
 
+[PrimaryKey(nameof(BillId), nameof(UserId))]
 public class BillPayment
 {
     public Guid BillId { get; set; }

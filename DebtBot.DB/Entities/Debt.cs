@@ -1,12 +1,12 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DebtBot.DB.Entities;
 
+[PrimaryKey(nameof(CreditorUserId), nameof(DebtorUserId), nameof(CurrencyCode))]
 public class Debt
 {
-    [Key]
-    public Guid Id { get; set; }
     public Guid CreditorUserId { get; set; }
     public Guid DebtorUserId { get; set; }
 
