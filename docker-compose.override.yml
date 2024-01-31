@@ -7,3 +7,11 @@ services:
   db:
     ports:
       - '5432:5432'
+    volumes:
+      - ./dbdata:/var/lib/postgresql/data
+  rabbit:
+    image: rabbitmq:3-management
+    ports:
+      - '15672:15672'
+    volumes:
+      - ./rabbitdata:/var/lib/rabbitmq

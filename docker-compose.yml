@@ -10,13 +10,22 @@ services:
     build:
       context: .
       dockerfile: DebtBot/Dockerfile
+    depends_on:
+      - db
+      - rabbit
 
   db:
     image: postgres:14.1-alpine
     restart: always
-    container_name: debtstoragebot_postgres
+    container_name: debtbot_postgres
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-    volumes:
-       - ./data:/var/lib/postgresql/data
+
+  rabbit:
+    image: rabbitmq:3
+    restart: always
+    container_name: debtbot_rabbit
+    environment:
+      - RABBITMQ_DEFAULT_USER=debtbot
+      - RABBITMQ_DEFAULT_PASS=debtbot
