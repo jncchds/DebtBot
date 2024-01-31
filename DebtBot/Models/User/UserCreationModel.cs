@@ -1,8 +1,7 @@
-﻿namespace DebtBot.Models;
+﻿namespace DebtBot.Models.User;
 
-public class UserModel
+public class UserCreationModel
 {
-    public Guid Id { get; set; }
     public string DisplayName { get; set; }
     public long? TelegramId { get; set; }
     public string? Phone { get; set; }

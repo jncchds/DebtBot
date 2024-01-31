@@ -3,7 +3,7 @@ using AutoMapper.QueryableExtensions;
 using DebtBot.DB;
 using DebtBot.DB.Entities;
 using DebtBot.Interfaces.Services;
-using DebtBot.Models;
+using DebtBot.Models.Bill;
 using Microsoft.EntityFrameworkCore;
 
 namespace DebtBot.Services;
@@ -39,11 +39,32 @@ public class BillService : IBillService
 		return bills;
 	}
 	
-	public void AddBill(BillModel billModel)
+	public Guid AddBill(BillCreationModel billModel)
 	{
 		var bill = _mapper.Map<Bill>(billModel);
 
 		_debtContext.Bills.Add(bill);
 		_debtContext.SaveChanges();
+
+		return bill.Id;
 	}
+
+    public bool Finalize(Guid id)
+    {
+		var bill = _debtContext.Bills.FirstOrDefault(q => q.Id == id);
+        if (bill == null)
+		{
+            return false;
+        }
+
+		if(bill.Status != DB.Enums.ProcessingState.Draft)
+		{
+			return false;
+		}
+
+        bill.Status = DB.Enums.ProcessingState.Ready;
+        _debtContext.SaveChanges();
+
+		return true;
+    }
 }

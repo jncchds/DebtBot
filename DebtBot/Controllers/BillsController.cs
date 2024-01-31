@@ -1,5 +1,5 @@
 ﻿using DebtBot.Interfaces.Services;
-using DebtBot.Models;
+using DebtBot.Models.Bill;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DebtBot.Controllers;
@@ -34,11 +34,20 @@ public class BillsController : ControllerBase
 	}
 
 	[HttpPost]
-	public IActionResult Post(BillModel billModel)
+	public IActionResult Post(BillCreationModel billModel)
 	{
-		_billService.AddBill(billModel);
-
-		return Ok();
+		return Ok(_billService.AddBill(billModel));
 	}
+
+	[HttpPost("{id}/finalize")]
+	public IActionResult Finalize(Guid id)
+	{
+		var result = _billService.Finalize(id);
+        if (!result)
+        {
+            return BadRequest();
+        }
+        return Ok();
+    }
 	
 }

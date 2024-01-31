@@ -1,5 +1,5 @@
 ﻿using DebtBot.Interfaces.Services;
-using DebtBot.Models;
+using DebtBot.Models.User;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DebtBot.Controllers;
@@ -38,7 +38,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost()]
-    public ActionResult Post(UserModel user)
+    public ActionResult Post(UserCreationModel user)
     {
         _userService.AddUser(user);
 

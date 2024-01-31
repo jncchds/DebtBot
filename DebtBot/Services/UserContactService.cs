@@ -3,7 +3,7 @@ using AutoMapper.QueryableExtensions;
 using DebtBot.DB;
 using DebtBot.DB.Entities;
 using DebtBot.Interfaces.Services;
-using DebtBot.Models;
+using DebtBot.Models.User;
 using Microsoft.EntityFrameworkCore;
 
 namespace DebtBot.Services;

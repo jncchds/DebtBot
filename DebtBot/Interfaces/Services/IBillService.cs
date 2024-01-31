@@ -1,4 +1,4 @@
-﻿using DebtBot.Models;
+﻿using DebtBot.Models.Bill;
 
 namespace DebtBot.Interfaces.Services;
 
@@ -6,5 +6,6 @@ public interface IBillService
 {
     BillModel? Get(Guid id);
     List<BillModel> Get();
-    void AddBill(BillModel billModel);
+    Guid AddBill(BillCreationModel billModel);
+    bool Finalize(Guid id);
 }

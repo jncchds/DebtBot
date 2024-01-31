@@ -1,4 +1,4 @@
-﻿using DebtBot.Models;
+﻿using DebtBot.Models.User;
 
 namespace DebtBot.Interfaces.Services;
 

@@ -1,5 +1,5 @@
 ﻿using DebtBot.Interfaces.Services;
-using DebtBot.Models;
+using DebtBot.Models.User;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DebtBot.Controllers;

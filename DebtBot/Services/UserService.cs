@@ -3,7 +3,7 @@ using AutoMapper.QueryableExtensions;
 using DebtBot.DB;
 using DebtBot.DB.Entities;
 using DebtBot.Interfaces.Services;
-using DebtBot.Models;
+using DebtBot.Models.User;
 
 namespace DebtBot.Services;
 
@@ -30,7 +30,7 @@ public class UserService : IUserService
         return user;
     }
 
-    public void AddUser(UserModel user)
+    public void AddUser(UserCreationModel user)
     {
         var entity = _mapper.Map<User>(user);
         _debtContext.Users.Add(entity);

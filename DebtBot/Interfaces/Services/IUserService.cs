@@ -1,10 +1,10 @@
-﻿using DebtBot.Models;
+﻿using DebtBot.Models.User;
 
 namespace DebtBot.Interfaces.Services;
 
 public interface IUserService
 {
-    void AddUser(UserModel user);
+    void AddUser(UserCreationModel user);
     void DeleteUser(Guid id);
     UserModel? GetUserById(Guid id);
     IEnumerable<UserModel> GetUsers();

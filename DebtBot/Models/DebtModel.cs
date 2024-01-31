@@ -5,7 +5,6 @@ namespace DebtBot.Models;
 
 public class DebtModel
 {
-    public Guid Id { get; set; }
     public Guid CreditorUserId { get; set; }
     public string CreditorDisplayName { get; set; }
     public Guid DebtorUserId { get; set; }
