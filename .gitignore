@@ -482,6 +482,7 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
-/data
 /DebtBot/appsettings.Development.json
 /DebtBot.Doc/.obsidian/workspace.json
+/dbdata
+/rabbitdata
