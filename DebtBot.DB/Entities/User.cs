@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using DebtBot.DB.Enums;
 
 namespace DebtBot.DB.Entities;
 
@@ -12,6 +13,7 @@ public class User
     public long? TelegramId { get; set; }
     public string? Phone { get; set; }
     public string? Email { get; set; }
+    public UserRole Role { get; set; }
 
     [InverseProperty(nameof(UserContactLink.User))]
     public virtual ICollection<UserContactLink> UserContacts { get; set; }

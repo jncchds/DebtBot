@@ -1,4 +1,5 @@
-﻿using DebtBot.Models.User;
+﻿using DebtBot.DB.Enums;
+using DebtBot.Models.User;
 
 namespace DebtBot.Interfaces.Services;
 
@@ -9,4 +10,5 @@ public interface IUserService
     UserModel? GetUserById(Guid id);
     IEnumerable<UserModel> GetUsers();
     void UpdateUser(UserModel user);
+    bool SetRole(Guid id, UserRole role);
 }

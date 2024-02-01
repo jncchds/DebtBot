@@ -1,4 +1,6 @@
-﻿namespace DebtBot.Models.User;
+﻿using DebtBot.DB.Enums;
+
+namespace DebtBot.Models.User;
 
 public class UserModel
 {
@@ -7,4 +9,5 @@ public class UserModel
     public long? TelegramId { get; set; }
     public string? Phone { get; set; }
     public string? Email { get; set; }
+    public UserRole Role { get; set; }
 }

@@ -2,6 +2,7 @@
 using AutoMapper.QueryableExtensions;
 using DebtBot.DB;
 using DebtBot.DB.Entities;
+using DebtBot.DB.Enums;
 using DebtBot.Interfaces.Services;
 using DebtBot.Models.User;
 
@@ -42,6 +43,19 @@ public class UserService : IUserService
         var entity = _mapper.Map<User>(user);
         _debtContext.Users.Update(entity);
         _debtContext.SaveChanges();
+    }
+
+    public bool SetRole(Guid id, UserRole role)
+    {
+        var user = _debtContext.Users.FirstOrDefault(q => q.Id == id);
+        if (user is null)
+        {
+            return false;
+        }
+
+        user.Role = role;
+        _debtContext.SaveChanges();
+        return true;
     }
 
     public void DeleteUser(Guid id)

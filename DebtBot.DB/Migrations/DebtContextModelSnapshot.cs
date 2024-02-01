@@ -225,6 +225,9 @@ namespace DebtBot.DB.Migrations
                     b.Property<string>("Phone")
                         .HasColumnType("text");
 
+                    b.Property<byte>("Role")
+                        .HasColumnType("smallint");
+
                     b.Property<long?>("TelegramId")
                         .HasColumnType("bigint");
 

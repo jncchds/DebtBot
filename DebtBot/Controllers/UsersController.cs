@@ -1,4 +1,5 @@
-﻿using DebtBot.Identity;
+﻿using DebtBot.DB.Enums;
+using DebtBot.Identity;
 using DebtBot.Interfaces.Services;
 using DebtBot.Models.User;
 using Microsoft.AspNetCore.Authorization;
@@ -62,5 +63,12 @@ public class UsersController : ControllerBase
         _userService.UpdateUser(user);
 
         return Ok();
+    }
+
+    [HttpPost("{id}/role")]
+    public ActionResult SetRole(Guid id, UserRole role)
+    {
+        var res = _userService.SetRole(id, role);
+        return res? Ok(): NotFound();
     }
 }
