@@ -8,7 +8,7 @@ namespace DebtBot.Controllers;
 
 [Route("api/v1/[controller]")]
 [ApiController]
-public class UserContactsController : ControllerBase
+public class UserContactsController : DebtBotControllerBase
 {
     private readonly IUserContactService _userContactService;
 
@@ -24,6 +24,7 @@ public class UserContactsController : ControllerBase
         return Ok(_userContactService.Get());
     }
 
+    [Authorize(IdentityData.AdminUserPolicyName)]
     [HttpGet("{id}")]
     public IActionResult Get(Guid id)
     {
@@ -36,10 +37,31 @@ public class UserContactsController : ControllerBase
         return NotFound();
     }
 
+    [HttpGet("Own")]
+    public IActionResult GetOwn()
+    {
+        var contactLinks = _userContactService.Get(UserId.Value);
+        if (contactLinks?.Any() ?? false)
+        {
+            return Ok(contactLinks);
+        }
+
+        return NotFound();
+    }
+
+    [Authorize(IdentityData.AdminUserPolicyName)]
     [HttpPost("{id}")]
     public IActionResult Post(Guid id, UserModel contact)
     {
         _userContactService.AddContact(id, contact);
+
+        return Ok();
+    }
+    
+    [HttpPost]
+    public IActionResult Post(UserModel contact)
+    {
+        _userContactService.AddContact(UserId.Value, contact);
 
         return Ok();
     }

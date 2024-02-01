@@ -8,7 +8,7 @@ namespace DebtBot.Controllers;
 
 [ApiController]
 [Route("api/v1/[controller]")]
-public class BillsController : ControllerBase
+public class BillsController : DebtBotControllerBase
 {
 	private readonly IBillService _billService;
 
@@ -21,7 +21,8 @@ public class BillsController : ControllerBase
 	public IActionResult Get(Guid id)
 	{
 		var bill = _billService.Get(id);
-		if (bill is null)
+
+		if (!_billService.HasAccess(UserId.Value, bill))
 		{
 			return NotFound();
 		}
@@ -42,7 +43,7 @@ public class BillsController : ControllerBase
 		return Ok(_billService.AddBill(billModel));
 	}
 
-	[HttpPost("{id}/finalize")]
+	[HttpPost("{id}/Finalize")]
 	public IActionResult Finalize(Guid id)
 	{
 		var result = _billService.Finalize(id);

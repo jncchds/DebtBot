@@ -7,7 +7,7 @@ namespace DebtBot.Controllers;
 
 [ApiController]
 [Route("api/v1/[controller]")]
-public class DebtsController : ControllerBase
+public class DebtsController : DebtBotControllerBase
 {
     private readonly IDebtService _debtService;
 
@@ -23,10 +23,19 @@ public class DebtsController : ControllerBase
         return Ok(_debtService.GetAll());
     }
 
+    [Authorize(IdentityData.AdminUserPolicyName)]
     [HttpGet("{id}")]
     public IActionResult Get(Guid id)
     {
         var debts = _debtService.Get(id);
+        
+        return Ok(debts);
+    }
+    
+    [HttpGet("Own")]
+    public IActionResult GetOwn()
+    {
+        var debts = _debtService.Get(UserId.Value);
         
         return Ok(debts);
     }

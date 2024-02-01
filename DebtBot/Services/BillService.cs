@@ -67,4 +67,29 @@ public class BillService : IBillService
 
 		return true;
     }
+
+    public bool HasAccess(Guid userId, BillModel? bill)
+    {
+	    if (bill is null)
+	    {
+		    return false;
+	    }
+	    
+	    if (bill.CreatorId == userId)
+	    {
+		    return true;
+	    }
+	    
+	    if(bill.Payments.Any(q => q.UserId == userId))
+	    {
+		    return true;
+	    }
+
+	    if(bill.Lines.Any(q => q.Participants.Any(w => w.UserId == userId)))
+	    {
+		    return true;
+	    }
+
+	    return false;
+    }
 }

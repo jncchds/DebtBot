@@ -9,7 +9,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Swashbuckle.AspNetCore.Filters;
 using System.Reflection;
 using System.Text;
 
@@ -96,6 +95,7 @@ builder.Services
             ValidateIssuerSigningKey = true,
         };
     });
+
 
 builder.Services.AddAuthorization(options =>
 {

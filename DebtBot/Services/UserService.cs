@@ -67,4 +67,23 @@ public class UserService : IUserService
             _debtContext.SaveChanges();
         }
     }
+
+    public UserModel GetFirstAdmin()
+    {
+
+        var user = _debtContext.Users.FirstOrDefault(q => q.Role == UserRole.Admin);
+        if (user is null)
+        {
+            user = new()
+            {
+                DisplayName = "Admin",
+                Role = UserRole.Admin
+            };
+
+            _debtContext.Users.Add(user);
+            _debtContext.SaveChanges();
+        }
+
+        return _mapper.Map<UserModel>(user);
+    }
 }

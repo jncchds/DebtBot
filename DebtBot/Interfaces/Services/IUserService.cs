@@ -11,4 +11,5 @@ public interface IUserService
     IEnumerable<UserModel> GetUsers();
     void UpdateUser(UserModel user);
     bool SetRole(Guid id, UserRole role);
+    public UserModel GetFirstAdmin();
 }

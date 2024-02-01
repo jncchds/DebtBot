@@ -10,7 +10,7 @@ namespace DebtBot.Controllers;
 [Authorize(IdentityData.AdminUserPolicyName)]
 [ApiController]
 [Route("api/v1/[controller]")]
-public class UsersController : ControllerBase
+public class UsersController : DebtBotControllerBase
 {
     private readonly IUserService _userService;
 
@@ -65,7 +65,7 @@ public class UsersController : ControllerBase
         return Ok();
     }
 
-    [HttpPost("{id}/role")]
+    [HttpPost("{id}/Role")]
     public ActionResult SetRole(Guid id, UserRole role)
     {
         var res = _userService.SetRole(id, role);
