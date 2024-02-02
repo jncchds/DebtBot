@@ -17,6 +17,7 @@ public class BillsController : DebtBotControllerBase
 		_billService = billService;
 	}
 
+	[Authorize]
 	[HttpGet("{id}")]
 	public IActionResult Get(Guid id)
 	{
@@ -28,7 +29,16 @@ public class BillsController : DebtBotControllerBase
 		}
 
 		return Ok(bill);
-	}
+    }
+
+	[Authorize]
+    [HttpGet("Own")]
+    public IActionResult GetOwn()
+    {
+        var bills = _billService.GetByUser(UserId.Value);
+
+        return Ok(bills);
+    }
 
     [Authorize(IdentityData.AdminUserPolicyName)]
     [HttpGet]

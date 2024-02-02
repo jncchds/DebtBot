@@ -37,6 +37,7 @@ public class UserContactsController : DebtBotControllerBase
         return NotFound();
     }
 
+    [Authorize]
     [HttpGet("Own")]
     public IActionResult GetOwn()
     {
@@ -57,7 +58,8 @@ public class UserContactsController : DebtBotControllerBase
 
         return Ok();
     }
-    
+
+    [Authorize]
     [HttpPost]
     public IActionResult Post(UserModel contact)
     {

@@ -31,7 +31,8 @@ public class DebtsController : DebtBotControllerBase
         
         return Ok(debts);
     }
-    
+
+    [Authorize]
     [HttpGet("Own")]
     public IActionResult GetOwn()
     {

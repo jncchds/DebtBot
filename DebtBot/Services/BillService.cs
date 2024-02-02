@@ -92,4 +92,20 @@ public class BillService : IBillService
 
 	    return false;
     }
+
+    public List<BillModel> GetByUser(Guid userId)
+    {
+        
+        var bills = _debtContext
+            .Bills
+            .Include(q => q.Lines)
+            .ThenInclude(q => q.Participants)
+            .ThenInclude(q => q.User)
+            .Include(q => q.Payments)
+            .ThenInclude(q => q.User)
+            .Where(q => q.CreatorId == userId || q.Payments.Any(w => w.UserId == userId) || q.Lines.Any(w => w.Participants.Any(e => e.UserId == userId)))
+            .ProjectTo<BillModel>(_mapper.ConfigurationProvider)
+            .ToList();
+        return bills;
+    }
 }

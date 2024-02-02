@@ -8,6 +8,6 @@ public interface IBillService
     List<BillModel> Get();
     Guid AddBill(BillCreationModel billModel);
     bool Finalize(Guid id);
-
+    List<BillModel> GetByUser(Guid userId);
     bool HasAccess(Guid UserId, BillModel? bill);
 }
