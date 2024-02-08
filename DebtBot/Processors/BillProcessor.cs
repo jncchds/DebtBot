@@ -12,13 +12,13 @@ public class BillProcessor : IProcessor
     private ProcessorConfiguration _retryConfig;
     private readonly IDbContextFactory<DebtContext> _contextFactory;
 
+    public int Delay => _retryConfig.ProcessorDelay;
+
     public BillProcessor(IDbContextFactory<DebtContext> contextFactory, IOptions<DebtBotConfiguration> debtBotConfig)
     {
         _contextFactory = contextFactory;
         _retryConfig = debtBotConfig.Value.BillProcessor;
     }
-
-    public int Delay => _retryConfig.ProcessorDelay;
 
     public async Task Run(CancellationToken token)
     {

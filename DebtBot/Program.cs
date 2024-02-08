@@ -70,6 +70,7 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.AddDbContextFactory<DebtContext>(options =>
 {
+    options.UseLazyLoadingProxies();
     options.UseNpgsql(builder.Configuration.GetConnectionString("DebtBot"));
 });
 

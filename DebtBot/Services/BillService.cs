@@ -24,8 +24,18 @@ public class BillService : IBillService
 
 	public BillModel? Get(Guid id)
 	{
-		var bill = _debtContext.Bills.FirstOrDefault(q => q.Id == id);
-		return _mapper.Map<BillModel>(bill);
+		var bill = _debtContext
+            .Bills
+            .Where(q => q.Id == id)
+            .Include(q => q.Lines)
+            .ThenInclude(q => q.Participants)
+            .ThenInclude(q => q.User)
+            .Include(q => q.Payments)
+            .ThenInclude(q => q.User)
+            .ProjectTo<BillModel>(_mapper.ConfigurationProvider)
+			.FirstOrDefault();
+
+		return bill;
 	}
 	
 	public List<BillModel> Get()
@@ -63,7 +73,12 @@ public class BillService : IBillService
 
     private BillCreationModel ParseBill(Guid userId, string billString)
     {
-		var billModel = new BillCreationModel();
+		var billModel = new BillCreationModel()
+		{
+			CreatorId = userId,
+			Date = DateTime.UtcNow
+		};
+
         var sections = billString.Split("\n\n");
 		
 		// description

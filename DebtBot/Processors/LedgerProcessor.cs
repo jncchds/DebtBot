@@ -12,6 +12,9 @@ public class LedgerProcessor : IProcessor
 {
     private ProcessorConfiguration _retryConfig;
     private readonly IDbContextFactory<DebtContext> _contextFactory;
+    private readonly ISyncPolicy _retryPolicy;
+
+    public int Delay => _retryConfig.ProcessorDelay;
 
     public LedgerProcessor(IDbContextFactory<DebtContext> contextFactory, IOptions<DebtBotConfiguration> debtBotConfig)
     {
@@ -20,12 +23,8 @@ public class LedgerProcessor : IProcessor
 
         _retryPolicy = Policy
             .Handle<Exception>()
-            .WaitAndRetry(_retryConfig.RetryCount, _ => TimeSpan.FromSeconds(_retryConfig.RetryDelay));
+            .WaitAndRetry(_retryConfig.RetryCount, _ => TimeSpan.FromMilliseconds(_retryConfig.RetryDelay));
     }
-
-    public int Delay => _retryConfig.ProcessorDelay;
-
-    private readonly ISyncPolicy _retryPolicy;
 
     public async Task Run(CancellationToken token)
     {
@@ -49,10 +48,7 @@ public class LedgerProcessor : IProcessor
 
         try
         {
-            using var transaction = debtContext.Database.BeginTransaction(System.Data.IsolationLevel.Serializable);
-            _retryPolicy.Execute(() => ApplyRecordsToDebt(creditorId, debtorId, ledgerRecord));
-            
-            transaction.Commit();
+            _retryPolicy.Execute(() => ApplyRecordsToDebt(debtContext, creditorId, debtorId, ledgerRecord));
         }
         catch (Exception)
         {
@@ -61,52 +57,60 @@ public class LedgerProcessor : IProcessor
         }
     }
 
-    private void ApplyRecordsToDebt(Guid creditorId, Guid debtorId, LedgerRecord ledgerRecord)
+    private void ApplyRecordsToDebt(DebtContext debtContext, Guid creditorId, Guid debtorId, LedgerRecord ledgerRecord)
     {
-        using var debtContext = _contextFactory.CreateDbContext();
-        var creditorDebt = debtContext
-            .Debts
-            .FirstOrDefault(t => t.CreditorUserId == creditorId
-                                 && t.DebtorUserId == debtorId
-                                 && t.CurrencyCode == ledgerRecord.CurrencyCode);
+        using var transaction = debtContext.Database.BeginTransaction();
+
+        var creditor = debtContext
+            .Users
+            .First(t => t.Id == creditorId);
+
+        var debtor = debtContext
+            .Users
+            .First(t => t.Id == debtorId);
+
+        var creditorDebt = creditor.Debts
+            .FirstOrDefault(t => t.DebtorUserId == debtorId
+                                && t.CurrencyCode == ledgerRecord.CurrencyCode);
 
         if (creditorDebt == null)
         {
-            creditorDebt = new Debt
+            creditorDebt = new Debt()
             {
-                CreditorUserId = creditorId,
+                Amount = 0.0m,
+                CurrencyCode = ledgerRecord.CurrencyCode,
                 DebtorUserId = debtorId,
-                Amount = 0,
-                CurrencyCode = ledgerRecord.CurrencyCode
+                CreditorUserId = creditorId
             };
 
-            debtContext.Debts.Add(creditorDebt);
+            creditor.Debts.Add(creditorDebt);
         }
 
-        var debtorDebt = debtContext
-            .Debts
-            .FirstOrDefault(t => t.CreditorUserId == debtorId
-                                 && t.DebtorUserId == creditorId
-                                 && t.CurrencyCode == ledgerRecord.CurrencyCode);
+        var debtorDebt = debtor.Debts
+            .FirstOrDefault(t => t.DebtorUserId == creditorId
+                                && t.CurrencyCode == ledgerRecord.CurrencyCode);
 
         if (debtorDebt == null)
         {
-            debtorDebt = new Debt
+            debtorDebt = new Debt()
             {
-                CreditorUserId = debtorId,
+                Amount = 0.0m,
+                CurrencyCode = ledgerRecord.CurrencyCode,
                 DebtorUserId = creditorId,
-                Amount = 0,
-                CurrencyCode = ledgerRecord.CurrencyCode
+                CreditorUserId = debtorId
             };
 
-            debtContext.Debts.Add(debtorDebt);
+            debtor.Debts.Add(debtorDebt);
         }
 
         creditorDebt.Amount += ledgerRecord.Amount;
         debtorDebt.Amount -= ledgerRecord.Amount;
         ledgerRecord.Status = ProcessingState.Processed;
+        creditor.Version++;
+        debtor.Version++;
 
         debtContext.SaveChanges();
+        transaction.Commit();
     }
 
     private (Guid creditorId, Guid debtorId, Guid billId)? GetUnprocessedLedgerRecordId(DebtContext debtContext)
