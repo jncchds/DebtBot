@@ -25,4 +25,8 @@ public class User
     public virtual ICollection<LedgerRecord> CreditorLedgerRecords { get; set; }
     [InverseProperty(nameof(LedgerRecord.DebtorUser))]
     public virtual ICollection<LedgerRecord> DebtorLedgerRecords { get; set; }
+
+    [Timestamp]
+    public byte[] ModifiedAt { get; set; }
+    public long Version { get; set; }
 }
