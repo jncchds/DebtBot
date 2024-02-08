@@ -1,11 +1,15 @@
-﻿using DebtBot.Identity;
+﻿using DebtBot.Crutch;
+using DebtBot.Extensions;
+using DebtBot.Identity;
 using DebtBot.Interfaces.Services;
+using DebtBot.Models;
 using DebtBot.Models.Bill;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DebtBot.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/v1/[controller]")]
 public class BillsController : DebtBotControllerBase
@@ -17,13 +21,12 @@ public class BillsController : DebtBotControllerBase
 		_billService = billService;
 	}
 
-	[Authorize]
 	[HttpGet("{id}")]
 	public IActionResult Get(Guid id)
 	{
 		var bill = _billService.Get(id);
 
-		if (!_billService.HasAccess(UserId.Value, bill))
+		if (!_billService.HasAccess(UserId!.Value, bill))
 		{
 			return NotFound();
 		}
@@ -31,11 +34,10 @@ public class BillsController : DebtBotControllerBase
 		return Ok(bill);
     }
 
-	[Authorize]
     [HttpGet("Own")]
     public IActionResult GetOwn()
     {
-        var bills = _billService.GetByUser(UserId.Value);
+        var bills = _billService.GetByUser(UserId!.Value);
 
         return Ok(bills);
     }
@@ -52,6 +54,65 @@ public class BillsController : DebtBotControllerBase
 	{
 		return Ok(_billService.AddBill(billModel));
 	}
+
+    /// <summary>
+    /// An endpoint to parse a bill from a text message
+    /// </summary>
+    /// <remarks>
+    /// Format:
+    /// 
+    ///		Description (multiple rows, no empty lines)
+    ///		
+    ///		Total
+    ///		Currency Code (3 letters)
+    ///		Payment currency code (3 letters) [optional]
+    ///		
+    ///		[Payments:]
+    ///		Amount1 User1
+    ///		Amount2 User2
+    ///		...
+    ///		AmountN UserN
+    ///		
+    ///		[Lines]
+    ///		Description1 [one line]
+    ///		Subtotal1
+    ///		Ratio1_1 User1_1
+    ///		Ratio2_1 User2_1
+    ///		...
+    ///		RatioK_1 UserK_1
+    ///		[empty line between bill lines:]
+    ///		
+    ///		Description2 [one line]
+    ///		Subtotal2
+    ///		Ratio1_2 User1_2
+    ///		Ratio2_2 User2_2
+    ///		...
+    ///		RatioL_2 UserL_2
+    ///		...
+    ///		DescriptionM [one line]
+    ///		SubtotalM
+    ///		Ratio1_M User1_M
+    ///		Ratio2_M User2_M
+    ///		...
+    ///		RatioP_M UserP_M
+    /// </remarks>
+    /// <param name="message"></param>
+    /// <returns></returns>
+    [HttpPost("text")]
+	[RawTextRequest]
+    public IActionResult PostText()
+    {
+        try
+        {
+            var message = Request.Body.ReadToEndAsync().Result;
+            var billGuid = _billService.AddBill(UserId!.Value, message);
+            return Ok(billGuid);
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
 
 	[HttpPost("{id}/Finalize")]
 	public IActionResult Finalize(Guid id)

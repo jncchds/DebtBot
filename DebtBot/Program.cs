@@ -1,4 +1,5 @@
 using DebtBot;
+using DebtBot.Crutch;
 using DebtBot.DB;
 using DebtBot.Identity;
 using DebtBot.Interfaces.Services;
@@ -34,6 +35,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Debt Bot", Version = "v1" });
+
+    c.OperationFilter<RawTextRequestOperationFilter>();
 
     // Set the comments path for the Swagger JSON and UI.
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";

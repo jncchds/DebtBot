@@ -7,7 +7,8 @@ public interface IBillService
     BillModel? Get(Guid id);
     List<BillModel> Get();
     Guid AddBill(BillCreationModel billModel);
+    Guid AddBill(Guid userId, string billString);
     bool Finalize(Guid id);
     List<BillModel> GetByUser(Guid userId);
-    bool HasAccess(Guid UserId, BillModel? bill);
+    bool HasAccess(Guid userId, BillModel? bill);
 }
