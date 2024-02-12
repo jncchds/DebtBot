@@ -91,7 +91,7 @@ public class BillService : IBillService
 		// summary
 		var summarySection = sections[1].Split("\n");
 
-		billModel.Total = decimal.Parse(summarySection[0]);
+		billModel.TotalWithTips = decimal.Parse(summarySection[0]);
 		billModel.CurrencyCode = summarySection[1];
 		if(summarySection.Length > 2)
 		{

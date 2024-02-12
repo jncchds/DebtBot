@@ -12,7 +12,7 @@ public class Bill
     public string CurrencyCode { get; set; }
     public string PaymentCurrencyCode { get; set; }
     [Column(TypeName = "decimal(10, 4)")]
-    public decimal Total { get; set; }
+    public decimal TotalWithTips { get; set; }
     public string Description { get; set; }
     public DateTime Date { get; set; }
     public ProcessingState Status { get; set; }

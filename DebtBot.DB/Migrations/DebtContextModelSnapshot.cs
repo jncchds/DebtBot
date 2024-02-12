@@ -52,7 +52,7 @@ namespace DebtBot.DB.Migrations
                     b.Property<byte>("Status")
                         .HasColumnType("smallint");
 
-                    b.Property<decimal>("Total")
+                    b.Property<decimal>("TotalWithTips")
                         .HasColumnType("decimal(10, 4)");
 
                     b.HasKey("Id");
@@ -221,7 +221,7 @@ namespace DebtBot.DB.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Spandings");
+                    b.ToTable("Spendings");
                 });
 
             modelBuilder.Entity("DebtBot.DB.Entities.User", b =>

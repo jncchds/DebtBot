@@ -37,43 +37,68 @@ public class BillProcessor : IConsumer<BillFinalized>
         bill.Status = ProcessingState.Processing;
         debtContext.SaveChanges();
 
-        decimal amount = bill.Lines.Sum(t => t.Subtotal);
-        decimal paid = bill.Payments.Sum(t => t.Amount);
-        Dictionary<Guid, decimal> participation = new Dictionary<Guid, decimal>();
+        decimal spentBillTotalNoTips = bill.Lines.Sum(t => t.Subtotal);
+        decimal paidPaymentTotalWithTips = bill.Payments.Sum(t => t.Amount);
+        Dictionary<Guid, decimal> spentPaymentPerUserWithTips = new Dictionary<Guid, decimal>();
+
+        decimal exchangeRatePaymentToBill = bill.TotalWithTips / paidPaymentTotalWithTips;
+        
         foreach (var line in bill.Lines)
         {
             var parts = line.Participants.Sum(t => t.Part);
             foreach (var participant in line.Participants)
             {
-                if (!participation.ContainsKey(participant.UserId))
+                if (!spentPaymentPerUserWithTips.ContainsKey(participant.UserId))
                 {
-                    participation[participant.UserId] = 0;
+                    spentPaymentPerUserWithTips[participant.UserId] = 0;
                 }
 
-                participation[participant.UserId] += participant.Part * line.Subtotal / parts;
+                spentPaymentPerUserWithTips[participant.UserId] += line.Subtotal 
+                    * participant.Part / parts 
+                    * paidPaymentTotalWithTips / spentBillTotalNoTips;
             }
         }
+        
+        /// spent/pay               - Spent/Paid
+        /// currency                - Bill/Payment
+        /// total or per            - Total/PerUser
+        /// tips/no tips            - WithTips/NoTips
+        ///
+        /// spentBillTotalNoTips
+        /// paidPaymentTotalWithTips
+        /// spentBillTotalWithTips
+        /// spentPaymentPerUserWithTips
 
-        foreach (var item in participation)
-        {
-            participation[item.Key] = item.Value * paid / amount;
-        }
-
-        // write budget here
+        /// spentBillTotalNoTips - amount spent without tips in bill currency
+        /// paidPaymentTotalWithTisp - amount paid with tips in payment currency
+        /// bill.total - amount spent with tips in bill currency
+        /// spentPaymentPerUserWithTips.value - amount spent with tips in payment currency per user
+        
+        debtContext.Spendings.AddRange(
+            spentPaymentPerUserWithTips.Select(q => new Spending()
+            {
+                Description = $"{bill.Description} portion {q.Value / paidPaymentTotalWithTips}",
+                BillId = bill.Id,
+                UserId = q.Key,
+                Amount = q.Value * exchangeRatePaymentToBill,
+                CurrencyCode = bill.CurrencyCode,
+                PaymentCurrencyCode = bill.PaymentCurrencyCode,
+                PaymentAmount = q.Value
+            }));
         
         foreach (var payment in bill.Payments)
         {
-            if (!participation.ContainsKey(payment.UserId))
+            if (!spentPaymentPerUserWithTips.ContainsKey(payment.UserId))
             {
-                participation[payment.UserId] = 0;
+                spentPaymentPerUserWithTips[payment.UserId] = 0;
             }
             
-            participation[payment.UserId] -= payment.Amount;
+            spentPaymentPerUserWithTips[payment.UserId] -= payment.Amount;
         }
 
-        var sponsor = participation.MinBy(t => t.Value).Key;
+        var sponsor = spentPaymentPerUserWithTips.MinBy(t => t.Value).Key;
         var records = new List<LedgerRecord>();
-        foreach (var item in participation)
+        foreach (var item in spentPaymentPerUserWithTips)
         {
             if (item.Key == sponsor)
             {
@@ -86,7 +111,7 @@ public class BillProcessor : IConsumer<BillFinalized>
                 CreditorUserId = sponsor,
                 DebtorUserId = item.Key,
                 BillId = bill.Id,
-                CurrencyCode = bill.CurrencyCode,
+                CurrencyCode = bill.PaymentCurrencyCode,
                 Status = ProcessingState.Ready
             });
 
