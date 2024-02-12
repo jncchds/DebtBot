@@ -3,10 +3,12 @@ using AutoMapper.QueryableExtensions;
 using DebtBot.DB;
 using DebtBot.DB.Entities;
 using DebtBot.Interfaces.Services;
+using DebtBot.Messages;
 using DebtBot.Models;
 using DebtBot.Models.Bill;
 using DebtBot.Models.BillLine;
 using DebtBot.Models.BillLineParticipant;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 
 namespace DebtBot.Services;
@@ -15,11 +17,13 @@ public class BillService : IBillService
 {
 	private readonly DebtContext _debtContext;
 	private readonly IMapper _mapper;
+	private readonly IPublishEndpoint _publishEndpoint;
 	
-	public BillService(DebtContext debtContext, IMapper mapper)
+	public BillService(DebtContext debtContext, IMapper mapper, IPublishEndpoint publishEndpoint)
 	{
 		_debtContext = debtContext;
 		_mapper = mapper;
+		_publishEndpoint = publishEndpoint;
 	}
 
 	public BillModel? Get(Guid id)
@@ -177,6 +181,8 @@ public class BillService : IBillService
 
         bill.Status = DB.Enums.ProcessingState.Ready;
         _debtContext.SaveChanges();
+
+        _publishEndpoint.Publish(new BillFinalized(id));
 
 		return true;
     }

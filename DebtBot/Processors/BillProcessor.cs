@@ -1,13 +1,14 @@
 ﻿using DebtBot.DB;
 using DebtBot.DB.Entities;
 using DebtBot.DB.Enums;
-using DebtBot.Interfaces;
+using DebtBot.Messages;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace DebtBot.Processors;
 
-public class BillProcessor : IProcessor
+public class BillProcessor : IConsumer<BillFinalized>
 {
     private ProcessorConfiguration _retryConfig;
     private readonly IDbContextFactory<DebtContext> _contextFactory;
@@ -20,15 +21,9 @@ public class BillProcessor : IProcessor
         _retryConfig = debtBotConfig.Value.BillProcessor;
     }
 
-    public async Task Run(CancellationToken token)
+    public async Task Run(Guid billId, CancellationToken cancellationToken)
     {
         using var debtContext = _contextFactory.CreateDbContext();
-
-        var billId = GetUnprocessedBill(debtContext);
-        if (billId is null)
-        {
-            return;
-        }
 
         var bill = debtContext
             .Bills
@@ -36,6 +31,9 @@ public class BillProcessor : IProcessor
             .ThenInclude(t => t.Participants)
             .Include(t => t.Payments)
             .First(t => t.Id == billId);
+        
+        bill.Status = ProcessingState.Processing;
+        debtContext.SaveChanges();
 
         decimal amount = bill.Lines.Sum(t => t.Subtotal);
         decimal paid = bill.Payments.Sum(t => t.Amount);
@@ -59,13 +57,15 @@ public class BillProcessor : IProcessor
             participation[item.Key] = item.Value * paid / amount;
         }
 
+        // write budget here
+        
         foreach (var payment in bill.Payments)
         {
             if (!participation.ContainsKey(payment.UserId))
             {
                 participation[payment.UserId] = 0;
             }
-
+            
             participation[payment.UserId] -= payment.Amount;
         }
 
@@ -115,23 +115,8 @@ public class BillProcessor : IProcessor
         debtContext.SaveChanges();
     }
 
-    private Guid? GetUnprocessedBill(DebtContext debtContext)
+    public async Task Consume(ConsumeContext<BillFinalized> context)
     {
-        using var transaction = debtContext.Database.BeginTransaction(System.Data.IsolationLevel.Serializable);
-
-        var bill = debtContext
-            .Bills
-            .FirstOrDefault(t => t.Status == ProcessingState.Ready);
-
-        if (bill is null)
-            return null;
-
-        bill.Status = ProcessingState.Processing;
-
-        debtContext.SaveChanges();
-
-        transaction.Commit();
-
-        return bill.Id;
+        await Run(context.Message.id, context.CancellationToken);
     }
 }
