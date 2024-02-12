@@ -12,12 +12,14 @@ public class BillProcessor : IConsumer<BillFinalized>
 {
     private ProcessorConfiguration _retryConfig;
     private readonly IDbContextFactory<DebtContext> _contextFactory;
+    private readonly IPublishEndpoint _publishEndpoint;
 
     public int Delay => _retryConfig.ProcessorDelay;
 
-    public BillProcessor(IDbContextFactory<DebtContext> contextFactory, IOptions<DebtBotConfiguration> debtBotConfig)
+    public BillProcessor(IDbContextFactory<DebtContext> contextFactory, IOptions<DebtBotConfiguration> debtBotConfig, IPublishEndpoint publishEndpoint)
     {
         _contextFactory = contextFactory;
+        _publishEndpoint = publishEndpoint;
         _retryConfig = debtBotConfig.Value.BillProcessor;
     }
 
@@ -113,6 +115,14 @@ public class BillProcessor : IConsumer<BillFinalized>
         debtContext.LedgerRecords.AddRange(records);
         bill.Status = ProcessingState.Processed;
         debtContext.SaveChanges();
+
+        await _publishEndpoint.PublishBatch(records.Select(q =>
+            new LedgerRecordCreated(q.CreditorUserId, q.DebtorUserId, q.Amount, q.CurrencyCode)
+        ));
+        
+        await _publishEndpoint.PublishBatch(records.Select(q =>
+            new LedgerRecordCreated(q.DebtorUserId, q.CreditorUserId, -q.Amount, q.CurrencyCode)
+        ));
     }
 
     public async Task Consume(ConsumeContext<BillFinalized> context)

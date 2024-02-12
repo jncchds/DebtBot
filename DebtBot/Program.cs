@@ -3,7 +3,6 @@ using DebtBot.Crutch;
 using DebtBot.DB;
 using DebtBot.Identity;
 using DebtBot.Interfaces.Services;
-using DebtBot.Processors;
 using DebtBot.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -24,11 +23,7 @@ builder.Services.AddScoped<IDebtService, DebtService>();
 
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
-//builder.Services.AddScoped<BillProcessor>();
-builder.Services.AddScoped<LedgerProcessor>();
-
-//builder.Services.AddHostedService<ProcessorRunner<BillProcessor>>();
-builder.Services.AddHostedService<ProcessorRunner<LedgerProcessor>>();
+builder.Services.AddLogging();
 
 builder.Services.AddMassTransit(configurator =>
 {
