@@ -17,7 +17,10 @@ namespace DebtBot.DB.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.0")
+                .HasAnnotation("ProductVersion", "8.0.1")
+                .HasAnnotation("Proxies:ChangeTracking", false)
+                .HasAnnotation("Proxies:CheckEquality", false)
+                .HasAnnotation("Proxies:LazyLoading", true)
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -158,27 +161,6 @@ namespace DebtBot.DB.Migrations
                     b.ToTable("Debts");
                 });
 
-            modelBuilder.Entity("DebtBot.DB.Entities.Event", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Parameter")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Events");
-                });
-
             modelBuilder.Entity("DebtBot.DB.Entities.LedgerRecord", b =>
                 {
                     b.Property<Guid>("CreditorUserId")
@@ -207,6 +189,39 @@ namespace DebtBot.DB.Migrations
                     b.HasIndex("DebtorUserId");
 
                     b.ToTable("LedgerRecords");
+                });
+
+            modelBuilder.Entity("DebtBot.DB.Entities.Spending", b =>
+                {
+                    b.Property<Guid>("BillId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(10, 4)");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("PaymentAmount")
+                        .HasColumnType("decimal(10, 4)");
+
+                    b.Property<string>("PaymentCurrencyCode")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("BillId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Spandings");
                 });
 
             modelBuilder.Entity("DebtBot.DB.Entities.User", b =>
@@ -370,6 +385,25 @@ namespace DebtBot.DB.Migrations
                     b.Navigation("DebtorUser");
                 });
 
+            modelBuilder.Entity("DebtBot.DB.Entities.Spending", b =>
+                {
+                    b.HasOne("DebtBot.DB.Entities.Bill", "Bill")
+                        .WithMany()
+                        .HasForeignKey("BillId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DebtBot.DB.Entities.User", "User")
+                        .WithMany("Spendings")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Bill");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("DebtBot.DB.Entities.UserContactLink", b =>
                 {
                     b.HasOne("DebtBot.DB.Entities.User", "ContactUser")
@@ -408,6 +442,8 @@ namespace DebtBot.DB.Migrations
                     b.Navigation("DebtorLedgerRecords");
 
                     b.Navigation("Debts");
+
+                    b.Navigation("Spendings");
 
                     b.Navigation("UserContacts");
                 });

@@ -10,11 +10,11 @@ public class DebtContext : DbContext
     public DbSet<BillLine> BillLines { get; set; }
     public DbSet<BillLineParticipant> BillLineParticipants { get; set; }
     public DbSet<Currency> Currencies { get; set; }
-    public DbSet<Event> Events { get; set; }
     public DbSet<Debt> Debts { get; set; }
     public DbSet<LedgerRecord> LedgerRecords { get; set; }
     public DbSet<User> Users { get; set; }
     public DbSet<UserContactLink> UserContactsLinks { get; set; }
+    public DbSet<Spending> Spandings { get; set; }
 
     public DebtContext(DbContextOptions<DebtContext> options) : base(options)
     {
