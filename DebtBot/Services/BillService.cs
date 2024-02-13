@@ -3,10 +3,12 @@ using AutoMapper.QueryableExtensions;
 using DebtBot.DB;
 using DebtBot.DB.Entities;
 using DebtBot.Interfaces.Services;
+using DebtBot.Messages;
 using DebtBot.Models;
 using DebtBot.Models.Bill;
 using DebtBot.Models.BillLine;
 using DebtBot.Models.BillLineParticipant;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 
 namespace DebtBot.Services;
@@ -15,11 +17,13 @@ public class BillService : IBillService
 {
 	private readonly DebtContext _debtContext;
 	private readonly IMapper _mapper;
+	private readonly IPublishEndpoint _publishEndpoint;
 	
-	public BillService(DebtContext debtContext, IMapper mapper)
+	public BillService(DebtContext debtContext, IMapper mapper, IPublishEndpoint publishEndpoint)
 	{
 		_debtContext = debtContext;
 		_mapper = mapper;
+		_publishEndpoint = publishEndpoint;
 	}
 
 	public BillModel? Get(Guid id)
@@ -52,30 +56,30 @@ public class BillService : IBillService
 		return bills;
 	}
 	
-	public Guid AddBill(BillCreationModel billModel)
+	public Guid AddBill(BillCreationModel billModel, Guid creatorId)
 	{
 		var bill = _mapper.Map<Bill>(billModel);
 
+		bill.CreatorId = creatorId;
 		_debtContext.Bills.Add(bill);
 		_debtContext.SaveChanges();
 
 		return bill.Id;
 	}
 
-	public Guid AddBill(Guid userId, string billString)
+    public Guid AddBill(string billString, Guid creatorId)
 	{
-		BillCreationModel billModel = ParseBill(userId, billString);
-		return AddBill(billModel);
+		BillCreationModel billModel = ParseBill(billString, creatorId);
+		return AddBill(billModel, creatorId);
     }
 
 	private (int index, string val) whitespaceLocator(string w) 
 		=> (index: w.IndexOfAny([' ', '\n', '\t', '\v', '\r']), val: w);
 
-    private BillCreationModel ParseBill(Guid userId, string billString)
+    private BillCreationModel ParseBill(string billString, Guid creatorId)
     {
 		var billModel = new BillCreationModel()
 		{
-			CreatorId = userId,
 			Date = DateTime.UtcNow
 		};
 
@@ -87,7 +91,7 @@ public class BillService : IBillService
 		// summary
 		var summarySection = sections[1].Split("\n");
 
-		billModel.Total = decimal.Parse(summarySection[0]);
+		billModel.TotalWithTips = decimal.Parse(summarySection[0]);
 		billModel.CurrencyCode = summarySection[1];
 		if(summarySection.Length > 2)
 		{
@@ -105,7 +109,7 @@ public class BillService : IBillService
 			.Select(q => new BillPaymentModel
 			{
 				Amount = decimal.Parse(q.val.Substring(0, q.index)),
-				UserId = DetectUser(userId, q.val.Substring(q.index + 1)) ?? Guid.Empty
+				UserId = DetectUser(creatorId, q.val.Substring(q.index + 1)) ?? Guid.Empty
 			})
 			.ToList();
 
@@ -122,7 +126,7 @@ public class BillService : IBillService
                                 .Select(w => new BillLineParticipantCreationModel
                                 {
                                     Part = decimal.Parse(w.val.Substring(0, w.index)),
-                                    UserId = DetectUser(userId, w.val.Substring(w.index + 1)) ?? Guid.Empty
+                                    UserId = DetectUser(creatorId, w.val.Substring(w.index + 1)) ?? Guid.Empty
                                 })
                                 .ToList()
             })
@@ -177,6 +181,8 @@ public class BillService : IBillService
 
         bill.Status = DB.Enums.ProcessingState.Ready;
         _debtContext.SaveChanges();
+
+        _publishEndpoint.Publish(new BillFinalized(id));
 
 		return true;
     }

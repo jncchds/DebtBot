@@ -2,6 +2,7 @@
 {
     public class DebtBotConfiguration
     {
+        public const string SectionName = "DebtBot";
         public RetryConfiguration Migration { get; set; }
         public ProcessorConfiguration LedgerProcessor { get; set; }
         public ProcessorConfiguration BillProcessor { get; set; }

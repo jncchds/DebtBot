@@ -1,34 +1,31 @@
 ﻿using DebtBot.DB;
 using DebtBot.DB.Entities;
 using DebtBot.DB.Enums;
-using DebtBot.Interfaces;
+using DebtBot.Messages;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace DebtBot.Processors;
 
-public class BillProcessor : IProcessor
+public class BillProcessor : IConsumer<BillFinalized>
 {
     private ProcessorConfiguration _retryConfig;
     private readonly IDbContextFactory<DebtContext> _contextFactory;
+    private readonly IPublishEndpoint _publishEndpoint;
 
     public int Delay => _retryConfig.ProcessorDelay;
 
-    public BillProcessor(IDbContextFactory<DebtContext> contextFactory, IOptions<DebtBotConfiguration> debtBotConfig)
+    public BillProcessor(IDbContextFactory<DebtContext> contextFactory, IOptions<DebtBotConfiguration> debtBotConfig, IPublishEndpoint publishEndpoint)
     {
         _contextFactory = contextFactory;
+        _publishEndpoint = publishEndpoint;
         _retryConfig = debtBotConfig.Value.BillProcessor;
     }
 
-    public async Task Run(CancellationToken token)
+    public async Task Run(Guid billId, CancellationToken cancellationToken)
     {
         using var debtContext = _contextFactory.CreateDbContext();
-
-        var billId = GetUnprocessedBill(debtContext);
-        if (billId is null)
-        {
-            return;
-        }
 
         var bill = debtContext
             .Bills
@@ -36,42 +33,72 @@ public class BillProcessor : IProcessor
             .ThenInclude(t => t.Participants)
             .Include(t => t.Payments)
             .First(t => t.Id == billId);
+        
+        bill.Status = ProcessingState.Processing;
+        debtContext.SaveChanges();
 
-        decimal amount = bill.Lines.Sum(t => t.Subtotal);
-        decimal paid = bill.Payments.Sum(t => t.Amount);
-        Dictionary<Guid, decimal> participation = new Dictionary<Guid, decimal>();
+        decimal spentBillTotalNoTips = bill.Lines.Sum(t => t.Subtotal);
+        decimal paidPaymentTotalWithTips = bill.Payments.Sum(t => t.Amount);
+        Dictionary<Guid, decimal> spentPaymentPerUserWithTips = new Dictionary<Guid, decimal>();
+
+        decimal exchangeRatePaymentToBill = bill.TotalWithTips / paidPaymentTotalWithTips;
+        
         foreach (var line in bill.Lines)
         {
             var parts = line.Participants.Sum(t => t.Part);
             foreach (var participant in line.Participants)
             {
-                if (!participation.ContainsKey(participant.UserId))
+                if (!spentPaymentPerUserWithTips.ContainsKey(participant.UserId))
                 {
-                    participation[participant.UserId] = 0;
+                    spentPaymentPerUserWithTips[participant.UserId] = 0;
                 }
 
-                participation[participant.UserId] += participant.Part * line.Subtotal / parts;
+                spentPaymentPerUserWithTips[participant.UserId] += line.Subtotal 
+                    * participant.Part / parts 
+                    * paidPaymentTotalWithTips / spentBillTotalNoTips;
             }
         }
+        
+        /// spent/pay               - Spent/Paid
+        /// currency                - Bill/Payment
+        /// total or per            - Total/PerUser
+        /// tips/no tips            - WithTips/NoTips
+        ///
+        /// spentBillTotalNoTips
+        /// paidPaymentTotalWithTips
+        /// spentBillTotalWithTips
+        /// spentPaymentPerUserWithTips
 
-        foreach (var item in participation)
-        {
-            participation[item.Key] = item.Value * paid / amount;
-        }
-
+        /// spentBillTotalNoTips - amount spent without tips in bill currency
+        /// paidPaymentTotalWithTisp - amount paid with tips in payment currency
+        /// bill.total - amount spent with tips in bill currency
+        /// spentPaymentPerUserWithTips.value - amount spent with tips in payment currency per user
+        
+        debtContext.Spendings.AddRange(
+            spentPaymentPerUserWithTips.Select(q => new Spending()
+            {
+                Description = $"{bill.Description} portion {q.Value / paidPaymentTotalWithTips}",
+                BillId = bill.Id,
+                UserId = q.Key,
+                Amount = q.Value * exchangeRatePaymentToBill,
+                CurrencyCode = bill.CurrencyCode,
+                PaymentCurrencyCode = bill.PaymentCurrencyCode,
+                PaymentAmount = q.Value
+            }));
+        
         foreach (var payment in bill.Payments)
         {
-            if (!participation.ContainsKey(payment.UserId))
+            if (!spentPaymentPerUserWithTips.ContainsKey(payment.UserId))
             {
-                participation[payment.UserId] = 0;
+                spentPaymentPerUserWithTips[payment.UserId] = 0;
             }
-
-            participation[payment.UserId] -= payment.Amount;
+            
+            spentPaymentPerUserWithTips[payment.UserId] -= payment.Amount;
         }
 
-        var sponsor = participation.MinBy(t => t.Value).Key;
+        var sponsor = spentPaymentPerUserWithTips.MinBy(t => t.Value).Key;
         var records = new List<LedgerRecord>();
-        foreach (var item in participation)
+        foreach (var item in spentPaymentPerUserWithTips)
         {
             if (item.Key == sponsor)
             {
@@ -84,8 +111,7 @@ public class BillProcessor : IProcessor
                 CreditorUserId = sponsor,
                 DebtorUserId = item.Key,
                 BillId = bill.Id,
-                CurrencyCode = bill.CurrencyCode,
-                Status = ProcessingState.Ready
+                CurrencyCode = bill.PaymentCurrencyCode
             });
 
             try
@@ -113,25 +139,18 @@ public class BillProcessor : IProcessor
         debtContext.LedgerRecords.AddRange(records);
         bill.Status = ProcessingState.Processed;
         debtContext.SaveChanges();
+
+        await _publishEndpoint.PublishBatch(records.Select(q =>
+            new LedgerRecordCreated(q.CreditorUserId, q.DebtorUserId, q.Amount, q.CurrencyCode)
+        ));
+        
+        await _publishEndpoint.PublishBatch(records.Select(q =>
+            new LedgerRecordCreated(q.DebtorUserId, q.CreditorUserId, -q.Amount, q.CurrencyCode)
+        ));
     }
 
-    private Guid? GetUnprocessedBill(DebtContext debtContext)
+    public async Task Consume(ConsumeContext<BillFinalized> context)
     {
-        using var transaction = debtContext.Database.BeginTransaction(System.Data.IsolationLevel.Serializable);
-
-        var bill = debtContext
-            .Bills
-            .FirstOrDefault(t => t.Status == ProcessingState.Ready);
-
-        if (bill is null)
-            return null;
-
-        bill.Status = ProcessingState.Processing;
-
-        debtContext.SaveChanges();
-
-        transaction.Commit();
-
-        return bill.Id;
+        await Run(context.Message.id, context.CancellationToken);
     }
 }

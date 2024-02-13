@@ -13,7 +13,7 @@ public class BillModel
     public string Description { get; set; }
     public DateTime Date { get; set; }
     public ProcessingState Status { get; set; }
-    public decimal Total { get; set; }
+    public decimal TotalWithTips { get; set; }
 
     public List<BillLineModel> Lines { get; set; }
     public List<BillPaymentModel> Payments { get; set; }

@@ -25,6 +25,8 @@ public class User
     public virtual ICollection<LedgerRecord> CreditorLedgerRecords { get; set; }
     [InverseProperty(nameof(LedgerRecord.DebtorUser))]
     public virtual ICollection<LedgerRecord> DebtorLedgerRecords { get; set; }
+    [InverseProperty(nameof(Spending.User))]
+    public virtual ICollection<Spending> Spendings { get; set; }
 
     [Timestamp]
     public byte[] ModifiedAt { get; set; }

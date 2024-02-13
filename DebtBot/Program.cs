@@ -3,7 +3,6 @@ using DebtBot.Crutch;
 using DebtBot.DB;
 using DebtBot.Identity;
 using DebtBot.Interfaces.Services;
-using DebtBot.Processors;
 using DebtBot.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -12,6 +11,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
 using System.Text;
+using MassTransit;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,11 +23,25 @@ builder.Services.AddScoped<IDebtService, DebtService>();
 
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
-builder.Services.AddScoped<BillProcessor>();
-builder.Services.AddScoped<LedgerProcessor>();
+builder.Services.AddLogging();
 
-builder.Services.AddHostedService<ProcessorRunner<BillProcessor>>();
-builder.Services.AddHostedService<ProcessorRunner<LedgerProcessor>>();
+builder.Services.AddMassTransit(configurator =>
+{
+    configurator.AddConsumers(typeof(Program).Assembly);
+    configurator.UsingRabbitMq((context, cfg) =>
+    {
+        cfg.Host(
+            builder.Configuration[$"{DebtBotConfiguration.SectionName}:RabbitMq:Host"], 
+            "/",
+            h =>
+            {
+                h.Username(builder.Configuration[$"{DebtBotConfiguration.SectionName}:RabbitMq:Username"]);
+                h.Password(builder.Configuration[$"{DebtBotConfiguration.SectionName}:RabbitMq:Password"]);
+            });
+        
+        cfg.ConfigureEndpoints(context);
+    });
+});
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -80,7 +94,7 @@ builder.Services.AddDbContext<DebtContext>(options =>
 });
 
 builder.Services.Configure<DebtBotConfiguration>(
-    builder.Configuration.GetSection(nameof(DebtBotConfiguration)));
+    builder.Configuration.GetSection(DebtBotConfiguration.SectionName));
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -88,11 +102,11 @@ builder.Services
     {
         x.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
         {
-            ValidIssuer = builder.Configuration["DebtBotConfiguration:JwtConfiguration:Issuer"],
-            ValidAudience = builder.Configuration["DebtBotConfiguration:JwtConfiguration:Audience"],
+            ValidIssuer = builder.Configuration[$"{DebtBotConfiguration.SectionName}:JwtConfiguration:Issuer"],
+            ValidAudience = builder.Configuration[$"{DebtBotConfiguration.SectionName}:JwtConfiguration:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(
-                    builder.Configuration["DebtBotConfiguration:JwtConfiguration:Key"]!)),
+                    builder.Configuration[$"{DebtBotConfiguration.SectionName}:JwtConfiguration:Key"]!)),
             ValidateIssuer = true,
             ValidateAudience = true,
             ValidateLifetime = true,
