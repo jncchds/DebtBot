@@ -111,8 +111,7 @@ public class BillProcessor : IConsumer<BillFinalized>
                 CreditorUserId = sponsor,
                 DebtorUserId = item.Key,
                 BillId = bill.Id,
-                CurrencyCode = bill.PaymentCurrencyCode,
-                Status = ProcessingState.Ready
+                CurrencyCode = bill.PaymentCurrencyCode
             });
 
             try

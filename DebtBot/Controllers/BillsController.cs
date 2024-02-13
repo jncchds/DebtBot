@@ -2,7 +2,6 @@
 using DebtBot.Extensions;
 using DebtBot.Identity;
 using DebtBot.Interfaces.Services;
-using DebtBot.Models;
 using DebtBot.Models.Bill;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -52,7 +51,7 @@ public class BillsController : DebtBotControllerBase
 	[HttpPost]
 	public IActionResult Post(BillCreationModel billModel)
 	{
-		return Ok(_billService.AddBill(billModel));
+		return Ok(_billService.AddBill(billModel, UserId!.Value));
 	}
 
     /// <summary>
@@ -63,7 +62,7 @@ public class BillsController : DebtBotControllerBase
     /// 
     ///		Description (multiple rows, no empty lines)
     ///		
-    ///		Total
+    ///		Total with tips in bill currency
     ///		Currency Code (3 letters)
     ///		Payment currency code (3 letters) [optional]
     ///		
@@ -105,7 +104,7 @@ public class BillsController : DebtBotControllerBase
         try
         {
             var message = Request.Body.ReadToEndAsync().Result;
-            var billGuid = _billService.AddBill(UserId!.Value, message);
+            var billGuid = _billService.AddBill(message, UserId!.Value);
             return Ok(billGuid);
         }
         catch (Exception e)

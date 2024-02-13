@@ -5,7 +5,6 @@ namespace DebtBot.Models.Bill;
 
 public class BillCreationModel
 {
-    public Guid CreatorId { get; set; }
     public string CurrencyCode { get; set; }
     public string PaymentCurrencyCode { get; set; }
     public string Description { get; set; }

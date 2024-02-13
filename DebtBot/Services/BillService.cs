@@ -56,30 +56,30 @@ public class BillService : IBillService
 		return bills;
 	}
 	
-	public Guid AddBill(BillCreationModel billModel)
+	public Guid AddBill(BillCreationModel billModel, Guid creatorId)
 	{
 		var bill = _mapper.Map<Bill>(billModel);
 
+		bill.CreatorId = creatorId;
 		_debtContext.Bills.Add(bill);
 		_debtContext.SaveChanges();
 
 		return bill.Id;
 	}
 
-	public Guid AddBill(Guid userId, string billString)
+    public Guid AddBill(string billString, Guid creatorId)
 	{
-		BillCreationModel billModel = ParseBill(userId, billString);
-		return AddBill(billModel);
+		BillCreationModel billModel = ParseBill(billString, creatorId);
+		return AddBill(billModel, creatorId);
     }
 
 	private (int index, string val) whitespaceLocator(string w) 
 		=> (index: w.IndexOfAny([' ', '\n', '\t', '\v', '\r']), val: w);
 
-    private BillCreationModel ParseBill(Guid userId, string billString)
+    private BillCreationModel ParseBill(string billString, Guid creatorId)
     {
 		var billModel = new BillCreationModel()
 		{
-			CreatorId = userId,
 			Date = DateTime.UtcNow
 		};
 
@@ -109,7 +109,7 @@ public class BillService : IBillService
 			.Select(q => new BillPaymentModel
 			{
 				Amount = decimal.Parse(q.val.Substring(0, q.index)),
-				UserId = DetectUser(userId, q.val.Substring(q.index + 1)) ?? Guid.Empty
+				UserId = DetectUser(creatorId, q.val.Substring(q.index + 1)) ?? Guid.Empty
 			})
 			.ToList();
 
@@ -126,7 +126,7 @@ public class BillService : IBillService
                                 .Select(w => new BillLineParticipantCreationModel
                                 {
                                     Part = decimal.Parse(w.val.Substring(0, w.index)),
-                                    UserId = DetectUser(userId, w.val.Substring(w.index + 1)) ?? Guid.Empty
+                                    UserId = DetectUser(creatorId, w.val.Substring(w.index + 1)) ?? Guid.Empty
                                 })
                                 .ToList()
             })

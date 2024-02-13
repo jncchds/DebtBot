@@ -1,5 +1,4 @@
-﻿using DebtBot.DB.Enums;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DebtBot.DB.Entities;
@@ -14,7 +13,6 @@ public class LedgerRecord
     [Column(TypeName = "decimal(10, 4)")]
     public decimal Amount { get; set; }
     public string CurrencyCode { get; set; }
-    public ProcessingState Status { get; set; }
 
     [ForeignKey(nameof(CreditorUserId))]
     public virtual User CreditorUser { get; set; }
