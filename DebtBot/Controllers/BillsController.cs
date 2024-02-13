@@ -99,12 +99,17 @@ public class BillsController : DebtBotControllerBase
     /// <returns></returns>
     [HttpPost("text")]
 	[RawTextRequest]
-    public IActionResult PostText()
+    public IActionResult PostText([FromQuery] bool createDrafted)
     {
         try
         {
             var message = Request.Body.ReadToEndAsync().Result;
             var billGuid = _billService.AddBill(message, UserId!.Value);
+            
+            if(!createDrafted)
+            {
+				_billService.Finalize(billGuid);
+            }
             return Ok(billGuid);
         }
         catch (Exception e)
