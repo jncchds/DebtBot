@@ -114,26 +114,14 @@ public class BillProcessor : IConsumer<BillFinalized>
                 CurrencyCode = bill.PaymentCurrencyCode
             });
 
-            try
+            var debtor = debtContext.Users.First(t => t.Id == item.Key);
+            await _publishEndpoint.Publish(new EnsureContact 
             {
-                var contact = debtContext.UserContactsLinks.FirstOrDefault(t => t.UserId == sponsor && t.ContactUserId == item.Key);
-                if (contact is null)
-                {
-                    var debtor = debtContext.Users.First(t => t.Id == item.Key);
-                    contact = new UserContactLink()
-                    {
-                        UserId = sponsor,
-                        ContactUserId = item.Key,
-                        DisplayName = debtor.DisplayName ?? debtor.Id.ToString()
-                    };
-                    debtContext.UserContactsLinks.Add(contact);
-                    debtContext.SaveChanges();
-                }
-            }
-            catch (Exception)
-            {
-                // TODO: Log
-            }
+                UserId = sponsor,
+                ContactUserId = item.Key, 
+                DisplayName = debtor.DisplayName ?? debtor.Id.ToString()
+            });
+
         }
 
         debtContext.LedgerRecords.AddRange(records);
