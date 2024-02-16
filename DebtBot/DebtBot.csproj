@@ -30,6 +30,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DebtBot.DB\DebtBot.DB.csproj" />
+    <ProjectReference Include="..\DebtBot.Models.Enums\DebtBot.Models.Enums.csproj" />
     <ProjectReference Include="..\DebtBot.Models\DebtBot.Models.csproj" />
   </ItemGroup>
 

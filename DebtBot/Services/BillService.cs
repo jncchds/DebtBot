@@ -8,6 +8,7 @@ using DebtBot.Models;
 using DebtBot.Models.Bill;
 using DebtBot.Models.BillLine;
 using DebtBot.Models.BillLineParticipant;
+using DebtBot.Models.Enums;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 
@@ -174,12 +175,12 @@ public class BillService : IBillService
             return false;
         }
 
-		if(bill.Status != DB.Enums.ProcessingState.Draft)
+		if(bill.Status != ProcessingState.Draft)
 		{
 			return false;
 		}
 
-        bill.Status = DB.Enums.ProcessingState.Ready;
+        bill.Status = ProcessingState.Ready;
         _debtContext.SaveChanges();
 
         _publishEndpoint.Publish(new BillFinalized(id));

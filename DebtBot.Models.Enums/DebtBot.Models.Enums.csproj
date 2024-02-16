@@ -7,8 +7,4 @@
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\DebtBot.Models.Enums\DebtBot.Models.Enums.csproj" />
-  </ItemGroup>
-
 </Project>

@@ -1,6 +1,6 @@
 ﻿using DebtBot.DB;
 using DebtBot.DB.Entities;
-using DebtBot.DB.Enums;
+using DebtBot.Models.Enums;
 using DebtBot.Messages;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;

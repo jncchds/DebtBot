@@ -1,4 +1,4 @@
-﻿using DebtBot.DB.Enums;
+﻿using DebtBot.Models.Enums;
 using DebtBot.Identity;
 using DebtBot.Interfaces.Services;
 using DebtBot.Models.User;

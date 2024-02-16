@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using DebtBot.DB.Enums;
+using DebtBot.Models.Enums;
 
 namespace DebtBot.DB.Entities;
 

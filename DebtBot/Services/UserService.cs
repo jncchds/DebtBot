@@ -2,7 +2,7 @@
 using AutoMapper.QueryableExtensions;
 using DebtBot.DB;
 using DebtBot.DB.Entities;
-using DebtBot.DB.Enums;
+using DebtBot.Models.Enums;
 using DebtBot.Interfaces.Services;
 using DebtBot.Models.User;
 
