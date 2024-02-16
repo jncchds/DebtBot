@@ -25,10 +25,12 @@
     <PackageReference Include="Polly" Version="8.2.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
     <PackageReference Include="Swashbuckle.AspNetCore.Filters" Version="8.0.0" />
+    <PackageReference Include="Telegram.Bot" Version="19.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\DebtBot.DB\DebtBot.DB.csproj" />
+    <ProjectReference Include="..\DebtBot.Models\DebtBot.Models.csproj" />
   </ItemGroup>
 
 </Project>
