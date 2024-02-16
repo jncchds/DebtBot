@@ -12,4 +12,5 @@ public interface IUserService
     void UpdateUser(UserModel user);
     bool SetRole(Guid id, UserRole role);
     public UserModel GetFirstAdmin();
+    void MergeUsers(Guid oldUserId, Guid newUserId);
 }

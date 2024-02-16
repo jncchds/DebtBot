@@ -96,11 +96,12 @@ public class BillProcessor : IConsumer<BillFinalized>
             spentPaymentPerUserWithTips[payment.UserId] -= payment.Amount;
         }
 
-        var sponsor = spentPaymentPerUserWithTips.MinBy(t => t.Value).Key;
+        var sponsorId = spentPaymentPerUserWithTips.MinBy(t => t.Value).Key;
+        var sponsor = debtContext.Users.First(t => t.Id == sponsorId);
         var records = new List<LedgerRecord>();
         foreach (var item in spentPaymentPerUserWithTips)
         {
-            if (item.Key == sponsor)
+            if (item.Key == sponsorId)
             {
                 continue;
             }
@@ -108,7 +109,7 @@ public class BillProcessor : IConsumer<BillFinalized>
             records.Add(new LedgerRecord()
             {
                 Amount = item.Value,
-                CreditorUserId = sponsor,
+                CreditorUserId = sponsorId,
                 DebtorUserId = item.Key,
                 BillId = bill.Id,
                 CurrencyCode = bill.PaymentCurrencyCode
@@ -117,9 +118,15 @@ public class BillProcessor : IConsumer<BillFinalized>
             var debtor = debtContext.Users.First(t => t.Id == item.Key);
             await _publishEndpoint.Publish(new EnsureContact 
             {
-                UserId = sponsor,
+                UserId = sponsorId,
                 ContactUserId = item.Key, 
                 DisplayName = debtor.DisplayName ?? debtor.Id.ToString()
+            });
+            await _publishEndpoint.Publish(new EnsureContact
+            {
+                UserId = item.Key,
+                ContactUserId = sponsorId,
+                DisplayName = sponsor.DisplayName ?? sponsorId.ToString()
             });
 
         }
