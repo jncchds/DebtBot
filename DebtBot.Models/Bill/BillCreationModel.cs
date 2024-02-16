@@ -1,4 +1,4 @@
-﻿using DebtBot.DB.Enums;
+﻿using DebtBot.Models.Enums;
 using DebtBot.Models.BillLine;
 
 namespace DebtBot.Models.Bill;

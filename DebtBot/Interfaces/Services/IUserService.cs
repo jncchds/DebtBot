@@ -1,4 +1,4 @@
-﻿using DebtBot.DB.Enums;
+﻿using DebtBot.Models.Enums;
 using DebtBot.Models.User;
 
 namespace DebtBot.Interfaces.Services;
@@ -12,4 +12,5 @@ public interface IUserService
     void UpdateUser(UserModel user);
     bool SetRole(Guid id, UserRole role);
     public UserModel GetFirstAdmin();
+    void MergeUsers(Guid oldUserId, Guid newUserId);
 }

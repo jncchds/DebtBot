@@ -5,7 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using DebtBot.DB.Enums;
+using DebtBot.Models.Enums;
 using DebtBot.Interfaces.Services;
 using DebtBot.Models.User;
 

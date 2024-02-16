@@ -1,4 +1,4 @@
-﻿namespace DebtBot.DB.Enums;
+﻿namespace DebtBot.Models.Enums;
 
 public enum UserRole: byte
 {

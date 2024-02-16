@@ -1,4 +1,4 @@
-﻿using DebtBot.DB.Enums;
+﻿using DebtBot.Models.Enums;
 using DebtBot.Identity;
 using DebtBot.Interfaces.Services;
 using DebtBot.Models.User;
@@ -70,5 +70,13 @@ public class UsersController : DebtBotControllerBase
     {
         var res = _userService.SetRole(id, role);
         return res? Ok(): NotFound();
+    }
+
+    [HttpPost("merge")]
+    public ActionResult Merge([FromQuery] Guid oldUserId, [FromQuery] Guid newUserId)
+    {
+        _userService.MergeUsers(oldUserId, newUserId);
+
+        return Ok();
     }
 }

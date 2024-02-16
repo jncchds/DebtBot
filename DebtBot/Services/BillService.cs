@@ -8,6 +8,7 @@ using DebtBot.Models;
 using DebtBot.Models.Bill;
 using DebtBot.Models.BillLine;
 using DebtBot.Models.BillLineParticipant;
+using DebtBot.Models.Enums;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 
@@ -146,7 +147,8 @@ public class BillService : IBillService
 				|| u.ContactUser.DisplayName == strings
 				|| u.ContactUserId.ToString() == strings
 				|| (u.ContactUser.TelegramId ?? 0).ToString() == strings
-				|| u.ContactUser.Phone == strings
+                || u.ContactUser.TelegramUserName == strings
+                || u.ContactUser.Phone == strings
 				|| u.ContactUser.Email == strings)
 			.Select(u => u.ContactUser)
 			.FirstOrDefault();
@@ -159,7 +161,8 @@ public class BillService : IBillService
 					u.DisplayName == strings
 					|| u.Id.ToString() == strings
 					|| (u.TelegramId ?? 0).ToString() == strings
-					|| u.Phone == strings
+				    || u.TelegramUserName == strings
+                    || u.Phone == strings
 					|| u.Email == strings);
 		}
 
@@ -174,12 +177,12 @@ public class BillService : IBillService
             return false;
         }
 
-		if(bill.Status != DB.Enums.ProcessingState.Draft)
+		if(bill.Status != ProcessingState.Draft)
 		{
 			return false;
 		}
 
-        bill.Status = DB.Enums.ProcessingState.Ready;
+        bill.Status = ProcessingState.Ready;
         _debtContext.SaveChanges();
 
         _publishEndpoint.Publish(new BillFinalized(id));

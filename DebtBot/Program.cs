@@ -4,6 +4,7 @@ using DebtBot.DB;
 using DebtBot.Identity;
 using DebtBot.Interfaces.Services;
 using DebtBot.Services;
+using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -11,7 +12,6 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
 using System.Text;
-using MassTransit;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,14 +31,14 @@ builder.Services.AddMassTransit(configurator =>
     configurator.UsingRabbitMq((context, cfg) =>
     {
         cfg.Host(
-            builder.Configuration[$"{DebtBotConfiguration.SectionName}:RabbitMq:Host"], 
+            builder.Configuration[$"{DebtBotConfiguration.SectionName}:RabbitMq:Host"],
             "/",
             h =>
             {
                 h.Username(builder.Configuration[$"{DebtBotConfiguration.SectionName}:RabbitMq:Username"]);
                 h.Password(builder.Configuration[$"{DebtBotConfiguration.SectionName}:RabbitMq:Password"]);
             });
-        
+
         cfg.ConfigureEndpoints(context);
     });
 });
@@ -66,17 +66,17 @@ builder.Services.AddSwaggerGen(c =>
     });
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            Array.Empty<string>()
-        }
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        Array.Empty<string>()
+                    }
     });
 
     //c.OperationFilter<SecurityRequirementsOperationFilter>();
@@ -117,7 +117,7 @@ builder.Services
 
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy(IdentityData.AdminUserPolicyName, 
+    options.AddPolicy(IdentityData.AdminUserPolicyName,
         policy => policy.RequireClaim(IdentityData.AdminUserClaimName));
 });
 

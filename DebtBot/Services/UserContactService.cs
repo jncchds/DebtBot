@@ -77,6 +77,7 @@ public class UserContactService : IUserContactService
         return _debtContext.Users.FirstOrDefault(t =>
             (t.Id == user.Id) ||
             (t.TelegramId ?? -1) == user.TelegramId ||
+            (t.TelegramUserName ?? "N/A") == user.TelegramUserName ||
             (t.Phone ?? "N/A") == user.Phone ||
             (t.Email ?? "N/A") == user.Email);
     }

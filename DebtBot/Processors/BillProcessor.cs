@@ -1,6 +1,6 @@
 ﻿using DebtBot.DB;
 using DebtBot.DB.Entities;
-using DebtBot.DB.Enums;
+using DebtBot.Models.Enums;
 using DebtBot.Messages;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
@@ -96,11 +96,12 @@ public class BillProcessor : IConsumer<BillFinalized>
             spentPaymentPerUserWithTips[payment.UserId] -= payment.Amount;
         }
 
-        var sponsor = spentPaymentPerUserWithTips.MinBy(t => t.Value).Key;
+        var sponsorId = spentPaymentPerUserWithTips.MinBy(t => t.Value).Key;
+        var sponsor = debtContext.Users.First(t => t.Id == sponsorId);
         var records = new List<LedgerRecord>();
         foreach (var item in spentPaymentPerUserWithTips)
         {
-            if (item.Key == sponsor)
+            if (item.Key == sponsorId)
             {
                 continue;
             }
@@ -108,32 +109,26 @@ public class BillProcessor : IConsumer<BillFinalized>
             records.Add(new LedgerRecord()
             {
                 Amount = item.Value,
-                CreditorUserId = sponsor,
+                CreditorUserId = sponsorId,
                 DebtorUserId = item.Key,
                 BillId = bill.Id,
                 CurrencyCode = bill.PaymentCurrencyCode
             });
 
-            try
+            var debtor = debtContext.Users.First(t => t.Id == item.Key);
+            await _publishEndpoint.Publish(new EnsureContact 
             {
-                var contact = debtContext.UserContactsLinks.FirstOrDefault(t => t.UserId == sponsor && t.ContactUserId == item.Key);
-                if (contact is null)
-                {
-                    var debtor = debtContext.Users.First(t => t.Id == item.Key);
-                    contact = new UserContactLink()
-                    {
-                        UserId = sponsor,
-                        ContactUserId = item.Key,
-                        DisplayName = debtor.DisplayName ?? debtor.Id.ToString()
-                    };
-                    debtContext.UserContactsLinks.Add(contact);
-                    debtContext.SaveChanges();
-                }
-            }
-            catch (Exception)
+                UserId = sponsorId,
+                ContactUserId = item.Key, 
+                DisplayName = debtor.DisplayName ?? debtor.Id.ToString()
+            });
+            await _publishEndpoint.Publish(new EnsureContact
             {
-                // TODO: Log
-            }
+                UserId = item.Key,
+                ContactUserId = sponsorId,
+                DisplayName = sponsor.DisplayName ?? sponsorId.ToString()
+            });
+
         }
 
         debtContext.LedgerRecords.AddRange(records);

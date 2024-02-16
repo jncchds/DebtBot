@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using DebtBot.DB.Enums;
+using DebtBot.Models.Enums;
 
 namespace DebtBot.DB.Entities;
 
@@ -11,6 +11,7 @@ public class User
     
     public string DisplayName { get; set; }
     public long? TelegramId { get; set; }
+    public string? TelegramUserName { get; set; }
     public string? Phone { get; set; }
     public string? Email { get; set; }
     public UserRole Role { get; set; }
