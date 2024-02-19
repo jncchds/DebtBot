@@ -19,4 +19,18 @@ public class DebtContext : DbContext
     public DebtContext(DbContextOptions<DebtContext> options) : base(options)
     {
     }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+        modelBuilder
+            .Entity<Debt>()
+            .ToView(Debt.ViewName)
+            .HasKey(t => new
+            {
+                t.CreditorUserId, 
+                t.DebtorUserId, 
+                t.CurrencyCode
+            });
+    }
 }
