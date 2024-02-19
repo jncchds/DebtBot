@@ -99,12 +99,21 @@ public class UserService : IUserService
         }
 
         using var transaction = _debtContext.Database.BeginTransaction();
+        
 
-        // Updates/Deletes where oldUser is creditor
-
+        // Updates LedgerRecords where oldUser is creditor
+        
         _debtContext.LedgerRecords
             .Where(q => q.CreditorUserId == oldUserId)
             .ExecuteUpdate(u => u.SetProperty(u => u.CreditorUserId, newUserId));
+        
+        // Updates LedgerRecords where oldUser is debtor
+
+        _debtContext.LedgerRecords
+            .Where(q => q.DebtorUserId == oldUserId)
+            .ExecuteUpdate(u => u.SetProperty(u => u.DebtorUserId, newUserId));
+
+        // Updates/Deletes Debts where oldUser is creditor
 
         _debtContext.Debts
             .Where(t => 
@@ -122,16 +131,11 @@ public class UserService : IUserService
                 .Where(q => q.DebtorUserId == k.DebtorUserId && q.CurrencyCode == k.CurrencyCode && q.CreditorUserId == oldUserId)
                 .Sum(q => q.Amount)));
 
-
         _debtContext.Debts
             .Where(t => t.CreditorUserId == oldUserId)
             .ExecuteDelete();
 
-        // Updates/Deletes where oldUser is debtor
-
-        _debtContext.LedgerRecords
-            .Where(q => q.DebtorUserId == oldUserId)
-            .ExecuteUpdate(u => u.SetProperty(u => u.DebtorUserId, newUserId));
+        // Updates/Deletes debts where oldUser is debtor
 
         _debtContext.Debts
             .Where(t =>
@@ -176,6 +180,12 @@ public class UserService : IUserService
         _debtContext.UserContactsLinks
             .Where(t => t.ContactUserId == oldUserId)
             .ExecuteDelete();
+        
+        // Budgets of oldUser
+
+        _debtContext.Spendings
+            .Where(q => q.UserId == oldUserId)
+            .ExecuteUpdate(s => s.SetProperty(p => p.UserId, newUserId));
 
         _debtContext.Users.Remove(oldUser);
 
