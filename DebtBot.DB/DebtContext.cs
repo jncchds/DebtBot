@@ -10,7 +10,7 @@ public class DebtContext : DbContext
     public DbSet<BillLine> BillLines { get; set; }
     public DbSet<BillLineParticipant> BillLineParticipants { get; set; }
     public DbSet<Currency> Currencies { get; set; }
-    public DbSet<Debt> DebtsTable { get; set; }
+    public DbSet<Debt> Debts { get; set; }
     public DbSet<LedgerRecord> LedgerRecords { get; set; }
     public DbSet<User> Users { get; set; }
     public DbSet<UserContactLink> UserContactsLinks { get; set; }
@@ -18,5 +18,19 @@ public class DebtContext : DbContext
 
     public DebtContext(DbContextOptions<DebtContext> options) : base(options)
     {
+    }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+        modelBuilder
+            .Entity<Debt>()
+            .ToView(Debt.ViewName)
+            .HasKey(t => new
+            {
+                t.CreditorUserId, 
+                t.DebtorUserId, 
+                t.CurrencyCode
+            });
     }
 }

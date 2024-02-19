@@ -115,45 +115,45 @@ public class UserService : IUserService
 
         // Updates/Deletes Debts where oldUser is creditor
 
-        _debtContext.DebtsTable
+        _debtContext.Debts
             .Where(t => 
                 t.CreditorUserId == oldUserId 
-                && !_debtContext.DebtsTable
+                && !_debtContext.Debts
                     .Any(k => 
                         k.DebtorUserId == t.DebtorUserId
                         && k.CurrencyCode == t.CurrencyCode
                         && k.CreditorUserId == newUserId))
             .ExecuteUpdate(t => t.SetProperty(t => t.CreditorUserId, newUserId));
 
-        _debtContext.DebtsTable
+        _debtContext.Debts
             .Where(t => t.CreditorUserId == newUserId)
-            .ExecuteUpdate(t => t.SetProperty(k => k.Amount, k => k.Amount + _debtContext.DebtsTable
+            .ExecuteUpdate(t => t.SetProperty(k => k.Amount, k => k.Amount + _debtContext.Debts
                 .Where(q => q.DebtorUserId == k.DebtorUserId && q.CurrencyCode == k.CurrencyCode && q.CreditorUserId == oldUserId)
                 .Sum(q => q.Amount)));
 
-        _debtContext.DebtsTable
+        _debtContext.Debts
             .Where(t => t.CreditorUserId == oldUserId)
             .ExecuteDelete();
 
         // Updates/Deletes debts where oldUser is debtor
 
-        _debtContext.DebtsTable
+        _debtContext.Debts
             .Where(t =>
                 t.DebtorUserId == oldUserId
-                && !_debtContext.DebtsTable
+                && !_debtContext.Debts
                     .Any(k =>
                         k.CreditorUserId == t.CreditorUserId
                         && k.CurrencyCode == t.CurrencyCode
                         && k.DebtorUserId == newUserId))
             .ExecuteUpdate(t => t.SetProperty(t => t.DebtorUserId, newUserId));
 
-        _debtContext.DebtsTable
+        _debtContext.Debts
             .Where(t => t.DebtorUserId == newUserId)
-            .ExecuteUpdate(t => t.SetProperty(k => k.Amount, k => k.Amount + _debtContext.DebtsTable
+            .ExecuteUpdate(t => t.SetProperty(k => k.Amount, k => k.Amount + _debtContext.Debts
                 .Where(q => q.CreditorUserId == k.CreditorUserId && q.CurrencyCode == k.CurrencyCode && q.DebtorUserId == oldUserId)
                 .Sum(q => q.Amount)));
 
-        _debtContext.DebtsTable
+        _debtContext.Debts
             .Where(t => t.DebtorUserId == oldUserId)
             .ExecuteDelete();
 

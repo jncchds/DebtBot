@@ -7,6 +7,7 @@ namespace DebtBot.DB.Entities;
 [PrimaryKey(nameof(CreditorUserId), nameof(DebtorUserId), nameof(CurrencyCode))]
 public class Debt
 {
+    public const string ViewName = "debts";
     public Guid CreditorUserId { get; set; }
     public Guid DebtorUserId { get; set; }
 
