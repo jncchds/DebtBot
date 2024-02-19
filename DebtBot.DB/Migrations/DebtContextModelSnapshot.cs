@@ -158,7 +158,7 @@ namespace DebtBot.DB.Migrations
 
                     b.HasIndex("DebtorUserId");
 
-                    b.ToTable("Debts");
+                    b.ToTable("DebtsTable");
                 });
 
             modelBuilder.Entity("DebtBot.DB.Entities.LedgerRecord", b =>

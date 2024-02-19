@@ -21,7 +21,7 @@ public class DebtService : IDebtService
     public List<DebtModel> GetAll()
     {
         return _debtContext
-            .Debts
+            .DebtsTable
             .ProjectTo<DebtModel>(_mapper.ConfigurationProvider)
             .ToList();
     }
@@ -29,7 +29,7 @@ public class DebtService : IDebtService
     public List<DebtModel> Get(Guid id)
     {
         return _debtContext
-            .Debts
+            .DebtsTable
             .Where(t => t.CreditorUserId == id)
             .ProjectTo<DebtModel>(_mapper.ConfigurationProvider)
             .ToList();
