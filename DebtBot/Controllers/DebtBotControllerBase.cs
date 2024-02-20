@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using DebtBot.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DebtBot.Controllers;
@@ -19,4 +20,6 @@ public class DebtBotControllerBase : ControllerBase
 			return new Guid(identifier);
 		}
 	}
+
+	protected bool IsAdmin => User?.Claims.Any(c => c.Type == IdentityData.AdminUserClaimName) ?? false;
 }

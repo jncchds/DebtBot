@@ -5,7 +5,7 @@ namespace DebtBot.Interfaces.Services;
 
 public interface IUserService
 {
-    void AddUser(UserCreationModel user);
+    UserModel AddUser(UserCreationModel user);
     void DeleteUser(Guid id);
     UserModel? GetUserById(Guid id);
     IEnumerable<UserModel> GetUsers();
@@ -13,4 +13,6 @@ public interface IUserService
     bool SetRole(Guid id, UserRole role);
     public UserModel GetFirstAdmin();
     void MergeUsers(Guid oldUserId, Guid newUserId);
+    void ActualizeTelegramUser(long telegramId, string? userName, string firstName, string? lastName);
+    UserModel? FindUser(Guid userId, UserSearchModel model);
 }

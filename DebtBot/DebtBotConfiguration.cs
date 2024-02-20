@@ -7,6 +7,7 @@
         public ProcessorConfiguration LedgerProcessor { get; set; }
         public ProcessorConfiguration BillProcessor { get; set; }
         public JwtConfiguration JwtConfiguration { get; set; }
+        public TelegramConfiguration Telegram { get; set; }
     }
 
     public class RetryConfiguration
@@ -27,5 +28,10 @@
         public string Key { get; set; }
         public char[] Secret { get; internal set; }
         public int LifeTime { get; set; }
+    }
+
+    public class TelegramConfiguration
+    {
+        public string BotToken { get; set; }
     }
 }

@@ -12,12 +12,17 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
 using System.Text;
+using Telegram.Bot;
+using DebtBot.Telegram;
+using DebtBot.Telegram.Commands;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IUserContactService, UserContactService>();
+builder.Services.AddScoped<ITelegramService, TelegramService>();
+builder.Services.AddScoped<IParserService, ParserService>();
 builder.Services.AddScoped<IBillService, BillService>();
 builder.Services.AddScoped<IDebtService, DebtService>();
 
@@ -42,6 +47,21 @@ builder.Services.AddMassTransit(configurator =>
         cfg.ConfigureEndpoints(context);
     });
 });
+
+builder.Services.AddHttpClient("telegram_bot_client")
+                .AddTypedClient<ITelegramBotClient>((httpClient, sp) =>
+                {
+                    TelegramBotClientOptions options = new(builder.Configuration[$"{DebtBotConfiguration.SectionName}:Telegram:BotToken"]!);
+                    return new TelegramBotClient(options, httpClient);
+                });
+
+builder.Services.AddScoped<UpdateHandler>();
+builder.Services.AddScoped<ReceiverService>();
+builder.Services.AddHostedService<PollingService>();
+
+builder.Services.AddScoped<ITelegramCommand, StartCommand>();
+builder.Services.AddScoped<ITelegramCommand, AddBillCommand>();
+builder.Services.AddScoped<ITelegramCommand, FinilizeBillCommand>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

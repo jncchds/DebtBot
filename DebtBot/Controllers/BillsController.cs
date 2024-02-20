@@ -25,7 +25,7 @@ public class BillsController : DebtBotControllerBase
 	{
 		var bill = _billService.Get(id);
 
-		if (!_billService.HasAccess(UserId!.Value, bill))
+		if (!IsAdmin && !_billService.HasAccess(UserId!.Value, bill))
 		{
 			return NotFound();
 		}
