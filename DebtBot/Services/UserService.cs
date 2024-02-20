@@ -32,11 +32,13 @@ public class UserService : IUserService
         return user;
     }
 
-    public void AddUser(UserCreationModel user)
+    public UserModel AddUser(UserCreationModel user)
     {
         var entity = _mapper.Map<User>(user);
         _debtContext.Users.Add(entity);
         _debtContext.SaveChanges();
+
+        return _mapper.Map<UserModel>(entity);
     }
 
     public void UpdateUser(UserModel user)
@@ -113,50 +115,6 @@ public class UserService : IUserService
             .Where(q => q.DebtorUserId == oldUserId)
             .ExecuteUpdate(u => u.SetProperty(u => u.DebtorUserId, newUserId));
 
-        // Updates/Deletes Debts where oldUser is creditor
-
-        _debtContext.Debts
-            .Where(t => 
-                t.CreditorUserId == oldUserId 
-                && !_debtContext.Debts
-                    .Any(k => 
-                        k.DebtorUserId == t.DebtorUserId
-                        && k.CurrencyCode == t.CurrencyCode
-                        && k.CreditorUserId == newUserId))
-            .ExecuteUpdate(t => t.SetProperty(t => t.CreditorUserId, newUserId));
-
-        _debtContext.Debts
-            .Where(t => t.CreditorUserId == newUserId)
-            .ExecuteUpdate(t => t.SetProperty(k => k.Amount, k => k.Amount + _debtContext.Debts
-                .Where(q => q.DebtorUserId == k.DebtorUserId && q.CurrencyCode == k.CurrencyCode && q.CreditorUserId == oldUserId)
-                .Sum(q => q.Amount)));
-
-        _debtContext.Debts
-            .Where(t => t.CreditorUserId == oldUserId)
-            .ExecuteDelete();
-
-        // Updates/Deletes debts where oldUser is debtor
-
-        _debtContext.Debts
-            .Where(t =>
-                t.DebtorUserId == oldUserId
-                && !_debtContext.Debts
-                    .Any(k =>
-                        k.CreditorUserId == t.CreditorUserId
-                        && k.CurrencyCode == t.CurrencyCode
-                        && k.DebtorUserId == newUserId))
-            .ExecuteUpdate(t => t.SetProperty(t => t.DebtorUserId, newUserId));
-
-        _debtContext.Debts
-            .Where(t => t.DebtorUserId == newUserId)
-            .ExecuteUpdate(t => t.SetProperty(k => k.Amount, k => k.Amount + _debtContext.Debts
-                .Where(q => q.CreditorUserId == k.CreditorUserId && q.CurrencyCode == k.CurrencyCode && q.DebtorUserId == oldUserId)
-                .Sum(q => q.Amount)));
-
-        _debtContext.Debts
-            .Where(t => t.DebtorUserId == oldUserId)
-            .ExecuteDelete();
-
         // User contacts of oldUser
 
         _debtContext.UserContactsLinks
@@ -192,5 +150,80 @@ public class UserService : IUserService
         _debtContext.SaveChanges();
 
         transaction.Commit();
+    }
+
+    public void ActualizeTelegramUser(long telegramId, string? userName, string firstName, string? lastName)
+    {
+        var username = userName is null ? null : $"@{userName}";
+
+        var displayName = string.Join(" ", new[] { firstName, lastName }.Where(t => !string.IsNullOrWhiteSpace(t)));
+
+        if (string.IsNullOrWhiteSpace(displayName))
+            displayName = string.IsNullOrEmpty(username) ? telegramId.ToString() : username;
+
+        var user = _debtContext.Users.FirstOrDefault(u => u.TelegramId == telegramId);
+        if (user == null)
+        {
+            user = _debtContext.Users.FirstOrDefault(u => u.TelegramUserName == username && u.TelegramUserName != null);
+        }
+
+        if (user is null)
+        {
+            user = new()
+            {
+                TelegramId = telegramId,
+                TelegramUserName = username,
+                DisplayName = displayName
+            };
+            _debtContext.Users.Add(user);
+        }
+        else
+        {
+            user.TelegramUserName = username;
+            user.DisplayName = displayName;
+        }
+
+        _debtContext.SaveChanges();
+    }
+
+    public UserModel? FindUser(Guid userId, UserSearchModel model) 
+    {
+        User? user = null;
+        
+        if (model.TelegramId is not null)
+        {
+            user = _debtContext.Users.FirstOrDefault(u => u.TelegramId == model.TelegramId);
+        }
+        if (user is null && !string.IsNullOrEmpty(model.TelegramUserName))
+        {
+            user = _debtContext.Users.FirstOrDefault(u => u.TelegramUserName == model.TelegramUserName);
+        }
+        if (user is null && !string.IsNullOrEmpty(model.Phone))
+        {
+            user = _debtContext.Users.FirstOrDefault(u => u.Phone == model.Phone);
+        }
+        if (user is null && !string.IsNullOrEmpty(model.Email))
+        {
+            user = _debtContext.Users.FirstOrDefault(u => u.Email == model.Email);
+        }
+        if (user is null && !string.IsNullOrEmpty(model.QueryString))
+        {
+            user = _debtContext.Users.FirstOrDefault(u => u.TelegramId.ToString() == model.QueryString);
+            user ??= _debtContext.Users.FirstOrDefault(u => u.TelegramUserName == model.QueryString);
+            user ??= _debtContext.Users.FirstOrDefault(u => u.Phone == model.QueryString);
+            user ??= _debtContext.Users.FirstOrDefault(u => u.Email == model.QueryString);
+        }
+        if (user is null && !string.IsNullOrEmpty(model.DisplayName))
+        {
+            user = _debtContext.UserContactsLinks
+                .Where(t => t.UserId == userId && t.DisplayName == model.DisplayName)
+                .Select(t => t.ContactUser)
+                .FirstOrDefault();
+        }
+
+        if (user is null)
+            return null;
+
+        return _mapper.Map<UserModel>(user!);
     }
 }

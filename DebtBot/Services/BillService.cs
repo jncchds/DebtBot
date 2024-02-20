@@ -19,12 +19,18 @@ public class BillService : IBillService
 	private readonly DebtContext _debtContext;
 	private readonly IMapper _mapper;
 	private readonly IPublishEndpoint _publishEndpoint;
-	
-	public BillService(DebtContext debtContext, IMapper mapper, IPublishEndpoint publishEndpoint)
+    private readonly IParserService _parserService;
+
+    public BillService(
+		DebtContext debtContext, 
+		IMapper mapper, 
+		IPublishEndpoint publishEndpoint, 
+		IParserService parserService)
 	{
 		_debtContext = debtContext;
 		_mapper = mapper;
 		_publishEndpoint = publishEndpoint;
+		_parserService = parserService;
 	}
 
 	public BillModel? Get(Guid id)
@@ -70,104 +76,9 @@ public class BillService : IBillService
 
     public Guid AddBill(string billString, Guid creatorId)
 	{
-		BillCreationModel billModel = ParseBill(billString, creatorId);
+		BillCreationModel billModel = _parserService.ParseBill(creatorId, billString);
 		return AddBill(billModel, creatorId);
     }
-
-	private (int index, string val) whitespaceLocator(string w) 
-		=> (index: w.IndexOfAny([' ', '\n', '\t', '\v', '\r']), val: w);
-
-    private BillCreationModel ParseBill(string billString, Guid creatorId)
-    {
-		var billModel = new BillCreationModel()
-		{
-			Date = DateTime.UtcNow
-		};
-
-        var sections = billString.Split("\n\n");
-		
-		// description
-		billModel.Description = sections[0];
-
-		// summary
-		var summarySection = sections[1].Split("\n");
-
-		billModel.TotalWithTips = decimal.Parse(summarySection[0]);
-		billModel.CurrencyCode = summarySection[1];
-		if(summarySection.Length > 2)
-		{
-            billModel.PaymentCurrencyCode = summarySection[2];
-        }
-		else
-		{
-			billModel.PaymentCurrencyCode = billModel.CurrencyCode;
-		}
-
-        // payments
-        var paymentsSection = sections[2].Split("\n");
-		billModel.Payments = paymentsSection
-			.Select(whitespaceLocator)
-			.Select(q => new BillPaymentModel
-			{
-				Amount = decimal.Parse(q.val.Substring(0, q.index)),
-				UserId = DetectUser(creatorId, q.val.Substring(q.index + 1)) ?? Guid.Empty
-			})
-			.ToList();
-
-		// lines
-		var linesSections = sections.Skip(3);
-		billModel.Lines = linesSections
-            .Select(q => q.Split("\n"))
-            .Select(q => new BillLineCreationModel
-            {
-                ItemDescription = q[0],
-                Subtotal = decimal.Parse(q[1]),
-                Participants = q.Skip(2)
-                                .Select(whitespaceLocator)
-                                .Select(w => new BillLineParticipantCreationModel
-                                {
-                                    Part = decimal.Parse(w.val.Substring(0, w.index)),
-                                    UserId = DetectUser(creatorId, w.val.Substring(w.index + 1)) ?? Guid.Empty
-                                })
-                                .ToList()
-            })
-            .ToList();
-
-		return billModel;
-    }
-
-	private Guid? DetectUser(Guid userId, string strings)
-	{
-		var user = _debtContext
-			.UserContactsLinks
-			.Include(u => u.ContactUser)
-			.Where(u => u.UserId == userId)
-			.Where(u =>
-				u.DisplayName == strings
-				|| u.ContactUser.DisplayName == strings
-				|| u.ContactUserId.ToString() == strings
-				|| (u.ContactUser.TelegramId ?? 0).ToString() == strings
-                || u.ContactUser.TelegramUserName == strings
-                || u.ContactUser.Phone == strings
-				|| u.ContactUser.Email == strings)
-			.Select(u => u.ContactUser)
-			.FirstOrDefault();
-
-		if (user == null)
-		{
-			user = _debtContext
-				.Users
-				.FirstOrDefault(u =>
-					u.DisplayName == strings
-					|| u.Id.ToString() == strings
-					|| (u.TelegramId ?? 0).ToString() == strings
-				    || u.TelegramUserName == strings
-                    || u.Phone == strings
-					|| u.Email == strings);
-		}
-
-		return user?.Id;
-	}
 
     public bool Finalize(Guid id)
     {
