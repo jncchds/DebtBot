@@ -18,6 +18,7 @@ public class AddLinesCommand : ITelegramCommand
 		_telegramService = telegramParserService;
 		_billService = billService;
 	}
+
 	public string CommandName => "/AddLines";
 
 	public async Task ExecuteAsync(ProcessedMessage processedMessage, ITelegramBotClient botClient,
@@ -33,6 +34,7 @@ public class AddLinesCommand : ITelegramCommand
 			await botClient.SendTextMessageAsync(processedMessage.ChatId, $"Bill id not detected", 
 				 cancellationToken: cancellationToken,
 				 parseMode: ParseMode.MarkdownV2);
+			return;
 		}
 		
 		var lines = _telegramService.ParseLines(parsedText, processedMessage.UserSearchModels);

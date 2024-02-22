@@ -1,8 +1,7 @@
 ﻿using DebtBot.Interfaces.Services;
-using DebtBot.Services;
 using DebtBot.Models.User;
+using DebtBot.Services;
 using Telegram.Bot;
-using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
 namespace DebtBot.Telegram.Commands;

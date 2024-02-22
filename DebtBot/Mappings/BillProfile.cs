@@ -28,6 +28,8 @@ public class BillProfile : Profile
 
         CreateMap<BillPayment, BillPaymentModel>().ReverseMap();
 
+        CreateMap<BillPaymentCreationModel, BillPayment>();
+
 		CreateMap<BillLine, BillLineModel>().ReverseMap();
         CreateMap<BillLineCreationModel, BillLine>();
 

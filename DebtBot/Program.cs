@@ -63,6 +63,8 @@ builder.Services.AddScoped<ITelegramCommand, StartCommand>();
 builder.Services.AddScoped<ITelegramCommand, AddBillCommand>();
 builder.Services.AddScoped<ITelegramCommand, FinalizeBillCommand>();
 builder.Services.AddScoped<ITelegramCommand, AddLinesCommand>();
+builder.Services.AddScoped<ITelegramCommand, AddPaymentsCommand>();
+builder.Services.AddScoped<ITelegramCommand, ShowBillCommand>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -105,7 +107,6 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.AddDbContextFactory<DebtContext>(options =>
 {
-    options.UseLazyLoadingProxies();
     options.UseNpgsql(builder.Configuration.GetConnectionString("DebtBot"));
 });
 

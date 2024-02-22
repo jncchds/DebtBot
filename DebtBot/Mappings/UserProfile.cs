@@ -12,6 +12,8 @@ public class UserProfile : Profile
 
         CreateMap<UserCreationModel, User>();
 
+        CreateMap<User, UserDisplayModel>();
+
         CreateMap<UserSearchModel, User>()
             .ForMember(q => q.DisplayName, opt => opt.MapFrom(q => q.DisplayName??q.QueryString));
     }
