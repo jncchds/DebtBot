@@ -27,7 +27,7 @@ public class StartCommand : ITelegramCommand
 
         var user = message.From!;
 
-        var userModel = _userService.FindUser(Guid.Empty, new UserSearchModel() { TelegramId = user.Id });
+        var userModel = _userService.FindUser(new UserSearchModel() { TelegramId = user.Id });
 
         await botClient.SendTextMessageAsync(message.Chat.Id, $"Hello, {userModel!.DisplayName}!", cancellationToken: cancellationToken);
     }

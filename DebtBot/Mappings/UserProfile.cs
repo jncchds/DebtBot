@@ -11,5 +11,8 @@ public class UserProfile : Profile
         CreateMap<User, UserModel>().ReverseMap();
 
         CreateMap<UserCreationModel, User>();
+
+        CreateMap<UserSearchModel, User>()
+            .ForMember(q => q.DisplayName, opt => opt.MapFrom(q => q.DisplayName??q.QueryString));
     }
 }

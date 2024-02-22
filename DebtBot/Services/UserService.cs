@@ -186,11 +186,15 @@ public class UserService : IUserService
         _debtContext.SaveChanges();
     }
 
-    public UserModel? FindUser(Guid userId, UserSearchModel model) 
+    public UserModel? FindUser(UserSearchModel? model, Guid? userId = null) 
     {
         User? user = null;
-        
-        if (model.TelegramId is not null)
+
+        if (model.Id is not null)
+        {
+            user = _debtContext.Users.FirstOrDefault(u => u.Id == model.Id);
+        }
+        if (user is null && model.TelegramId is not null)
         {
             user = _debtContext.Users.FirstOrDefault(u => u.TelegramId == model.TelegramId);
         }
@@ -213,10 +217,14 @@ public class UserService : IUserService
             user ??= _debtContext.Users.FirstOrDefault(u => u.Phone == model.QueryString);
             user ??= _debtContext.Users.FirstOrDefault(u => u.Email == model.QueryString);
         }
-        if (user is null && !string.IsNullOrEmpty(model.DisplayName))
+
+        var searchString = model.DisplayName ?? model.QueryString;
+        if (user is null 
+            && userId is not null
+            && !string.IsNullOrEmpty(searchString))
         {
             user = _debtContext.UserContactsLinks
-                .Where(t => t.UserId == userId && t.DisplayName == model.DisplayName)
+                .Where(t => t.UserId == userId && t.DisplayName == searchString)
                 .Select(t => t.ContactUser)
                 .FirstOrDefault();
         }
@@ -224,6 +232,15 @@ public class UserService : IUserService
         if (user is null)
             return null;
 
-        return _mapper.Map<UserModel>(user!);
+        return _mapper.Map<UserModel>(user);
+    }
+
+    public UserModel AddUser(UserSearchModel model)
+    {
+        var entity = _mapper.Map<User>(model);
+        _debtContext.Users.Add(entity);
+        _debtContext.SaveChanges();
+
+        return _mapper.Map<UserModel>(entity); 
     }
 }
