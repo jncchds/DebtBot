@@ -6,6 +6,7 @@ using DebtBot.Models.User;
 using DebtBot.Interfaces.Services;
 using DebtBot.Models.Bill;
 using DebtBot.Telegram;
+using DebtBot.Models.Enums;
 
 namespace DebtBot.Services;
 
@@ -24,7 +25,36 @@ public class TelegramService : ITelegramService
         return user?.Id;
     }
 
-    public ProcessedMessage? ProcessMessage(Message telegramMessage)
+    private void parseReplyHeader(ProcessedMessage processedMessage, Message? reply, long? botId)
+    {
+        if (reply is null)
+            return;
+
+        if (reply.From!.Id != botId)
+            return;
+
+        var position = reply!.Text.IndexOf("\n", StringComparison.InvariantCultureIgnoreCase);
+        var firstLine = reply!.Text.Substring(0, position).Split(" ");
+
+        if (firstLine.Length < 2)
+            return;
+
+        if (!Enum.TryParse<ObjectType>(firstLine[0], out var outEnumVal))
+        {
+            processedMessage.ObjectType = null;
+            return;
+        }
+        processedMessage.ObjectType = outEnumVal;
+
+        if (!Guid.TryParse(firstLine[1], out var outGuidVal))
+        {
+            processedMessage.ObjectId = null;
+            return;
+        }
+        processedMessage.ObjectId = outGuidVal;
+    }
+
+    public ProcessedMessage? ProcessMessage(Message telegramMessage, long? botId)
     {
         List<UserSearchModel> mentions = new();
         
@@ -32,9 +62,6 @@ public class TelegramService : ITelegramService
         int entityId = 0;
 
         var message = telegramMessage.Text;
-
-        var entities = telegramMessage.Entities?.ToList() ?? [];
-        entities.Sort((a, b) => a.Offset.CompareTo(b.Offset));
 
         if (message is null)
             return null;
@@ -44,6 +71,11 @@ public class TelegramService : ITelegramService
             FromId = telegramMessage.From!.Id,
             ChatId = telegramMessage.Chat.Id
         };
+
+        parseReplyHeader(processedMessage, telegramMessage.ReplyToMessage, botId);
+
+        var entities = telegramMessage.Entities?.ToList() ?? [];
+        entities.Sort((a, b) => a.Offset.CompareTo(b.Offset));
 
         var sb = new StringBuilder(message.Length);
 

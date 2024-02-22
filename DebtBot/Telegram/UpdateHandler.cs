@@ -92,7 +92,7 @@ public class UpdateHandler : IUpdateHandler
 
         _telegramService.Actualize(message.From);
         
-        var preprocessedMessage = _telegramService.ProcessMessage(message);
+        var preprocessedMessage = _telegramService.ProcessMessage(message, _botClient.BotId);
         if (preprocessedMessage is not null && !string.IsNullOrEmpty(preprocessedMessage.BotCommand))
         {
             var command = _commands.FirstOrDefault(t => 
