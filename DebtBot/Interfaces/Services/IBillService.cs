@@ -13,4 +13,6 @@ public interface IBillService
     bool Finalize(Guid id);
     List<BillModel> GetByUser(Guid userId);
     bool HasAccess(Guid userId, BillModel? bill);
+    void AddLines(Guid billId, List<BillLineParserModel> parsedLines, UserSearchModel creatorSearchModel);
+    void AddPayments(Guid billId, List<BillPaymentParserModel> payments, UserSearchModel creatorSearchModel);
 }

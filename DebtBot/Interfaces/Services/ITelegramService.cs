@@ -1,12 +1,16 @@
 ﻿using DebtBot.Models.Bill;
 using DebtBot.Models.User;
+using DebtBot.Telegram;
 using Telegram.Bot.Types;
 
 namespace DebtBot.Services;
+
 public interface ITelegramService
 {
     Guid? GetUserByTelegramId(long telegramId);
-    (string processedText, List<UserSearchModel> entities) IncludeMentions(string? message, List<MessageEntity> entities);
+    ProcessedMessage? ProcessMessage(Message message);
     void Actualize(User user);
-    public BillParserModel ParseBill(string? message, List<MessageEntity> entities);
+    BillParserModel ParseBill(string parsedText, List<UserSearchModel> userSearchModels);
+    List<BillLineParserModel> ParseLines(string parsedText, List<UserSearchModel> userSearchModels);
+    List<BillPaymentParserModel> ParsePayments(string parsedText, List<UserSearchModel> userSearchModels);
 }

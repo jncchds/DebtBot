@@ -61,7 +61,8 @@ builder.Services.AddHostedService<PollingService>();
 
 builder.Services.AddScoped<ITelegramCommand, StartCommand>();
 builder.Services.AddScoped<ITelegramCommand, AddBillCommand>();
-builder.Services.AddScoped<ITelegramCommand, FinilizeBillCommand>();
+builder.Services.AddScoped<ITelegramCommand, FinalizeBillCommand>();
+builder.Services.AddScoped<ITelegramCommand, AddLinesCommand>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

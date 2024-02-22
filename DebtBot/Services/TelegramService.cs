@@ -5,6 +5,7 @@ using Telegram.Bot.Types;
 using DebtBot.Models.User;
 using DebtBot.Interfaces.Services;
 using DebtBot.Models.Bill;
+using DebtBot.Telegram;
 
 namespace DebtBot.Services;
 
@@ -23,18 +24,26 @@ public class TelegramService : ITelegramService
         return user?.Id;
     }
 
-    public (string processedText, List<UserSearchModel> entities) IncludeMentions(string? message, List<MessageEntity> entities)
+    public ProcessedMessage? ProcessMessage(Message telegramMessage)
     {
         List<UserSearchModel> mentions = new();
         
         int pmention = 0;
         int entityId = 0;
 
-        entities ??= [];
+        var message = telegramMessage.Text;
+
+        var entities = telegramMessage.Entities?.ToList() ?? [];
         entities.Sort((a, b) => a.Offset.CompareTo(b.Offset));
 
         if (message is null)
-            return (string.Empty, mentions);
+            return null;
+
+        var processedMessage = new ProcessedMessage()
+        {
+            FromId = telegramMessage.From!.Id,
+            ChatId = telegramMessage.Chat.Id
+        };
 
         var sb = new StringBuilder(message.Length);
 
@@ -51,6 +60,7 @@ public class TelegramService : ITelegramService
             {
                 case MessageEntityType.BotCommand:
                     // Ignoring bot command
+                    processedMessage.BotCommand = entityText;
                     break;
                 case MessageEntityType.TextMention:
                 case MessageEntityType.Mention:
@@ -61,6 +71,7 @@ public class TelegramService : ITelegramService
                     {
                         TelegramId = entity.User?.Id,
                         TelegramUserName = entity.Type == MessageEntityType.TextMention ? entity.User!.Username : entityText,
+                        DisplayName = entityText,
                     };
 
                     mentions.Add(user);
@@ -81,7 +92,10 @@ public class TelegramService : ITelegramService
             sb.Append(message.Substring(pmention));
         }
 
-        return (sb.ToString().Trim(), mentions);
+        processedMessage.UserSearchModels = mentions;
+        processedMessage.ProcessedText = sb.ToString().Trim();
+        
+        return processedMessage;
     }
 
     public void Actualize(User user)
@@ -107,10 +121,8 @@ public class TelegramService : ITelegramService
         }
     }
 
-    public BillParserModel ParseBill(string? message, List<MessageEntity> entities)
+    public BillParserModel ParseBill(string parsedText, List<UserSearchModel> userSearchModels)
     {
-        (var parsedText, var mentions) = IncludeMentions(message, entities);
-        
         var billModel = new BillParserModel
         {
             Date = DateTime.UtcNow
@@ -136,20 +148,30 @@ public class TelegramService : ITelegramService
         }
 
         // payments
-        var paymentsSection = sections[2].Split("\n");
-        billModel.Payments = paymentsSection
-            .Select(Extensions.Extensions.WhitespaceLocator)
-            .Select(q => new BillPaymentParserModel()
-            {
-                Amount = decimal.Parse(q.val.Substring(0, q.index)),
-                User = findMentionedUser(q.val.Substring(q.index + 1), mentions)
-            })
-            .ToList();
+        if (sections.Length > 2)
+        {
+            billModel.Payments = ParsePayments(sections[2], userSearchModels);
+        }
 
         // lines
-        var linesSections = sections.Skip(3);
-        billModel.Lines = linesSections
-            .Select(q => q.Split("\n"))
+        if (sections.Length > 3)
+        {
+            billModel.Lines = parseLines(sections.Skip(3), userSearchModels);
+        }
+
+        return billModel;
+    }
+
+    public List<BillLineParserModel> ParseLines(string parsedText, List<UserSearchModel> userSearchModels)
+    {
+        var sections = parsedText.Split("\n\n", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return parseLines(sections, userSearchModels);
+    }
+    
+    private List<BillLineParserModel> parseLines(IEnumerable<string> linesSections, List<UserSearchModel> userSearchModels)
+    {
+        return linesSections
+            .Select(q => q.Split("\n", StringSplitOptions.TrimEntries))
             .Select(q => new BillLineParserModel()
             {
                 ItemDescription = q[0],
@@ -159,12 +181,23 @@ public class TelegramService : ITelegramService
                     .Select(w => new BillLineParticipantParserModel()
                     {
                         Part = decimal.Parse(w.val.Substring(0, w.index)),
-                        User = findMentionedUser(w.val.Substring(w.index + 1), mentions)
+                        User = findMentionedUser(w.val.Substring(w.index + 1), userSearchModels)
                     })
                     .ToList()
             })
             .ToList();
-
-        return billModel;
+    }
+    
+    public List<BillPaymentParserModel> ParsePayments(string parsedText, List<UserSearchModel> userSearchModels)
+    {
+        var paymentsSection = parsedText.Split("\n");
+        return paymentsSection
+            .Select(Extensions.Extensions.WhitespaceLocator)
+            .Select(q => new BillPaymentParserModel()
+            {
+                Amount = decimal.Parse(q.val.Substring(0, q.index)),
+                User = findMentionedUser(q.val.Substring(q.index + 1), userSearchModels)
+            })
+            .ToList();
     }
 }

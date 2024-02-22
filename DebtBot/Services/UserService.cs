@@ -152,9 +152,9 @@ public class UserService : IUserService
         transaction.Commit();
     }
 
-    public void ActualizeTelegramUser(long telegramId, string? userName, string firstName, string? lastName)
+    public void ActualizeTelegramUser(long telegramId, string? telegramUserName, string firstName, string? lastName)
     {
-        var username = userName is null ? null : $"@{userName}";
+        var username = telegramUserName is null ? null : $"@{telegramUserName}";
 
         var displayName = string.Join(" ", new[] { firstName, lastName }.Where(t => !string.IsNullOrWhiteSpace(t)));
 
@@ -162,9 +162,9 @@ public class UserService : IUserService
             displayName = string.IsNullOrEmpty(username) ? telegramId.ToString() : username;
 
         var user = _debtContext.Users.FirstOrDefault(u => u.TelegramId == telegramId);
-        if (user == null)
+        if (user is null && !string.IsNullOrEmpty(username))
         {
-            user = _debtContext.Users.FirstOrDefault(u => u.TelegramUserName == username && u.TelegramUserName != null);
+            user = _debtContext.Users.FirstOrDefault(u => u.TelegramUserName == username);
         }
 
         if (user is null)
@@ -179,6 +179,7 @@ public class UserService : IUserService
         }
         else
         {
+            user.TelegramId = telegramId;
             user.TelegramUserName = username;
             user.DisplayName = displayName;
         }

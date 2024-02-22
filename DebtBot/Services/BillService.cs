@@ -9,6 +9,7 @@ using DebtBot.Models.Enums;
 using DebtBot.Models.User;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 namespace DebtBot.Services;
 
@@ -83,6 +84,47 @@ public class BillService : IBillService
 		BillCreationModel billModel = _parserService.ParseBill(creatorId, billString);
 		return AddBill(billModel, creatorId);
     }
+
+    private void addLines(Guid billId, List<BillLineParserModel> parsedLines, UserModel creator)
+    {
+	    parsedLines.ForEach(l => AddLine(billId, l, creator));
+    }
+    public void AddLines(Guid billId, List<BillLineParserModel> parsedLines, UserSearchModel creatorSearchModel)
+    {
+	    using var transaction = _debtContext.Database.BeginTransaction();
+	    
+	    var creator = _userService.FindUser(creatorSearchModel);
+	    if (creator is null)
+	    {
+		    throw new Exception("creator not found");
+	    }
+	    
+	    addLines(billId, parsedLines, creator);
+	    _debtContext.SaveChanges();
+	    
+	    transaction.Commit();
+    }
+
+    private void addPayments(Guid billId, List<BillPaymentParserModel> payments, UserModel creator)
+    {
+	    payments.ForEach(p => AddPayment(billId, p, creator));
+    }
+    
+    public void AddPayments(Guid billId, List<BillPaymentParserModel> payments, UserSearchModel creatorSearchModel)
+    {
+	    using var transaction = _debtContext.Database.BeginTransaction();
+	    
+	    var creator = _userService.FindUser(creatorSearchModel);
+	    if (creator is null)
+	    {
+		    throw new Exception("creator not found");
+	    }
+	    
+	    addPayments(billId, payments, creator);
+	    _debtContext.SaveChanges();
+	    
+	    transaction.Commit();
+    }
     
     public Guid AddBill(BillParserModel parsedBill, UserSearchModel creatorSearchModel)
     {
@@ -136,8 +178,15 @@ public class BillService : IBillService
 
 	    _debtContext.SaveChanges();
 
-	    parsedBill.Lines.ForEach(l => AddLine(bill.Id, l, creator));
-	    parsedBill.Payments.ForEach(p => AddPayment(bill.Id, p, creator));
+	    if (!parsedBill.Lines.IsNullOrEmpty())
+	    {
+			addLines(bill.Id, parsedBill.Lines, creator);
+	    }
+
+	    if (!parsedBill.Payments.IsNullOrEmpty())
+	    {
+			addPayments(bill.Id, parsedBill.Payments, creator);
+	    }
 	    
 	    _debtContext.SaveChanges();
 	    
