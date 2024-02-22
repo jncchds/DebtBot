@@ -17,18 +17,15 @@ public class StartCommand : ITelegramCommand
 
     public string CommandName => "/Start";
 
-    public async Task ExecuteAsync(Message message, ITelegramBotClient botClient, CancellationToken cancellationToken)
+    public async Task ExecuteAsync(
+	    ProcessedMessage processedMessage,
+	    ITelegramBotClient botClient,
+	    CancellationToken cancellationToken)
     {
-        if (message.Chat.Type == ChatType.Channel)
-        {
-            await botClient.SendTextMessageAsync(message.Chat.Id, $"Hello! Currently channels are not supported", cancellationToken: cancellationToken);
-            return;
-        }
-
-        var user = message.From!;
-
-        var userModel = _userService.FindUser(Guid.Empty, new UserSearchModel() { TelegramId = user.Id });
-
-        await botClient.SendTextMessageAsync(message.Chat.Id, $"Hello, {userModel!.DisplayName}!", cancellationToken: cancellationToken);
+	    var userModel = _userService.FindUser(new UserSearchModel { TelegramId = processedMessage.FromId });
+	    await botClient.SendTextMessageAsync(
+		    processedMessage.ChatId, 
+		    $"Hello, {userModel!.DisplayName}!",
+		    cancellationToken: cancellationToken);
     }
 }

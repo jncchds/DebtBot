@@ -1,5 +1,4 @@
 ﻿using DebtBot.Services;
-using System.Text.Json;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Polling;
@@ -85,16 +84,22 @@ public class UpdateHandler : IUpdateHandler
 
     private async Task BotOnMessageReceived(Message message, CancellationToken cancellationToken)
     {
-        if (message.From is not null)
-            _telegramService.Actualize(message.From);
-
-        if (message.Text?.StartsWith("/") ?? false)
+        if (message.Chat.Type == ChatType.Channel)
         {
-            var command = _commands.FirstOrDefault(t => message.Text.StartsWith(t.CommandName, StringComparison.InvariantCultureIgnoreCase));
+            await _botClient.SendTextMessageAsync(message.Chat.Id, $"Hello! Currently channels are not supported", cancellationToken: cancellationToken);
+            return;
+        }
+
+        _telegramService.Actualize(message.From);
+        
+        var preprocessedMessage = _telegramService.ProcessMessage(message);
+        if (preprocessedMessage is not null && !string.IsNullOrEmpty(preprocessedMessage.BotCommand))
+        {
+            var command = _commands.FirstOrDefault(t => 
+                preprocessedMessage.BotCommand.Equals(t.CommandName, StringComparison.InvariantCultureIgnoreCase));
             if (command != null)
             {
-                await command.ExecuteAsync(message, _botClient, cancellationToken);
-                return;
+                await command.ExecuteAsync(preprocessedMessage, _botClient, cancellationToken);
             }
         }
     }

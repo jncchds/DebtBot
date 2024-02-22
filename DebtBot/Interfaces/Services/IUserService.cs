@@ -14,5 +14,6 @@ public interface IUserService
     public UserModel GetFirstAdmin();
     void MergeUsers(Guid oldUserId, Guid newUserId);
     void ActualizeTelegramUser(long telegramId, string? userName, string firstName, string? lastName);
-    UserModel? FindUser(Guid userId, UserSearchModel model);
+    UserModel? FindUser(UserSearchModel? model, Guid? userId = null);
+    UserModel AddUser(UserSearchModel model);
 }
