@@ -51,7 +51,7 @@ public class ParserService : IParserService
         var paymentsSection = sections[2].Split("\n");
         billModel.Payments = paymentsSection
             .Select(Extensions.Extensions.WhitespaceLocator)
-            .Select(q => new BillPaymentModel
+            .Select(q => new BillPaymentCreationModel
             {
                 Amount = decimal.Parse(q.val.Substring(0, q.index)),
                 UserId = DetectUser(creatorId, q.val.Substring(q.index + 1)) ?? Guid.Empty

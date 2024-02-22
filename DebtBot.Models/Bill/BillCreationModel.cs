@@ -13,5 +13,5 @@ public class BillCreationModel
     public decimal TotalWithTips { get; set; }
 
     public List<BillLineCreationModel> Lines { get; set; }
-    public List<BillPaymentModel> Payments { get; set; }
+    public List<BillPaymentCreationModel> Payments { get; set; }
 }

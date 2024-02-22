@@ -2,9 +2,9 @@
 
 namespace DebtBot.Models;
 
-public class BillPaymentModel
+public class BillPaymentCreationModel
 {
-	public UserDisplayModel User { get; set; }
+	public Guid UserId { get; set; }
     
 	public decimal Amount { get; set; }
 }

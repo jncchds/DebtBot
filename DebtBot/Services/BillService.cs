@@ -58,6 +58,7 @@ public class BillService : IBillService
 	{
 		var bills = _debtContext
 			.Bills
+			.Include(q => q.Creator)
 			.Include(q => q.Lines)
 			.ThenInclude(q => q.Participants)
 			.ThenInclude(q => q.User)
@@ -315,17 +316,17 @@ public class BillService : IBillService
 		    return false;
 	    }
 	    
-	    if (bill.CreatorId == userId)
+	    if (bill.Creator.Id == userId)
 	    {
 		    return true;
 	    }
 	    
-	    if(bill.Payments.Any(q => q.UserId == userId))
+	    if(bill.Payments.Any(q => q.User.Id == userId))
 	    {
 		    return true;
 	    }
 
-	    if(bill.Lines.Any(q => q.Participants.Any(w => w.UserId == userId)))
+	    if(bill.Lines.Any(q => q.Participants.Any(w => w.User.Id == userId)))
 	    {
 		    return true;
 	    }
