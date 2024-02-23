@@ -88,7 +88,7 @@ public class BillService : IBillService
 
     private void addLines(Guid billId, List<BillLineParserModel> parsedLines, UserModel creator)
     {
-	    parsedLines.ForEach(l => AddLine(billId, l, creator));
+	    parsedLines.ForEach(l => addLine(billId, l, creator));
     }
     public void AddLines(Guid billId, List<BillLineParserModel> parsedLines, UserSearchModel creatorSearchModel)
     {
@@ -108,7 +108,7 @@ public class BillService : IBillService
 
     private void addPayments(Guid billId, List<BillPaymentParserModel> payments, UserModel creator)
     {
-	    payments.ForEach(p => AddPayment(billId, p, creator));
+	    payments.ForEach(p => addPayment(billId, p, creator));
     }
     
     public void AddPayments(Guid billId, List<BillPaymentParserModel> payments, UserSearchModel creatorSearchModel)
@@ -137,7 +137,7 @@ public class BillService : IBillService
 		    throw new Exception("creator not found");
 	    }
 
-	    Bill? bill;
+        Bill? bill;
 	    if (parsedBill.Id is not null)
 	    {
 		    bill = _debtContext.Bills.FirstOrDefault(q => q.Id == parsedBill.Id.Value) 
@@ -152,7 +152,9 @@ public class BillService : IBillService
 			_debtContext.Bills.Add(bill);
 	    }
 
-	    if (parsedBill.CurrencyCode is not null)
+        _publishEndpoint.Publish(new EnsureBillParticipant(bill.Id, creator.Id));
+
+        if (parsedBill.CurrencyCode is not null)
 	    {
 		    bill.CurrencyCode = parsedBill.CurrencyCode;
 	    }
@@ -196,7 +198,7 @@ public class BillService : IBillService
 	    return bill.Id;
     }
 
-    private void AddLine(Guid billId, BillLineParserModel parsedLine, UserModel creator)
+    private void addLine(Guid billId, BillLineParserModel parsedLine, UserModel creator)
     {
 	    BillLine? billLine;
 	    if (parsedLine.Id is not null)
@@ -226,7 +228,7 @@ public class BillService : IBillService
 	    _debtContext.SaveChanges();
 
 	    // add participants
-	    parsedLine.Participants.ForEach(q => AddParticipant(billLine.Id, q, creator));
+	    parsedLine.Participants.ForEach(q => addParticipant(billId, billLine.Id, q, creator));
     }
 
     private UserModel dealWithUser(UserSearchModel model, UserModel creator)
@@ -239,7 +241,7 @@ public class BillService : IBillService
 	    return lineUser;
     }
 
-    private void AddParticipant(Guid billLineId, BillLineParticipantParserModel parsedParticipant, UserModel creator)
+    private void addParticipant(Guid billId, Guid billLineId, BillLineParticipantParserModel parsedParticipant, UserModel creator)
     {
 	    var lineUser = _userService.FindUser(parsedParticipant.User, creator.Id);
 	    lineUser ??= dealWithUser( parsedParticipant.User, creator);
@@ -261,21 +263,23 @@ public class BillService : IBillService
 	    }
 
 	    _debtContext.SaveChanges();
+
+        _publishEndpoint.Publish(new EnsureBillParticipant(billId, creator.Id));
     }
 
-    private void AddPayment(Guid billId, BillPaymentParserModel parsedPayment, UserModel creator)
+    private void addPayment(Guid billId, BillPaymentParserModel parsedPayment, UserModel creator)
     {
-	    var lineUser = _userService.FindUser(parsedPayment.User, creator.Id);
-	    lineUser ??= dealWithUser(parsedPayment.User, creator);
+	    var paymentUser = _userService.FindUser(parsedPayment.User, creator.Id);
+	    paymentUser ??= dealWithUser(parsedPayment.User, creator);
 	    
-	    var payment = _debtContext.BillPayments.FirstOrDefault(q => q.BillId == billId && q.UserId == lineUser.Id);
+	    var payment = _debtContext.BillPayments.FirstOrDefault(q => q.BillId == billId && q.UserId == paymentUser.Id);
 	    
 	    if (payment is null)
 	    {
 		    payment = new BillPayment()
 		    {
 			    BillId = billId,
-			    UserId = lineUser.Id
+			    UserId = paymentUser.Id
 		    };
 		    _debtContext.BillPayments.Add(payment);
 	    }
@@ -286,6 +290,8 @@ public class BillService : IBillService
 	    }
 
 	    _debtContext.SaveChanges();
+
+		_publishEndpoint.Publish(new EnsureBillParticipant(billId, paymentUser.Id));
     }
     
     public bool Finalize(Guid id)

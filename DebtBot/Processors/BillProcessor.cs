@@ -116,31 +116,26 @@ public class BillProcessor : IConsumer<BillFinalized>
             });
 
             var debtor = debtContext.Users.First(t => t.Id == item.Key);
-            await _publishEndpoint.Publish(new EnsureContact 
-            {
-                UserId = sponsorId,
-                ContactUserId = item.Key, 
-                DisplayName = debtor.DisplayName ?? debtor.Id.ToString()
-            });
-            await _publishEndpoint.Publish(new EnsureContact
-            {
-                UserId = item.Key,
-                ContactUserId = sponsorId,
-                DisplayName = sponsor.DisplayName ?? sponsorId.ToString()
-            });
-
+            await _publishEndpoint.Publish(new EnsureContact(
+                sponsorId, 
+                item.Key, 
+                debtor.DisplayName ?? debtor.Id.ToString()));
+            await _publishEndpoint.Publish(new EnsureContact(
+                item.Key, 
+                sponsorId, 
+                sponsor.DisplayName ?? sponsorId.ToString()));
         }
 
         debtContext.LedgerRecords.AddRange(records);
         bill.Status = ProcessingState.Processed;
         debtContext.SaveChanges();
 
-        await _publishEndpoint.PublishBatch(records.Select(q =>
-            new LedgerRecordCreated(q.CreditorUserId, q.DebtorUserId, q.Amount, q.CurrencyCode)
+        await _publishEndpoint.PublishBatch(records.Select(q => new LedgerRecordCreated(
+            q.CreditorUserId, q.DebtorUserId, q.Amount, q.CurrencyCode)
         ));
         
-        await _publishEndpoint.PublishBatch(records.Select(q =>
-            new LedgerRecordCreated(q.DebtorUserId, q.CreditorUserId, -q.Amount, q.CurrencyCode)
+        await _publishEndpoint.PublishBatch(records.Select(q => new LedgerRecordCreated(
+            q.DebtorUserId, q.CreditorUserId, -q.Amount, q.CurrencyCode)
         ));
     }
 
