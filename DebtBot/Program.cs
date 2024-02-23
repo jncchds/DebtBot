@@ -15,6 +15,8 @@ using System.Text;
 using Telegram.Bot;
 using DebtBot.Telegram;
 using DebtBot.Telegram.Commands;
+using DebtBot.Telegram.CallbackQueries;
+using DebtBot.Interfaces.Telegram;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -65,6 +67,10 @@ builder.Services.AddScoped<ITelegramCommand, FinalizeBillCommand>();
 builder.Services.AddScoped<ITelegramCommand, AddLinesCommand>();
 builder.Services.AddScoped<ITelegramCommand, AddPaymentsCommand>();
 builder.Services.AddScoped<ITelegramCommand, ShowBillCommand>();
+builder.Services.AddScoped<ITelegramCommand, ShowBillLineCommand>();
+builder.Services.AddScoped<ITelegramCommand, MenuCommand>();
+
+builder.Services.AddScoped<ITelegramCallbackQuery, DebtsCallbackQuery>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

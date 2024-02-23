@@ -18,6 +18,6 @@ public class Debt
 
     [ForeignKey(nameof(CreditorUserId))]
     public virtual User CreditorUser { get; set; }
-    [ForeignKey(nameof(DebtorUserId))]
-    public virtual User DebtorUser { get; set; }
+    [ForeignKey($"{nameof(CreditorUserId)},{nameof(DebtorUserId)}")]
+    public virtual UserContactLink DebtorUser { get; set; }
 }

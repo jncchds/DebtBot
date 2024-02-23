@@ -51,7 +51,7 @@ public class BillsController : DebtBotControllerBase
 	[HttpPost]
 	public IActionResult Post(BillCreationModel billModel)
 	{
-		return Ok(_billService.AddBill(billModel, UserId!.Value));
+		return Ok(_billService.Add(billModel, UserId!.Value));
 	}
 
     /// <summary>
@@ -104,7 +104,7 @@ public class BillsController : DebtBotControllerBase
         try
         {
             var message = Request.Body.ReadToEndAsync().Result;
-            var billGuid = _billService.AddBill(message, UserId!.Value);
+            var billGuid = _billService.Add(message, UserId!.Value);
             
             if(!createDrafted)
             {

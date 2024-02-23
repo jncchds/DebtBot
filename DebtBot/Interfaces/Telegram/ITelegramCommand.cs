@@ -1,6 +1,7 @@
-﻿using Telegram.Bot;
+﻿using DebtBot.Telegram;
+using Telegram.Bot;
 
-namespace DebtBot.Telegram;
+namespace DebtBot.Interfaces.Telegram;
 
 public interface ITelegramCommand
 {

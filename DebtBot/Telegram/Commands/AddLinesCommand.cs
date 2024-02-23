@@ -1,4 +1,5 @@
 ﻿using DebtBot.Interfaces.Services;
+using DebtBot.Interfaces.Telegram;
 using DebtBot.Models.Enums;
 using DebtBot.Models.User;
 using DebtBot.Services;

@@ -5,6 +5,7 @@ using DebtBot.DB.Entities;
 using DebtBot.Interfaces.Services;
 using DebtBot.Messages;
 using DebtBot.Models.Bill;
+using DebtBot.Models.BillLine;
 using DebtBot.Models.Enums;
 using DebtBot.Models.User;
 using MassTransit;
@@ -52,9 +53,22 @@ public class BillService : IBillService
 			.FirstOrDefault();
 
 		return bill;
-	}
-	
-	public List<BillModel> Get()
+    }
+
+    public BillLineModel? GetLine(Guid id)
+    {
+        var billLine = _debtContext
+            .BillLines
+            .Where(q => q.Id == id)
+            .Include(q => q.Participants)
+            .ThenInclude(q => q.User)
+            .ProjectTo<BillLineModel>(_mapper.ConfigurationProvider)
+            .FirstOrDefault();
+
+        return billLine;
+    }
+
+    public List<BillModel> Get()
 	{
 		var bills = _debtContext
 			.Bills
@@ -69,7 +83,7 @@ public class BillService : IBillService
 		return bills;
 	}
 	
-	public Guid AddBill(BillCreationModel billModel, Guid creatorId)
+	public Guid Add(BillCreationModel billModel, Guid creatorId)
 	{
 		var bill = _mapper.Map<Bill>(billModel);
 
@@ -80,10 +94,10 @@ public class BillService : IBillService
 		return bill.Id;
 	}
 
-    public Guid AddBill(string billString, Guid creatorId)
+    public Guid Add(string billString, Guid creatorId)
 	{
 		BillCreationModel billModel = _parserService.ParseBill(creatorId, billString);
-		return AddBill(billModel, creatorId);
+		return Add(billModel, creatorId);
     }
 
     private void addLines(Guid billId, List<BillLineParserModel> parsedLines, UserModel creator)
@@ -127,7 +141,7 @@ public class BillService : IBillService
 	    transaction.Commit();
     }
     
-    public Guid AddBill(BillParserModel parsedBill, UserSearchModel creatorSearchModel)
+    public Guid Add(BillParserModel parsedBill, UserSearchModel creatorSearchModel)
     {
 	    using var transaction = _debtContext.Database.BeginTransaction();
 	    

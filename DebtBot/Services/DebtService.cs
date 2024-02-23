@@ -31,6 +31,9 @@ public class DebtService : IDebtService
         return _debtContext
             .Debts
             .Where(t => t.CreditorUserId == id)
+            .Include(t => t.CreditorUser)
+            .Include(t => t.DebtorUser)
+            .ThenInclude(t => t.ContactUser)
             .ProjectTo<DebtModel>(_mapper.ConfigurationProvider)
             .ToList();
     }
