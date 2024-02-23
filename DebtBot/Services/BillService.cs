@@ -49,10 +49,11 @@ public class BillService : IBillService
             .ThenInclude(q => q.User)
             .Include(q => q.Payments)
             .ThenInclude(q => q.User)
-            .ProjectTo<BillModel>(_mapper.ConfigurationProvider)
+			.Include(q => q.Spendings)
+			.ThenInclude(q => q.User)
 			.FirstOrDefault();
 
-		return bill;
+		return _mapper.Map<BillModel>(bill);
     }
 
     public BillLineModel? GetLine(Guid id)

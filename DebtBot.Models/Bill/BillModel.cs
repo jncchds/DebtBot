@@ -19,6 +19,8 @@ public class BillModel
     public List<BillLineModel> Lines { get; set; }
     public List<BillPaymentModel> Payments { get; set; }
 
+    public List<SpendingModel> Spendings { get; set; }
+
     public override string ToString()
     {
         decimal totalWithoutTips = Lines?.Sum(t => t.Subtotal) ?? TotalWithTips;
@@ -58,6 +60,12 @@ public class BillModel
                 sb.AppendLine();
                 line.AppendToStringBuilder(sb, CurrencyCode, tipAdjustment);
             });
+        }
+        if ((Spendings ?? []).Count != 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("<b>Spendings:</b>");
+            Spendings!.ForEach(spendings => sb.AppendLine($"  {spendings.ToString()}"));
         }
 
         return sb.ToString();
