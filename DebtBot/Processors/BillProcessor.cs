@@ -4,28 +4,25 @@ using DebtBot.Models.Enums;
 using DebtBot.Messages;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 namespace DebtBot.Processors;
 
 public class BillProcessor : IConsumer<BillFinalized>
 {
-    private ProcessorConfiguration _retryConfig;
     private readonly IDbContextFactory<DebtContext> _contextFactory;
     private readonly IPublishEndpoint _publishEndpoint;
 
-    public int Delay => _retryConfig.ProcessorDelay;
-
-    public BillProcessor(IDbContextFactory<DebtContext> contextFactory, IOptions<DebtBotConfiguration> debtBotConfig, IPublishEndpoint publishEndpoint)
+    public BillProcessor(IDbContextFactory<DebtContext> contextFactory, IPublishEndpoint publishEndpoint)
     {
         _contextFactory = contextFactory;
         _publishEndpoint = publishEndpoint;
-        _retryConfig = debtBotConfig.Value.BillProcessor;
     }
 
-    public async Task Run(Guid billId, CancellationToken cancellationToken)
+    public async Task Consume(ConsumeContext<BillFinalized> context)
     {
-        using var debtContext = _contextFactory.CreateDbContext();
+        var billId = context.Message.id;
+
+        await using var debtContext = await _contextFactory.CreateDbContextAsync();
 
         var bill = debtContext
             .Bills
@@ -35,7 +32,7 @@ public class BillProcessor : IConsumer<BillFinalized>
             .First(t => t.Id == billId);
         
         bill.Status = ProcessingState.Processing;
-        debtContext.SaveChanges();
+        await debtContext.SaveChangesAsync();
 
         decimal spentBillTotalNoTips = bill.Lines.Sum(t => t.Subtotal);
         decimal paidPaymentTotalWithTips = bill.Payments.Sum(t => t.Amount);
@@ -48,10 +45,7 @@ public class BillProcessor : IConsumer<BillFinalized>
             var parts = line.Participants.Sum(t => t.Part);
             foreach (var participant in line.Participants)
             {
-                if (!spentPaymentPerUserWithTips.ContainsKey(participant.UserId))
-                {
-                    spentPaymentPerUserWithTips[participant.UserId] = 0;
-                }
+                spentPaymentPerUserWithTips.TryAdd(participant.UserId, 0);
 
                 spentPaymentPerUserWithTips[participant.UserId] += line.Subtotal 
                     * participant.Part / parts 
@@ -59,20 +53,20 @@ public class BillProcessor : IConsumer<BillFinalized>
             }
         }
         
-        /// spent/pay               - Spent/Paid
-        /// currency                - Bill/Payment
-        /// total or per            - Total/PerUser
-        /// tips/no tips            - WithTips/NoTips
-        ///
-        /// spentBillTotalNoTips
-        /// paidPaymentTotalWithTips
-        /// spentBillTotalWithTips
-        /// spentPaymentPerUserWithTips
+        // spent/pay               - Spent/Paid
+        // currency                - Bill/Payment
+        // total or per            - Total/PerUser
+        // tips/no tips            - WithTips/NoTips
+        //
+        // spentBillTotalNoTips
+        // paidPaymentTotalWithTips
+        // spentBillTotalWithTips
+        // spentPaymentPerUserWithTips
 
-        /// spentBillTotalNoTips - amount spent without tips in bill currency
-        /// paidPaymentTotalWithTisp - amount paid with tips in payment currency
-        /// bill.total - amount spent with tips in bill currency
-        /// spentPaymentPerUserWithTips.value - amount spent with tips in payment currency per user
+        // spentBillTotalNoTips - amount spent without tips in bill currency
+        // paidPaymentTotalWithTips - amount paid with tips in payment currency
+        // bill.total - amount spent with tips in bill currency
+        // spentPaymentPerUserWithTips.value - amount spent with tips in payment currency per user
         
         debtContext.Spendings.AddRange(
             spentPaymentPerUserWithTips.Select(q => new Spending()
@@ -88,11 +82,7 @@ public class BillProcessor : IConsumer<BillFinalized>
         
         foreach (var payment in bill.Payments)
         {
-            if (!spentPaymentPerUserWithTips.ContainsKey(payment.UserId))
-            {
-                spentPaymentPerUserWithTips[payment.UserId] = 0;
-            }
-            
+            spentPaymentPerUserWithTips.TryAdd(payment.UserId, 0);
             spentPaymentPerUserWithTips[payment.UserId] -= payment.Amount;
         }
 
@@ -119,7 +109,7 @@ public class BillProcessor : IConsumer<BillFinalized>
             await _publishEndpoint.Publish(new EnsureContact(
                 sponsorId, 
                 item.Key, 
-                debtor.DisplayName ?? debtor.Id.ToString()));
+                debtor.DisplayName));
             await _publishEndpoint.Publish(new EnsureContact(
                 item.Key, 
                 sponsorId, 
@@ -128,7 +118,7 @@ public class BillProcessor : IConsumer<BillFinalized>
 
         debtContext.LedgerRecords.AddRange(records);
         bill.Status = ProcessingState.Processed;
-        debtContext.SaveChanges();
+        await debtContext.SaveChangesAsync();
 
         await _publishEndpoint.PublishBatch(records.Select(q => new LedgerRecordCreated(
             q.CreditorUserId, q.DebtorUserId, q.Amount, q.CurrencyCode)
@@ -137,10 +127,5 @@ public class BillProcessor : IConsumer<BillFinalized>
         await _publishEndpoint.PublishBatch(records.Select(q => new LedgerRecordCreated(
             q.DebtorUserId, q.CreditorUserId, -q.Amount, q.CurrencyCode)
         ));
-    }
-
-    public async Task Consume(ConsumeContext<BillFinalized> context)
-    {
-        await Run(context.Message.id, context.CancellationToken);
     }
 }
