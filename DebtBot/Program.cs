@@ -27,6 +27,32 @@ builder.Services.AddScoped<ITelegramService, TelegramService>();
 builder.Services.AddScoped<IParserService, ParserService>();
 builder.Services.AddScoped<IBillService, BillService>();
 builder.Services.AddScoped<IDebtService, DebtService>();
+builder.Services.AddScoped<IBudgetService, BudgetService>();
+
+// telegram
+builder.Services.AddScoped<UpdateHandler>();
+builder.Services.AddScoped<ReceiverService>();
+builder.Services.AddHostedService<PollingService>();
+
+builder.Services.AddScoped<ITelegramCommand, StartCommand>();
+builder.Services.AddScoped<ITelegramCommand, AddBillCommand>();
+builder.Services.AddScoped<ITelegramCommand, FinalizeBillCommand>();
+builder.Services.AddScoped<ITelegramCommand, AddLinesCommand>();
+builder.Services.AddScoped<ITelegramCommand, AddPaymentsCommand>();
+builder.Services.AddScoped<ITelegramCommand, ShowBillCommand>();
+builder.Services.AddScoped<ITelegramCommand, ShowBillLineCommand>();
+builder.Services.AddScoped<ITelegramCommand, MenuCommand>();
+
+builder.Services.AddScoped<ITelegramCallbackQuery, DebtsCallbackQuery>();
+builder.Services.AddScoped<ITelegramCallbackQuery, SpendingsCallbackQuery>();
+
+
+builder.Services.AddHttpClient("telegram_bot_client")
+                .AddTypedClient<ITelegramBotClient>((httpClient, sp) =>
+                {
+                    TelegramBotClientOptions options = new(builder.Configuration[$"{DebtBotConfiguration.SectionName}:Telegram:BotToken"]!);
+                    return new TelegramBotClient(options, httpClient);
+                });
 
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
@@ -49,28 +75,6 @@ builder.Services.AddMassTransit(configurator =>
         cfg.ConfigureEndpoints(context);
     });
 });
-
-builder.Services.AddHttpClient("telegram_bot_client")
-                .AddTypedClient<ITelegramBotClient>((httpClient, sp) =>
-                {
-                    TelegramBotClientOptions options = new(builder.Configuration[$"{DebtBotConfiguration.SectionName}:Telegram:BotToken"]!);
-                    return new TelegramBotClient(options, httpClient);
-                });
-
-builder.Services.AddScoped<UpdateHandler>();
-builder.Services.AddScoped<ReceiverService>();
-builder.Services.AddHostedService<PollingService>();
-
-builder.Services.AddScoped<ITelegramCommand, StartCommand>();
-builder.Services.AddScoped<ITelegramCommand, AddBillCommand>();
-builder.Services.AddScoped<ITelegramCommand, FinalizeBillCommand>();
-builder.Services.AddScoped<ITelegramCommand, AddLinesCommand>();
-builder.Services.AddScoped<ITelegramCommand, AddPaymentsCommand>();
-builder.Services.AddScoped<ITelegramCommand, ShowBillCommand>();
-builder.Services.AddScoped<ITelegramCommand, ShowBillLineCommand>();
-builder.Services.AddScoped<ITelegramCommand, MenuCommand>();
-
-builder.Services.AddScoped<ITelegramCallbackQuery, DebtsCallbackQuery>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
