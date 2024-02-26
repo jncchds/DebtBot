@@ -8,28 +8,31 @@ namespace DebtBot.Processors;
 
 public class BillParticipantProcessor : IConsumer<EnsureBillParticipant>
 {
-    private readonly IDbContextFactory<DebtContext> _contextFactory;
+    private readonly DebtContext _debtContext;
+    private readonly ILogger<BillParticipantProcessor> _logger;
 
-    public BillParticipantProcessor(IDbContextFactory<DebtContext> contextFactory)
+    public BillParticipantProcessor(
+        DebtContext debtContext, 
+        ILogger<BillParticipantProcessor> logger)
     {
-        _contextFactory = contextFactory;
+        _debtContext = debtContext;
+        _logger = logger;
     }
 
     public async Task Consume(ConsumeContext<EnsureBillParticipant> context)
     {
-        using var debtContext = _contextFactory.CreateDbContext();
-
-        var participant = await debtContext.BillParticipants.FirstOrDefaultAsync(t =>
+        var participant = await _debtContext.BillParticipants.FirstOrDefaultAsync(t =>
             t.BillId == context.Message.BillId && t.UserId == context.Message.UserId);
+        
         if (participant == null)
         {
-            await debtContext.BillParticipants.AddAsync(new BillParticipant
+            await _debtContext.BillParticipants.AddAsync(new BillParticipant
             {
                 BillId = context.Message.BillId,
                 UserId = context.Message.UserId
             });
 
-            await debtContext.SaveChangesAsync();
+            await _debtContext.SaveChangesAsync();
         }
     }
 }

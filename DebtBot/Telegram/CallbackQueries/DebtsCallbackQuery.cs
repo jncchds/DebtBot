@@ -20,7 +20,8 @@ public class DebtsCallbackQuery : ITelegramCallbackQuery
         _telegramService = telegramService;
     }
 
-    public string CommandName => "/Debts";
+    public static string CommandString = "/Debts";
+    public string CommandName => CommandString;
 
     public async Task ExecuteAsync(
         CallbackQuery query,

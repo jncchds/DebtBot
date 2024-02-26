@@ -1,7 +1,5 @@
-﻿using DebtBot.Interfaces.Services;
-using DebtBot.Interfaces.Telegram;
-using DebtBot.Models.User;
-using DebtBot.Services;
+﻿using DebtBot.Interfaces.Telegram;
+using DebtBot.Telegram.CallbackQueries;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -10,16 +8,6 @@ namespace DebtBot.Telegram.Commands;
 
 public class MenuCommand : ITelegramCommand
 {
-    private readonly ITelegramService _telegramService;
-    private readonly IBillService _billService;
-
-    public MenuCommand(
-        ITelegramService telegramParserService,
-        IBillService billService)
-    {
-        _telegramService = telegramParserService;
-        _billService = billService;
-    }
     public string CommandName => "/Menu";
 
     public async Task ExecuteAsync(
@@ -35,8 +23,11 @@ public class MenuCommand : ITelegramCommand
             {
                 new[]
                 {
-                    InlineKeyboardButton.WithCallbackData("Debts", "/Debts"),
-                }
+                    InlineKeyboardButton.WithCallbackData("Debts", DebtsCallbackQuery.CommandString),
+                },
+                [
+                    InlineKeyboardButton.WithCallbackData("Spendings", SpendingsCallbackQuery.CommandString)
+                ]
             }),
             parseMode: ParseMode.Html);
     }
