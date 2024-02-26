@@ -168,8 +168,6 @@ namespace DebtBot.DB.Migrations
 
                     b.HasKey("CreditorUserId", "DebtorUserId", "CurrencyCode");
 
-                    b.HasIndex("DebtorUserId");
-
                     b.ToTable((string)null);
 
                     b.ToView("debts", (string)null);
@@ -259,6 +257,9 @@ namespace DebtBot.DB.Migrations
 
                     b.Property<byte>("Role")
                         .HasColumnType("smallint");
+
+                    b.Property<bool>("TelegramBotEnabled")
+                        .HasColumnType("boolean");
 
                     b.Property<long?>("TelegramId")
                         .HasColumnType("bigint");
@@ -380,9 +381,9 @@ namespace DebtBot.DB.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("DebtBot.DB.Entities.User", "DebtorUser")
+                    b.HasOne("DebtBot.DB.Entities.UserContactLink", "DebtorUser")
                         .WithMany()
-                        .HasForeignKey("DebtorUserId")
+                        .HasForeignKey("CreditorUserId", "DebtorUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -421,7 +422,7 @@ namespace DebtBot.DB.Migrations
             modelBuilder.Entity("DebtBot.DB.Entities.Spending", b =>
                 {
                     b.HasOne("DebtBot.DB.Entities.Bill", "Bill")
-                        .WithMany()
+                        .WithMany("Spendings")
                         .HasForeignKey("BillId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -461,6 +462,8 @@ namespace DebtBot.DB.Migrations
                     b.Navigation("Lines");
 
                     b.Navigation("Payments");
+
+                    b.Navigation("Spendings");
                 });
 
             modelBuilder.Entity("DebtBot.DB.Entities.BillLine", b =>

@@ -14,6 +14,7 @@ public class User
     public string? TelegramUserName { get; set; }
     public string? Phone { get; set; }
     public string? Email { get; set; }
+    public bool TelegramBotEnabled { get; set; } = false;
     public UserRole Role { get; set; }
 
     [InverseProperty(nameof(UserContactLink.User))]
