@@ -236,6 +236,14 @@ public class UserService : IUserService
         return _mapper.Map<UserModel>(user);
     }
 
+    public void SetBotActiveState(Guid userId, bool stateToSet)
+    {
+        _debtContext
+            .Users
+            .Where(u => u.Id == userId)
+            .ExecuteUpdate(q => q.SetProperty(p => p.TelegramBotEnabled, stateToSet));
+    }
+
     public UserModel AddUser(UserSearchModel model)
     {
         var entity = _mapper.Map<User>(model);

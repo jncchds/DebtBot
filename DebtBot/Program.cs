@@ -73,6 +73,7 @@ builder.Services.AddMassTransit(configurator =>
             });
 
         cfg.ConfigureEndpoints(context);
+        cfg.ConcurrentMessageLimit = 1;
     });
 });
 

@@ -2,8 +2,6 @@
 using DebtBot.Interfaces.Telegram;
 using DebtBot.Models.User;
 using Telegram.Bot;
-using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
 
 namespace DebtBot.Telegram.Commands;
 
@@ -24,9 +22,12 @@ public class StartCommand : ITelegramCommand
 	    CancellationToken cancellationToken)
     {
 	    var userModel = _userService.FindUser(new UserSearchModel { TelegramId = processedMessage.FromId });
+	    
 	    await botClient.SendTextMessageAsync(
 		    processedMessage.ChatId, 
 		    $"Hello, {userModel!.DisplayName}!",
 		    cancellationToken: cancellationToken);
+	    
+		_userService.SetBotActiveState(userModel.Id, true);
     }
 }

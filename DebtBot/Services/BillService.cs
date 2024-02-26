@@ -167,8 +167,6 @@ public class BillService : IBillService
 			_debtContext.Bills.Add(bill);
 	    }
 
-        _publishEndpoint.Publish(new EnsureBillParticipant(bill.Id, creator.Id));
-
         if (parsedBill.CurrencyCode is not null)
 	    {
 		    bill.CurrencyCode = parsedBill.CurrencyCode;
@@ -196,6 +194,8 @@ public class BillService : IBillService
 
 	    _debtContext.SaveChanges();
 
+        _publishEndpoint.Publish(new EnsureBillParticipant(bill.Id, creator.Id));
+	    
 	    if (!parsedBill.Lines.IsNullOrEmpty())
 	    {
 			addLines(bill.Id, parsedBill.Lines, creator);

@@ -120,12 +120,6 @@ public class BillProcessor : IConsumer<BillFinalized>
         bill.Status = ProcessingState.Processed;
         await debtContext.SaveChangesAsync();
 
-        await _publishEndpoint.PublishBatch(records.Select(q => new LedgerRecordCreated(
-            q.CreditorUserId, q.DebtorUserId, q.Amount, q.CurrencyCode)
-        ));
-        
-        await _publishEndpoint.PublishBatch(records.Select(q => new LedgerRecordCreated(
-            q.DebtorUserId, q.CreditorUserId, -q.Amount, q.CurrencyCode)
-        ));
+        await _publishEndpoint.Publish(new NotifyBillProcessed(billId));
     }
 }
