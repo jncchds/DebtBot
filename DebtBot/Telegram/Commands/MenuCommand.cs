@@ -4,34 +4,40 @@ using DebtBot.Models.User;
 using DebtBot.Services;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace DebtBot.Telegram.Commands;
 
-public class AddBillCommand : ITelegramCommand
+public class MenuCommand : ITelegramCommand
 {
     private readonly ITelegramService _telegramService;
     private readonly IBillService _billService;
 
-    public AddBillCommand(
+    public MenuCommand(
         ITelegramService telegramParserService,
         IBillService billService)
     {
         _telegramService = telegramParserService;
         _billService = billService;
     }
-    public string CommandName => "/AddBill";
+    public string CommandName => "/Menu";
 
     public async Task ExecuteAsync(
         ProcessedMessage processedMessage, 
         ITelegramBotClient botClient,
         CancellationToken cancellationToken)
     {
-        var parsedBill = _telegramService.ParseBill(processedMessage.ProcessedText, processedMessage.UserSearchModels);
-        var billId = _billService.Add(parsedBill, new UserSearchModel() { TelegramId = processedMessage.FromId });
         await botClient.SendTextMessageAsync(
             processedMessage.ChatId, 
-            $"Bill added with id ```{billId}```", 
+            $"<b>MENU</b>", 
             cancellationToken: cancellationToken,
-            parseMode: ParseMode.MarkdownV2);
+            replyMarkup: new InlineKeyboardMarkup(new[]
+            {
+                new[]
+                {
+                    InlineKeyboardButton.WithCallbackData("Debts", "/Debts"),
+                }
+            }),
+            parseMode: ParseMode.Html);
     }
 }

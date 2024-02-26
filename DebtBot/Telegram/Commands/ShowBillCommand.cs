@@ -1,6 +1,5 @@
 ﻿using DebtBot.Interfaces.Services;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
+using DebtBot.Interfaces.Telegram;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
 

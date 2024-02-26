@@ -19,6 +19,8 @@ public class Bill
     
     public virtual ICollection<BillLine> Lines { get; set; }
     public virtual ICollection<BillPayment> Payments { get; set; }
+    [InverseProperty(nameof(Spending.Bill))]
+    public virtual ICollection<Spending> Spendings { get; set; }
     [ForeignKey(nameof(CreatorId))]
     public virtual User Creator { get; set; }
 }

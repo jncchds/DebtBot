@@ -1,8 +1,6 @@
 ﻿namespace DebtBot.Messages;
 
-public class EnsureContact
-{
-    public Guid UserId { get; set; }
-    public Guid ContactUserId { get; set; }
-    public string DisplayName { get; set; }
-}
+public record EnsureContact(
+    Guid UserId, 
+    Guid ContactUserId, 
+    string DisplayName);

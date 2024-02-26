@@ -1,4 +1,5 @@
 ﻿using DebtBot.Interfaces.Services;
+using DebtBot.Interfaces.Telegram;
 using Telegram.Bot;
 
 namespace DebtBot.Telegram.Commands;

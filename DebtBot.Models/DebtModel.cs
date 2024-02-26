@@ -1,14 +1,21 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-using System.ComponentModel.DataAnnotations;
+﻿using DebtBot.Models.User;
 
 namespace DebtBot.Models;
 
 public class DebtModel
 {
-    public Guid CreditorUserId { get; set; }
-    public string CreditorDisplayName { get; set; }
-    public Guid DebtorUserId { get; set; }
-    public string DebtorDisplayName { get; set; }
+    public UserDisplayModel CreditorUser { get; set; }
+    public UserDisplayModel DebtorUser { get; set; }
     public decimal Amount { get; set; }
     public string CurrencyCode { get; set; }
+
+    public override string ToString()
+    {
+        return $"{DebtorUser} owes {CreditorUser} {Amount} {CurrencyCode}";
+    }
+
+    public string ToCreditorString()
+    {
+        return $"{DebtorUser} owes you {Amount:0.##} {CurrencyCode}";
+    }
 }

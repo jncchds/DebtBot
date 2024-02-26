@@ -1,4 +1,6 @@
-﻿using DebtBot.Services;
+﻿using DebtBot.Interfaces.Telegram;
+using DebtBot.Services;
+using DebtBot.Telegram.CallbackQueries;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Polling;
@@ -12,17 +14,20 @@ public class UpdateHandler : IUpdateHandler
     private readonly ITelegramBotClient _botClient;
     private readonly ILogger<UpdateHandler> _logger;
     private readonly IEnumerable<ITelegramCommand> _commands;
+    private readonly IEnumerable<ITelegramCallbackQuery> _callbackQueries;
     private readonly ITelegramService _telegramService;
 
     public UpdateHandler(
         ITelegramBotClient botClient,
         ILogger<UpdateHandler> logger,
         IEnumerable<ITelegramCommand> commands,
+        IEnumerable<ITelegramCallbackQuery> callbackQueries, 
         ITelegramService telegramService)
     {
         _botClient = botClient;
         _logger = logger;
         _commands = commands;
+        _callbackQueries = callbackQueries;
         _telegramService = telegramService;
     }
     public async Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
@@ -79,7 +84,12 @@ public class UpdateHandler : IUpdateHandler
 
     private async Task BotOnCallbackQueryReceived(CallbackQuery callbackQuery, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        var callback = _callbackQueries.FirstOrDefault(t => 
+                   callbackQuery.Data?.StartsWith(t.CommandName, StringComparison.InvariantCultureIgnoreCase) ?? false);
+        if (callback != null)
+        {
+            await callback.ExecuteAsync(callbackQuery, _botClient, cancellationToken);
+        }
     }
 
     private async Task BotOnMessageReceived(Message message, CancellationToken cancellationToken)
