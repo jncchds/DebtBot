@@ -90,6 +90,10 @@ public class UpdateHandler : IUpdateHandler
         {
             await callback.ExecuteAsync(callbackQuery, _botClient, cancellationToken);
         }
+        else
+        {
+            await _botClient.AnswerCallbackQueryAsync(callbackQuery.Id, "command not found");
+        }
     }
 
     private async Task BotOnMessageReceived(Message message, CancellationToken cancellationToken)

@@ -45,6 +45,7 @@ builder.Services.AddScoped<ITelegramCommand, MenuCommand>();
 
 builder.Services.AddScoped<ITelegramCallbackQuery, DebtsCallbackQuery>();
 builder.Services.AddScoped<ITelegramCallbackQuery, SpendingsCallbackQuery>();
+builder.Services.AddScoped<ITelegramCallbackQuery, FinalizeBillCommand>();
 
 
 builder.Services.AddHttpClient("telegram_bot_client")

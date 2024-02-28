@@ -23,7 +23,9 @@ public class AddLinesCommand : ITelegramCommand
 
 	public string CommandName => "/AddLines";
 
-	public async Task ExecuteAsync(ProcessedMessage processedMessage, ITelegramBotClient botClient,
+	public async Task ExecuteAsync(
+		ProcessedMessage processedMessage, 
+		ITelegramBotClient botClient,
 		CancellationToken cancellationToken)
     {
         var trimmed = processedMessage.ProcessedText.Trim();

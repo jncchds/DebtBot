@@ -1,7 +1,10 @@
 ﻿using DebtBot.Interfaces.Services;
 using DebtBot.Interfaces.Telegram;
+using DebtBot.Models.Enums;
+using Microsoft.IdentityModel.Tokens;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace DebtBot.Telegram.Commands;
 
@@ -32,7 +35,22 @@ public class ShowBillCommand : ITelegramCommand
             await botClient.SendTextMessageAsync(processedMessage.ChatId, "Invalid bill id", cancellationToken: cancellationToken);
             return;
         }
+        
+        var markupList = new List<InlineKeyboardButton>();
+        if (bill!.Status == ProcessingState.Draft)
+        {
+            markupList.Add(InlineKeyboardButton.WithCallbackData(
+                "Finalize", 
+                $"{FinalizeBillCommand.CommandString} {billId}"));
+        }
 
-        await botClient.SendTextMessageAsync(processedMessage.ChatId, bill!.ToString(), cancellationToken: cancellationToken, parseMode: ParseMode.Html);
+        var markup = markupList.IsNullOrEmpty() ? null : new InlineKeyboardMarkup(markupList);
+        
+        await botClient.SendTextMessageAsync(
+            processedMessage.ChatId, 
+            bill!.ToString(),
+            replyMarkup: markup,
+            cancellationToken: cancellationToken,
+            parseMode: ParseMode.Html);
     }
 }
