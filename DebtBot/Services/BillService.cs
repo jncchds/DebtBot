@@ -83,6 +83,24 @@ public class BillService : IBillService
 			.ToList();
 		return bills;
 	}
+    
+	public List<BillModel> GetForUser(Guid userId)
+	{
+		var bills = _debtContext
+			.Bills
+			.Where(b => b
+				.BillParticipants
+				.Any(p => p.UserId == userId))
+			.Include(q => q.Creator)
+			.Include(q => q.Lines)
+			.ThenInclude(q => q.Participants)
+			.ThenInclude(q => q.User)
+			.Include(q => q.Payments)
+			.ThenInclude(q => q.User)
+			.ProjectTo<BillModel>(_mapper.ConfigurationProvider)
+			.ToList();
+		return bills;
+	}
 	
 	public Guid Add(BillCreationModel billModel, Guid creatorId)
 	{
@@ -357,7 +375,6 @@ public class BillService : IBillService
 
     public List<BillModel> GetByUser(Guid userId)
     {
-        
         var bills = _debtContext
             .Bills
             .Include(q => q.Lines)
@@ -365,7 +382,7 @@ public class BillService : IBillService
             .ThenInclude(q => q.User)
             .Include(q => q.Payments)
             .ThenInclude(q => q.User)
-            .Where(q => q.CreatorId == userId || q.Payments.Any(w => w.UserId == userId) || q.Lines.Any(w => w.Participants.Any(e => e.UserId == userId)))
+            .Where(q => q.CreatorId == userId)
             .ProjectTo<BillModel>(_mapper.ConfigurationProvider)
             .ToList();
         return bills;

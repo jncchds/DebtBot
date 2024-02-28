@@ -3,13 +3,17 @@ using DebtBot.Interfaces.Telegram;
 using DebtBot.Models.Enums;
 using Microsoft.IdentityModel.Tokens;
 using Telegram.Bot;
+using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace DebtBot.Telegram.Commands;
 
-public class ShowBillCommand : ITelegramCommand
+public class ShowBillCommand : ITelegramCommand, ITelegramCallbackQuery
 {
+    public const string CommandString = "/ShowBill";
+    public string CommandName => CommandString;
+    
     private readonly IBillService _billService;
 
     public ShowBillCommand(IBillService billService)
@@ -17,7 +21,18 @@ public class ShowBillCommand : ITelegramCommand
         _billService = billService;
     }
 
-    public string CommandName => "/ShowBill";
+    public async Task ExecuteAsync(CallbackQuery query, ITelegramBotClient botClient, CancellationToken cancellationToken)
+    {
+        var guidString = query.Data!.Split(" ").Skip(1).FirstOrDefault();
+        if (!Guid.TryParse(guidString, out var billId))
+        {
+            await botClient.AnswerCallbackQueryAsync(query.Id, "bill guid not detected", cancellationToken: cancellationToken);
+            return;
+        }
+
+        await ShowBill(billId, query.Message!.Chat.Id, botClient, cancellationToken);
+        await botClient.AnswerCallbackQueryAsync(query.Id, null, cancellationToken: cancellationToken);
+    }
 
     public async Task ExecuteAsync(ProcessedMessage processedMessage, ITelegramBotClient botClient, CancellationToken cancellationToken)
     {
@@ -28,11 +43,20 @@ public class ShowBillCommand : ITelegramCommand
             return;
         }
 
-        var bill = _billService.Get(billId.Value);
+        await ShowBill(billId.Value, processedMessage.ChatId, botClient, cancellationToken);
+    }
+
+    private async Task ShowBill(
+        Guid billId, 
+        long chatId,
+        ITelegramBotClient botClient,
+        CancellationToken cancellationToken)
+    {
+        var bill = _billService.Get(billId);
 
         if (bill is null)
         {
-            await botClient.SendTextMessageAsync(processedMessage.ChatId, "Invalid bill id", cancellationToken: cancellationToken);
+            await botClient.SendTextMessageAsync(chatId, "Invalid bill id", cancellationToken: cancellationToken);
             return;
         }
         
@@ -47,7 +71,7 @@ public class ShowBillCommand : ITelegramCommand
         var markup = markupList.IsNullOrEmpty() ? null : new InlineKeyboardMarkup(markupList);
         
         await botClient.SendTextMessageAsync(
-            processedMessage.ChatId, 
+            chatId, 
             bill!.ToString(),
             replyMarkup: markup,
             cancellationToken: cancellationToken,

@@ -9,6 +9,9 @@ namespace DebtBot.Telegram.Commands;
 
 public class FinalizeBillCommand : ITelegramCommand, ITelegramCallbackQuery
 {
+    public const string CommandString = "/FinalizeBill";
+    public string CommandName => CommandString;
+
     private readonly IBillService _billService;
 
     public FinalizeBillCommand(IBillService billService)
@@ -32,9 +35,6 @@ public class FinalizeBillCommand : ITelegramCommand, ITelegramCallbackQuery
         await FinalizeAsync(billId, query.Message!.Chat.Id, botClient, cancellationToken);
         await botClient.AnswerCallbackQueryAsync(query.Id, null, cancellationToken: cancellationToken);
     }
-
-    public static string CommandString = "/FinalizeBill";
-    public string CommandName => CommandString;
 
     public async Task ExecuteAsync(
         ProcessedMessage processedMessage, 

@@ -36,7 +36,7 @@ public class DebtsController : DebtBotControllerBase
     [HttpGet("Own")]
     public IActionResult GetOwn()
     {
-        var debts = _debtService.Get(UserId.Value);
+        var debts = _debtService.Get(UserId!.Value);
         
         return Ok(debts);
     }

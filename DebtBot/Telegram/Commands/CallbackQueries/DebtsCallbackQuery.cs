@@ -1,12 +1,12 @@
-﻿using DebtBot.Interfaces.Services;
+﻿using System.Text;
+using DebtBot.Interfaces.Services;
 using DebtBot.Interfaces.Telegram;
 using DebtBot.Services;
-using System.Text;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
-namespace DebtBot.Telegram.CallbackQueries;
+namespace DebtBot.Telegram.Commands.CallbackQueries;
 
 public class DebtsCallbackQuery : ITelegramCallbackQuery
 {
@@ -20,7 +20,7 @@ public class DebtsCallbackQuery : ITelegramCallbackQuery
         _telegramService = telegramService;
     }
 
-    public static string CommandString = "/Debts";
+    public const string CommandString = "/Debts";
     public string CommandName => CommandString;
 
     public async Task ExecuteAsync(
@@ -41,6 +41,6 @@ public class DebtsCallbackQuery : ITelegramCallbackQuery
 
         await botClient.SendTextMessageAsync(query.Message!.Chat.Id, sb.ToString(), cancellationToken: cancellationToken, parseMode: ParseMode.Html);
 
-        await botClient.AnswerCallbackQueryAsync(query.Id);
+        await botClient.AnswerCallbackQueryAsync(query.Id, cancellationToken: cancellationToken);
     }
 }

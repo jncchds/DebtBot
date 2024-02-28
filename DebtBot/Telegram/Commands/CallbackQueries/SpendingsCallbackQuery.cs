@@ -6,7 +6,7 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
-namespace DebtBot.Telegram.CallbackQueries;
+namespace DebtBot.Telegram.Commands.CallbackQueries;
 
 public class SpendingsCallbackQuery : ITelegramCallbackQuery
 {
@@ -19,7 +19,7 @@ public class SpendingsCallbackQuery : ITelegramCallbackQuery
 		_budgetService = budgetService;
 	}
 
-	public static string CommandString = "/Spendings";
+	public const string CommandString = "/Spendings";
 	public string CommandName => CommandString;
 	
 	public async Task ExecuteAsync(
@@ -41,6 +41,6 @@ public class SpendingsCallbackQuery : ITelegramCallbackQuery
 		
 		await botClient.SendTextMessageAsync(query.Message!.Chat.Id, sb.ToString(), cancellationToken: cancellationToken, parseMode: ParseMode.Html);
 		
-		await botClient.AnswerCallbackQueryAsync(query.Id);
+		await botClient.AnswerCallbackQueryAsync(query.Id, cancellationToken: cancellationToken);
 	}
 }

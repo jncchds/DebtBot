@@ -14,8 +14,6 @@ using System.Reflection;
 using System.Text;
 using Telegram.Bot;
 using DebtBot.Telegram;
-using DebtBot.Telegram.Commands;
-using DebtBot.Telegram.CallbackQueries;
 using DebtBot.Interfaces.Telegram;
 
 var builder = WebApplication.CreateBuilder(args);

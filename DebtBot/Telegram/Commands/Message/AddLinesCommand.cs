@@ -6,7 +6,7 @@ using DebtBot.Services;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
 
-namespace DebtBot.Telegram.Commands;
+namespace DebtBot.Telegram.Commands.Message;
 
 public class AddLinesCommand : ITelegramCommand
 {
@@ -21,7 +21,8 @@ public class AddLinesCommand : ITelegramCommand
 		_billService = billService;
 	}
 
-	public string CommandName => "/AddLines";
+	public const string CommandString = "/AddLines";
+	public string CommandName => CommandString;
 
 	public async Task ExecuteAsync(
 		ProcessedMessage processedMessage, 
@@ -30,7 +31,7 @@ public class AddLinesCommand : ITelegramCommand
     {
         var trimmed = processedMessage.ProcessedText.Trim();
 
-        string parsedText = processedMessage.ProcessedText;
+        var parsedText = processedMessage.ProcessedText;
 
         Guid billId;
 

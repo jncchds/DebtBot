@@ -41,7 +41,7 @@ public class UserContactsController : DebtBotControllerBase
     [HttpGet("Own")]
     public IActionResult GetOwn()
     {
-        var contactLinks = _userContactService.Get(UserId.Value);
+        var contactLinks = _userContactService.Get(UserId!.Value);
         if (contactLinks?.Any() ?? false)
         {
             return Ok(contactLinks);
@@ -63,7 +63,7 @@ public class UserContactsController : DebtBotControllerBase
     [HttpPost]
     public IActionResult Post(UserModel contact)
     {
-        _userContactService.AddContact(UserId.Value, contact);
+        _userContactService.AddContact(UserId!.Value, contact);
 
         return Ok();
     }
