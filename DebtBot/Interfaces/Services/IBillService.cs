@@ -8,6 +8,7 @@ public interface IBillService
 {
     BillModel? Get(Guid id);
     List<BillModel> Get();
+    List<BillModel> GetForUser(Guid userId);
     Guid Add(BillCreationModel billModel, Guid creatorId);
     Guid Add(string billString, Guid creatorId);
     Guid Add(BillParserModel parsedBill, UserSearchModel creator);

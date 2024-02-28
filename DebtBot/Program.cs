@@ -14,8 +14,6 @@ using System.Reflection;
 using System.Text;
 using Telegram.Bot;
 using DebtBot.Telegram;
-using DebtBot.Telegram.Commands;
-using DebtBot.Telegram.CallbackQueries;
 using DebtBot.Interfaces.Telegram;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -34,18 +32,13 @@ builder.Services.AddScoped<UpdateHandler>();
 builder.Services.AddScoped<ReceiverService>();
 builder.Services.AddHostedService<PollingService>();
 
-builder.Services.AddScoped<ITelegramCommand, StartCommand>();
-builder.Services.AddScoped<ITelegramCommand, AddBillCommand>();
-builder.Services.AddScoped<ITelegramCommand, FinalizeBillCommand>();
-builder.Services.AddScoped<ITelegramCommand, AddLinesCommand>();
-builder.Services.AddScoped<ITelegramCommand, AddPaymentsCommand>();
-builder.Services.AddScoped<ITelegramCommand, ShowBillCommand>();
-builder.Services.AddScoped<ITelegramCommand, ShowBillLineCommand>();
-builder.Services.AddScoped<ITelegramCommand, MenuCommand>();
 
-builder.Services.AddScoped<ITelegramCallbackQuery, DebtsCallbackQuery>();
-builder.Services.AddScoped<ITelegramCallbackQuery, SpendingsCallbackQuery>();
-
+builder.Services.Scan(q => q
+    .FromCallingAssembly()
+    .AddClasses(c =>
+        c.AssignableToAny([typeof(ITelegramCommand), typeof(ITelegramCallbackQuery)]))
+    .AsSelfWithInterfaces()
+    .WithScopedLifetime());
 
 builder.Services.AddHttpClient("telegram_bot_client")
                 .AddTypedClient<ITelegramBotClient>((httpClient, sp) =>
@@ -114,11 +107,6 @@ builder.Services.AddSwaggerGen(c =>
     });
 
     //c.OperationFilter<SecurityRequirementsOperationFilter>();
-});
-
-builder.Services.AddDbContextFactory<DebtContext>(options =>
-{
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DebtBot"));
 });
 
 builder.Services.AddDbContext<DebtContext>(options =>

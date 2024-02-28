@@ -33,8 +33,8 @@ public class TelegramService : ITelegramService
         if (reply.From!.Id != botId)
             return;
 
-        var position = reply!.Text.IndexOf("\n", StringComparison.InvariantCultureIgnoreCase);
-        var firstLine = reply!.Text.Substring(0, position).Split(" ");
+        var position = reply.Text!.IndexOf("\n", StringComparison.InvariantCultureIgnoreCase);
+        var firstLine = reply.Text[..position].Split(" ");
 
         if (firstLine.Length < 2)
             return;

@@ -187,7 +187,7 @@ public class UserService : IUserService
         _debtContext.SaveChanges();
     }
 
-    public UserModel? FindUser(UserSearchModel? model, Guid? userId = null) 
+    public UserModel? FindUser(UserSearchModel model, Guid? userId = null) 
     {
         User? user = null;
 

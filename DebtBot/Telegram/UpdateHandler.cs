@@ -1,6 +1,5 @@
 ﻿using DebtBot.Interfaces.Telegram;
 using DebtBot.Services;
-using DebtBot.Telegram.CallbackQueries;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Polling;
@@ -84,11 +83,18 @@ public class UpdateHandler : IUpdateHandler
 
     private async Task BotOnCallbackQueryReceived(CallbackQuery callbackQuery, CancellationToken cancellationToken)
     {
-        var callback = _callbackQueries.FirstOrDefault(t => 
-                   callbackQuery.Data?.StartsWith(t.CommandName, StringComparison.InvariantCultureIgnoreCase) ?? false);
+        var callback = _callbackQueries.FirstOrDefault(t =>
+                   (callbackQuery.Data?.StartsWith($"{t.CommandName} ", StringComparison.InvariantCultureIgnoreCase) ?? false)
+                   || 
+                   (callbackQuery.Data?.Equals(t.CommandName, StringComparison.InvariantCultureIgnoreCase) ?? false));
+        
         if (callback != null)
         {
             await callback.ExecuteAsync(callbackQuery, _botClient, cancellationToken);
+        }
+        else
+        {
+            await _botClient.AnswerCallbackQueryAsync(callbackQuery.Id, "command not found", cancellationToken: cancellationToken);
         }
     }
 
@@ -100,7 +106,7 @@ public class UpdateHandler : IUpdateHandler
             return;
         }
 
-        _telegramService.Actualize(message.From);
+        _telegramService.Actualize(message.From!);
         
         var preprocessedMessage = _telegramService.ProcessMessage(message, _botClient.BotId);
         if (preprocessedMessage is not null && !string.IsNullOrEmpty(preprocessedMessage.BotCommand))

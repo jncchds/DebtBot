@@ -9,12 +9,12 @@ namespace DebtBot.Processors;
 
 public class BillProcessor : IConsumer<BillFinalized>
 {
-    private readonly IDbContextFactory<DebtContext> _contextFactory;
+    private readonly DebtContext _debtContext;
     private readonly IPublishEndpoint _publishEndpoint;
 
-    public BillProcessor(IDbContextFactory<DebtContext> contextFactory, IPublishEndpoint publishEndpoint)
+    public BillProcessor(DebtContext debtContext, IPublishEndpoint publishEndpoint)
     {
-        _contextFactory = contextFactory;
+        _debtContext = debtContext;
         _publishEndpoint = publishEndpoint;
     }
 
@@ -22,9 +22,7 @@ public class BillProcessor : IConsumer<BillFinalized>
     {
         var billId = context.Message.id;
 
-        await using var debtContext = await _contextFactory.CreateDbContextAsync();
-
-        var bill = debtContext
+        var bill = _debtContext
             .Bills
             .Include(t => t.Lines)
             .ThenInclude(t => t.Participants)
@@ -32,7 +30,7 @@ public class BillProcessor : IConsumer<BillFinalized>
             .First(t => t.Id == billId);
         
         bill.Status = ProcessingState.Processing;
-        await debtContext.SaveChangesAsync();
+        await _debtContext.SaveChangesAsync();
 
         decimal spentBillTotalNoTips = bill.Lines.Sum(t => t.Subtotal);
         decimal paidPaymentTotalWithTips = bill.Payments.Sum(t => t.Amount);
@@ -68,7 +66,7 @@ public class BillProcessor : IConsumer<BillFinalized>
         // bill.total - amount spent with tips in bill currency
         // spentPaymentPerUserWithTips.value - amount spent with tips in payment currency per user
         
-        debtContext.Spendings.AddRange(
+        _debtContext.Spendings.AddRange(
             spentPaymentPerUserWithTips.Select(q => new Spending()
             {
                 Description = $"{bill.Description} portion {q.Value / paidPaymentTotalWithTips}",
@@ -87,7 +85,7 @@ public class BillProcessor : IConsumer<BillFinalized>
         }
 
         var sponsorId = spentPaymentPerUserWithTips.MinBy(t => t.Value).Key;
-        var sponsor = debtContext.Users.First(t => t.Id == sponsorId);
+        var sponsor = _debtContext.Users.First(t => t.Id == sponsorId);
         var records = new List<LedgerRecord>();
         foreach (var item in spentPaymentPerUserWithTips)
         {
@@ -105,7 +103,7 @@ public class BillProcessor : IConsumer<BillFinalized>
                 CurrencyCode = bill.PaymentCurrencyCode
             });
 
-            var debtor = debtContext.Users.First(t => t.Id == item.Key);
+            var debtor = _debtContext.Users.First(t => t.Id == item.Key);
             await _publishEndpoint.Publish(new EnsureContact(
                 sponsorId, 
                 item.Key, 
@@ -116,9 +114,9 @@ public class BillProcessor : IConsumer<BillFinalized>
                 sponsor.DisplayName ?? sponsorId.ToString()));
         }
 
-        debtContext.LedgerRecords.AddRange(records);
+        _debtContext.LedgerRecords.AddRange(records);
         bill.Status = ProcessingState.Processed;
-        await debtContext.SaveChangesAsync();
+        await _debtContext.SaveChangesAsync();
 
         await _publishEndpoint.Publish(new NotifyBillProcessed(billId));
     }
