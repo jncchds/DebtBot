@@ -111,11 +111,6 @@ builder.Services.AddSwaggerGen(c =>
     //c.OperationFilter<SecurityRequirementsOperationFilter>();
 });
 
-builder.Services.AddDbContextFactory<DebtContext>(options =>
-{
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DebtBot"));
-});
-
 builder.Services.AddDbContext<DebtContext>(options =>
 {
     options.UseNpgsql(builder.Configuration.GetConnectionString("DebtBot"));
