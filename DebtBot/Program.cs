@@ -34,19 +34,13 @@ builder.Services.AddScoped<UpdateHandler>();
 builder.Services.AddScoped<ReceiverService>();
 builder.Services.AddHostedService<PollingService>();
 
-builder.Services.AddScoped<ITelegramCommand, StartCommand>();
-builder.Services.AddScoped<ITelegramCommand, AddBillCommand>();
-builder.Services.AddScoped<ITelegramCommand, FinalizeBillCommand>();
-builder.Services.AddScoped<ITelegramCommand, AddLinesCommand>();
-builder.Services.AddScoped<ITelegramCommand, AddPaymentsCommand>();
-builder.Services.AddScoped<ITelegramCommand, ShowBillCommand>();
-builder.Services.AddScoped<ITelegramCommand, ShowBillLineCommand>();
-builder.Services.AddScoped<ITelegramCommand, MenuCommand>();
 
-builder.Services.AddScoped<ITelegramCallbackQuery, DebtsCallbackQuery>();
-builder.Services.AddScoped<ITelegramCallbackQuery, SpendingsCallbackQuery>();
-builder.Services.AddScoped<ITelegramCallbackQuery, FinalizeBillCommand>();
-
+builder.Services.Scan(q => q
+    .FromCallingAssembly()
+    .AddClasses(c =>
+        c.AssignableToAny([typeof(ITelegramCommand), typeof(ITelegramCallbackQuery)]))
+    .AsSelfWithInterfaces()
+    .WithScopedLifetime());
 
 builder.Services.AddHttpClient("telegram_bot_client")
                 .AddTypedClient<ITelegramBotClient>((httpClient, sp) =>
