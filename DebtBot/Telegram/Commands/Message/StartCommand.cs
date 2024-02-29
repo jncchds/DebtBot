@@ -1,4 +1,5 @@
-﻿using DebtBot.Interfaces.Services;
+﻿using DebtBot.Extensions;
+using DebtBot.Interfaces.Services;
 using DebtBot.Interfaces.Telegram;
 using DebtBot.Models.User;
 using Telegram.Bot;
@@ -27,6 +28,7 @@ public class StartCommand : ITelegramCommand
 	    await botClient.SendTextMessageAsync(
 		    processedMessage.ChatId, 
 		    $"Hello, {userModel!.DisplayName}!",
+			replyMarkup: TelegramBotExtensions.DefaultReplyKeyboard,
 		    cancellationToken: cancellationToken);
 	    
 		_userService.SetBotActiveState(userModel.Id, true);

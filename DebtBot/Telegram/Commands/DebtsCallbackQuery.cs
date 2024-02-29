@@ -7,9 +7,9 @@ using System.Text;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
-namespace DebtBot.Telegram.Commands.CallbackQueries;
+namespace DebtBot.Telegram.Commands;
 
-public class DebtsCallbackQuery : ITelegramCallbackQuery
+public class DebtsCallbackQuery : ITelegramCallbackQuery, ITelegramCommand
 {
     private readonly IDebtService _debtService;
     private readonly ITelegramService _telegramService;
@@ -43,7 +43,20 @@ public class DebtsCallbackQuery : ITelegramCallbackQuery
             messageId = query.Message!.MessageId;
         }
 
-        var user = _telegramService.GetUserByTelegramId(query.From.Id);
+        await ShowDebts(query.From.Id, query.Message!.Chat.Id, botClient, pageNumber, countPerPage, messageId, cancellationToken);
+
+        await botClient.AnswerCallbackQueryAsync(query.Id, cancellationToken: cancellationToken);
+    }
+
+    public async Task ExecuteAsync(ProcessedMessage processedMessage, ITelegramBotClient botClient, CancellationToken cancellationToken)
+    {
+        await ShowDebts(processedMessage.FromId, processedMessage.ChatId, botClient, 0, _telegramConfig.CountPerPage, null, cancellationToken);
+    }
+
+    private async Task ShowDebts(long telegramId, long chatId, ITelegramBotClient botClient,
+        int pageNumber, int? countPerPage, int? messageId, CancellationToken cancellationToken)
+    {
+        var user = _telegramService.GetUserByTelegramId(telegramId);
 
         var debts = _debtService.GetForUser(user!.Value, pageNumber, countPerPage);
         var sb = new StringBuilder();
@@ -54,8 +67,6 @@ public class DebtsCallbackQuery : ITelegramCallbackQuery
             sb.AppendLine(item.ToCreditorString());
         }
 
-        await botClient.SendOrUpdateTelegramMessage(query.Message!.Chat.Id, messageId, sb.ToString(), [debts.ToInlineKeyboardButtons(CommandString)], cancellationToken);
-
-        await botClient.AnswerCallbackQueryAsync(query.Id, cancellationToken: cancellationToken);
+        await botClient.SendOrUpdateTelegramMessage(chatId, messageId, sb.ToString(), [debts.ToInlineKeyboardButtons(CommandString)], cancellationToken);
     }
 }

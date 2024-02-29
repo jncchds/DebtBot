@@ -28,4 +28,15 @@ public static class TelegramBotExtensions
                 cancellationToken: cancellationToken);
         }
     }
+
+    public static ReplyKeyboardMarkup DefaultReplyKeyboard =>
+        new(new List<KeyboardButton>
+        {
+            new KeyboardButton("/Debts"),
+            new KeyboardButton("/ShowBills"),
+            new KeyboardButton("/Spendings")
+        })
+        {
+            ResizeKeyboard = true
+        };
 }
