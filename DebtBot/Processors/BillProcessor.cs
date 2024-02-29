@@ -69,8 +69,8 @@ public class BillProcessor : IConsumer<BillFinalized>
         _debtContext.Spendings.AddRange(
             spentPaymentPerUserWithTips.Select(q => new Spending()
             {
-                // TODO: Remove portion from description?
-                Description = $"{bill.Description} portion {q.Value * 100.0m / paidPaymentTotalWithTips:0.##%}",
+                Description = bill.Description,
+                Portion = q.Value / paidPaymentTotalWithTips,
                 BillId = bill.Id,
                 UserId = q.Key,
                 Amount = q.Value * exchangeRatePaymentToBill,

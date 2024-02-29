@@ -8,6 +8,7 @@ public class SpendingModel
     public string CurrencyCode { get; set; }
     public decimal PaymentAmount { get; set; }
     public string PaymentCurrencyCode { get; set; }
+    public decimal Portion { get; set; }
     public Guid BillId { get; set; }
     public UserDisplayModel User { get; set; }
 
