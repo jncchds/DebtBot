@@ -26,18 +26,18 @@ public class ShowBillsCommand: ITelegramCommand, ITelegramCallbackQuery
     {
         int pageNumber = 0;
         int countPerPage = 5;
-        bool updateMessage = false;
+		int? messageId = null;
         var parametrs = query.Data!.Split(' ');
         if (parametrs.Length > 1)
         {
-            Int32.TryParse(parametrs[1], out pageNumber);
-            updateMessage = true;
+            _ = int.TryParse(parametrs[1], out pageNumber);
+            messageId = query.Message!.MessageId;
         }
         
 		var telegramId = query.From.Id;
 		var chatId = query.Message!.Chat.Id;
 			
-		await ShowBills(telegramId, chatId, botClient, pageNumber, countPerPage, updateMessage ? query.Message.MessageId : null, cancellationToken);
+		await ShowBills(telegramId, chatId, botClient, pageNumber, countPerPage, messageId, cancellationToken);
 
 		await botClient.AnswerCallbackQueryAsync(query.Id, cancellationToken: cancellationToken);
 	}
@@ -56,40 +56,24 @@ public class ShowBillsCommand: ITelegramCommand, ITelegramCallbackQuery
 
 	private async Task ShowBills(long telegramId, long chatId, ITelegramBotClient botClient,
 		int pageNumber, int? countPerPage, int? messageId, CancellationToken cancellationToken)
-	{
-		var userId = _telegramService.GetUserByTelegramId(telegramId);
-		if (userId is null)
-		{
-			await botClient.SendTextMessageAsync(chatId, "User not detected", cancellationToken: cancellationToken);
-			return;
-		}
+    {
+        var userId = _telegramService.GetUserByTelegramId(telegramId);
+        if (userId is null)
+        {
+            await botClient.SendTextMessageAsync(chatId, "User not detected", cancellationToken: cancellationToken);
+            return;
+        }
 
-		var bills = _billService.GetForUser(userId.Value, pageNumber, countPerPage);
+        var bills = _billService.GetForUser(userId.Value, pageNumber, countPerPage);
 
-		var buttons = new List<List<InlineKeyboardButton>>
-		{
-			bills.ToInlineKeyboardButtons(CommandString)
-		};
+        var buttons = new List<List<InlineKeyboardButton>>
+        {
+            bills.ToInlineKeyboardButtons(CommandString)
+        };
 
-		buttons.AddRange(
-			bills.Items.Select(q => new List<InlineKeyboardButton> { InlineKeyboardButton.WithCallbackData(q.Description, $"{ShowBillCommand.CommandString} {q.Id}") }));
+        buttons.AddRange(
+            bills.Items.Select(q => new List<InlineKeyboardButton> { InlineKeyboardButton.WithCallbackData(q.Description, $"{ShowBillCommand.CommandString} {q.Id}") }));
 
-		if (messageId.HasValue)
-		{
-			await botClient.EditMessageTextAsync(
-				chatId,
-				messageId.Value,
-				"Bills:",
-				replyMarkup: new InlineKeyboardMarkup(buttons),
-				cancellationToken: cancellationToken);
-		}
-		else
-		{
-			await botClient.SendTextMessageAsync(
-				chatId,
-				"Bills:",
-				replyMarkup: new InlineKeyboardMarkup(buttons),
-				cancellationToken: cancellationToken);
-		}
-	}
+        await botClient.SendOrUpdateTelegramMessage(chatId, messageId, "<b>Bills</b>:", buttons, cancellationToken);
+    }
 }

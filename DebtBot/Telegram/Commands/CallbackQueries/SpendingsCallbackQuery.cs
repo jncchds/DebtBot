@@ -31,19 +31,19 @@ public class SpendingsCallbackQuery : ITelegramCallbackQuery
     {
         int pageNumber = 0;
         int? countPerPage = 5;
-		bool updateMessage = false;
+		int? messageId = null;
         var parametrs = query.Data!.Split(' ');
         if (parametrs.Length > 1)
         {
-            Int32.TryParse(parametrs[1], out pageNumber);
-			updateMessage = true;
+            _ = int.TryParse(parametrs[1], out pageNumber);
+			messageId = query.Message!.MessageId;
         }
         
 		var user = _telegramService.GetUserByTelegramId(query.From.Id);
 
 		var spendings = _budgetService.GetSpendings(user!.Value, pageNumber, countPerPage);
 		
-		StringBuilder sb = new StringBuilder();
+		var sb = new StringBuilder();
 		sb.AppendLine("<b>Spendings:</b>");
 		sb.AppendLine();
 		int i = 0;
@@ -60,26 +60,8 @@ public class SpendingsCallbackQuery : ITelegramCallbackQuery
         buttons.AddRange(
             spendings.Items.Select(q => new List<InlineKeyboardButton> { InlineKeyboardButton.WithCallbackData(q.Description, $"{ShowBillCommand.CommandString} {q.BillId}") }));
 
-        if (updateMessage)
-		{
-            await botClient.EditMessageTextAsync(
-                query.Message!.Chat.Id,
-				query.Message.MessageId,
-                sb.ToString(),
-                parseMode: ParseMode.Html,
-                replyMarkup: new InlineKeyboardMarkup(buttons),
-                cancellationToken: cancellationToken);
-        }
-        else
-		{
-			await botClient.SendTextMessageAsync(
-				query.Message!.Chat.Id,
-				sb.ToString(),
-				parseMode: ParseMode.Html,
-				replyMarkup: new InlineKeyboardMarkup(buttons),
-				cancellationToken: cancellationToken);
-		}
-		
+		await botClient.SendOrUpdateTelegramMessage(query.Message!.Chat.Id, messageId, sb.ToString(), buttons, cancellationToken);
+				
 		await botClient.AnswerCallbackQueryAsync(query.Id, cancellationToken: cancellationToken);
 	}
 }

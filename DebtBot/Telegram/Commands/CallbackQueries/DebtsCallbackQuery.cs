@@ -1,11 +1,10 @@
-﻿using System.Text;
-using DebtBot.Extensions;
+﻿using DebtBot.Extensions;
 using DebtBot.Interfaces.Services;
 using DebtBot.Interfaces.Telegram;
 using DebtBot.Services;
+using System.Text;
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace DebtBot.Telegram.Commands.CallbackQueries;
@@ -32,18 +31,18 @@ public class DebtsCallbackQuery : ITelegramCallbackQuery
     {
         int pageNumber = 0;
         int countPerPage = 5;
-        bool updateMessage = false;
+        int? messageId = null;
         var parametrs = query.Data!.Split(' ');
         if (parametrs.Length > 1)
         {
-            Int32.TryParse(parametrs[1], out pageNumber);
-            updateMessage = true;
+            _ = int.TryParse(parametrs[1], out pageNumber);
+            messageId = query.Message!.MessageId;
         }
 
         var user = _telegramService.GetUserByTelegramId(query.From.Id);
 
         var debts = _debtService.GetForUser(user!.Value, pageNumber, countPerPage);
-        StringBuilder sb = new StringBuilder();
+        var sb = new StringBuilder();
         sb.AppendLine("<b>Debts:</b>");
         sb.AppendLine();
         foreach (var item in debts.Items)
@@ -51,25 +50,7 @@ public class DebtsCallbackQuery : ITelegramCallbackQuery
             sb.AppendLine(item.ToCreditorString());
         }
 
-        if (updateMessage)
-        {
-            await botClient.EditMessageTextAsync(
-                query.Message!.Chat.Id,
-                query.Message.MessageId,
-                sb.ToString(),
-                parseMode: ParseMode.Html,
-                replyMarkup: new InlineKeyboardMarkup(debts.ToInlineKeyboardButtons(CommandString)),
-                cancellationToken: cancellationToken);
-        }
-        else
-        {
-            await botClient.SendTextMessageAsync(
-                query.Message!.Chat.Id,
-                sb.ToString(),
-                parseMode: ParseMode.Html,
-                replyMarkup: new InlineKeyboardMarkup(debts.ToInlineKeyboardButtons(CommandString)),
-                cancellationToken: cancellationToken);
-        }
+        await botClient.SendOrUpdateTelegramMessage(query.Message!.Chat.Id, messageId, sb.ToString(), new List<List<InlineKeyboardButton>> { debts.ToInlineKeyboardButtons(CommandString) }, cancellationToken);
 
         await botClient.AnswerCallbackQueryAsync(query.Id, cancellationToken: cancellationToken);
     }
