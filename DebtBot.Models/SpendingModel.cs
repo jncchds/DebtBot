@@ -8,7 +8,13 @@ public class SpendingModel
     public string CurrencyCode { get; set; }
     public decimal PaymentAmount { get; set; }
     public string PaymentCurrencyCode { get; set; }
+    public Guid BillId { get; set; }
     public UserDisplayModel User { get; set; }
+
+    public string? ToSpendingString()
+    {
+        return $"{Description}\n{Amount:0.##} {CurrencyCode} / {PaymentAmount:0.##} {PaymentCurrencyCode}";
+    }
 
     public override string ToString()
     {

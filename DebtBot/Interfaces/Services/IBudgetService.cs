@@ -4,5 +4,5 @@ namespace DebtBot.Interfaces.Services;
 
 public interface IBudgetService
 {
-	List<SpendingModel> GetSpendings(Guid userId);
+    PagingResult<SpendingModel> GetSpendings(Guid userId, int pageNumber = 0, int? countPerPage = null);
 }

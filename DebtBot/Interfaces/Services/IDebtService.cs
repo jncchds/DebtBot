@@ -3,6 +3,6 @@
 namespace DebtBot.Interfaces.Services;
 public interface IDebtService
 {
-    List<DebtModel> Get(Guid id);
+    PagingResult<DebtModel> GetForUser(Guid userId, int pageNumber = 0, int? countPerPage = null);
     List<DebtModel> GetAll();
 }
