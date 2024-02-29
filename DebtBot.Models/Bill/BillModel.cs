@@ -37,10 +37,11 @@ public class BillModel
         sb.AppendLine();
         sb.AppendLine($"<b>Creator:</b> {Creator}");
         sb.AppendLine($"<b>Created:</b> {Date}");
+        sb.AppendLine($"<b>Status:</b> {Status}");
+        sb.AppendLine();
         sb.AppendLine($"<b>Total with tips:</b> {TotalWithTips:0.##} {CurrencyCode}");
         sb.AppendLine($"<b>Tips:</b> {(tipAdjustment - 1m) * 100.0m:0.##}%");
         sb.AppendLine($"<b>Paid:</b> {(Payments?.Sum(t => t.Amount) ?? 0.0m):0.##} {PaymentCurrencyCode}");
-        sb.AppendLine($"<b>Status:</b> {Status}");
 
         if ((Payments ?? []).Count != 0)
         {

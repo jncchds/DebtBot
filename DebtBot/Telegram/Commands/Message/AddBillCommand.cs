@@ -1,12 +1,10 @@
 ﻿using DebtBot.Interfaces.Services;
 using DebtBot.Interfaces.Telegram;
-using DebtBot.Models.Enums;
+using DebtBot.Messages;
 using DebtBot.Models.User;
 using DebtBot.Services;
-using Microsoft.IdentityModel.Tokens;
+using MassTransit;
 using Telegram.Bot;
-using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Types.ReplyMarkups;
 
 namespace DebtBot.Telegram.Commands.Message;
 
@@ -14,13 +12,16 @@ public class AddBillCommand : ITelegramCommand
 {
     private readonly ITelegramService _telegramService;
     private readonly IBillService _billService;
+    private readonly IPublishEndpoint _publishEndpoint;
 
     public AddBillCommand(
         ITelegramService telegramParserService,
-        IBillService billService)
+        IBillService billService,
+        IPublishEndpoint publishEndpoint)
     {
         _telegramService = telegramParserService;
         _billService = billService;
+        _publishEndpoint = publishEndpoint;
     }
     public const string CommandString = "/AddBill";
     public string CommandName => CommandString;
@@ -32,23 +33,7 @@ public class AddBillCommand : ITelegramCommand
     {
         var parsedBill = _telegramService.ParseBill(processedMessage.ProcessedText, processedMessage.UserSearchModels);
         var billId = _billService.Add(parsedBill, new UserSearchModel() { TelegramId = processedMessage.FromId });
-        
-        var bill = _billService.Get(billId);
-        var markupList = new List<InlineKeyboardButton>();
-        if (bill!.Status == ProcessingState.Draft)
-        {
-            markupList.Add(InlineKeyboardButton.WithCallbackData(
-                "Finalize", 
-                $"{FinalizeBillCommand.CommandString} {billId}"));
-        }
 
-        var markup = markupList.IsNullOrEmpty() ? null : new InlineKeyboardMarkup(markupList);
-        
-        await botClient.SendTextMessageAsync(
-            processedMessage.ChatId, 
-            bill!.ToString(),
-            replyMarkup: markup,
-            cancellationToken: cancellationToken,
-            parseMode: ParseMode.Html);
+        await _publishEndpoint.Publish(new SendBillMessage(billId, processedMessage.ChatId));
     }
 }

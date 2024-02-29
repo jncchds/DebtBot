@@ -85,7 +85,7 @@ public class ShowBillsCommand: ITelegramCommand, ITelegramCallbackQuery
 		billsPage.Items.ForEach(q =>
 		{
 			sb.AppendLine($"<b>{++i}.</b> {q.Date} by {q.Creator}\n{q.Description}\n");
-			buttons.Add(InlineKeyboardButton.WithCallbackData(i.ToString(), $"{ShowBillCommand.CommandString} {q.Id}"));
+			buttons.Add(InlineKeyboardButton.WithCallbackData(i.ToString(), ShowBillCommand.FormatCallbackData(q.Id)));
 		});
 
         await botClient.SendOrUpdateTelegramMessage(chatId, messageId, sb.ToString(), [buttons, billsPage.ToInlineKeyboardButtons(CommandString)], cancellationToken);

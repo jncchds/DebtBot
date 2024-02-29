@@ -300,7 +300,7 @@ public class BillService : IBillService
 
 	    _debtContext.SaveChanges();
 
-        _publishEndpoint.Publish(new EnsureBillParticipant(billId, creator.Id));
+        _publishEndpoint.Publish(new EnsureBillParticipant(billId, lineUser.Id));
     }
 
     private void addPayment(Guid billId, BillPaymentParserModel parsedPayment, UserModel creator)

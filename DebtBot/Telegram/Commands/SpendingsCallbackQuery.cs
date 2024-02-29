@@ -72,7 +72,7 @@ public class SpendingsCallbackQuery : ITelegramCallbackQuery, ITelegramCommand
             sb.Append($"<b>{++i}</b>. ");
             sb.AppendLine(spending.ToString());
             sb.AppendLine();
-            buttons.Add(InlineKeyboardButton.WithCallbackData(i.ToString(), $"{ShowBillCommand.CommandString} {spending.BillId}"));
+            buttons.Add(InlineKeyboardButton.WithCallbackData(i.ToString(), ShowBillCommand.FormatCallbackData(spending.BillId)));
         }
 
         await botClient.SendOrUpdateTelegramMessage(chatId, messageId, sb.ToString(), [buttons, spendingsPage.ToInlineKeyboardButtons(CommandString)], cancellationToken);
