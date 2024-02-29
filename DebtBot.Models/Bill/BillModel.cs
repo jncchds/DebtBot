@@ -65,7 +65,7 @@ public class BillModel
         {
             sb.AppendLine();
             sb.AppendLine("<b>Spendings:</b>");
-            Spendings!.ForEach(spending => sb.AppendLine($"  {spending.ToString()}"));
+            Spendings!.ForEach(spending => sb.AppendLine($"  {spending.ToBillString()}"));
         }
 
         return sb.ToString();

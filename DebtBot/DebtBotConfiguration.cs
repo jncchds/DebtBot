@@ -33,5 +33,6 @@
     public class TelegramConfiguration
     {
         public string BotToken { get; set; }
+        public int CountPerPage { get; set; }
     }
 }

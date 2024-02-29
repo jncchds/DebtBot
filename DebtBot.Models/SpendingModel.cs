@@ -12,13 +12,13 @@ public class SpendingModel
     public Guid BillId { get; set; }
     public UserDisplayModel User { get; set; }
 
-    public string? ToSpendingString()
+    public string ToBillString()
     {
-        return $"{Description}\n{Amount:0.##} {CurrencyCode} / {PaymentAmount:0.##} {PaymentCurrencyCode}";
+        return $"{Portion * 100.0m:00.00}% | {Amount:0.##} {CurrencyCode} | {PaymentAmount:0.##} {PaymentCurrencyCode} - {User}";
     }
 
     public override string ToString()
     {
-        return $"{Amount:0.##} {CurrencyCode} / {PaymentAmount:0.##} {PaymentCurrencyCode} - {User}";
+        return $"{Description}\n    {Portion * 100.0m:0.##}% of the bill\n    {Amount:0.##} {CurrencyCode} | {PaymentAmount:0.##} {PaymentCurrencyCode}";
     }
 }

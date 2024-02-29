@@ -76,7 +76,8 @@ public class BillProcessor : IConsumer<BillFinalized>
                 Amount = q.Value * exchangeRatePaymentToBill,
                 CurrencyCode = bill.CurrencyCode,
                 PaymentCurrencyCode = bill.PaymentCurrencyCode,
-                PaymentAmount = q.Value
+                PaymentAmount = q.Value,
+                Date = bill.Date
             }));
         
         foreach (var payment in bill.Payments)

@@ -7,7 +7,7 @@ public class RawTextRequestOperationFilter : IOperationFilter
 {
     public void Apply(OpenApiOperation operation, OperationFilterContext context)
     {
-        RawTextRequestAttribute rawTextRequestAttribute = context.MethodInfo.GetCustomAttributes(true)
+        RawTextRequestAttribute? rawTextRequestAttribute = context.MethodInfo.GetCustomAttributes(true)
            .SingleOrDefault((attribute) => attribute is RawTextRequestAttribute) as RawTextRequestAttribute;
         if (rawTextRequestAttribute != null)
         {
