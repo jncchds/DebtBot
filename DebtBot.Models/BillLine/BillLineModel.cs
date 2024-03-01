@@ -29,12 +29,12 @@ public class BillLineModel
             Participants!.ForEach(participant =>
             {
                 sb.Append($"  {participant.Part * 100.0m / totalParts:0.##}%");
-                sb.Append($" - {(participant.Part * Subtotal * tipAdjustment / totalParts):0.##}");
+                sb.Append($" | {(participant.Part * Subtotal * tipAdjustment / totalParts):0.##}");
                 if (!string.IsNullOrEmpty(currencyCode))
                 {
                     sb.Append($" {currencyCode}");
                 }
-                sb.AppendLine($" - {participant.User}");
+                sb.AppendLine($" | {participant.User}");
             });
         }
     }

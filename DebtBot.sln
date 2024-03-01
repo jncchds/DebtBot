@@ -11,7 +11,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DebtBot.DB", "DebtBot.DB\De
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DebtBot.Models", "DebtBot.Models\DebtBot.Models.csproj", "{265AEEA1-399E-4FDE-AFC4-D0F7EE01242B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DebtBot.Models.Enums", "DebtBot.Models.Enums\DebtBot.Models.Enums.csproj", "{7E8C71B6-FE79-4909-A92A-98F8C8C13AD2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DebtBot.Models.Enums", "DebtBot.Models.Enums\DebtBot.Models.Enums.csproj", "{7E8C71B6-FE79-4909-A92A-98F8C8C13AD2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

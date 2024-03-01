@@ -69,13 +69,15 @@ public class BillProcessor : IConsumer<BillFinalized>
         _debtContext.Spendings.AddRange(
             spentPaymentPerUserWithTips.Select(q => new Spending()
             {
-                Description = $"{bill.Description} portion {q.Value / paidPaymentTotalWithTips}",
+                Description = bill.Description,
+                Portion = q.Value / paidPaymentTotalWithTips,
                 BillId = bill.Id,
                 UserId = q.Key,
                 Amount = q.Value * exchangeRatePaymentToBill,
                 CurrencyCode = bill.CurrencyCode,
                 PaymentCurrencyCode = bill.PaymentCurrencyCode,
-                PaymentAmount = q.Value
+                PaymentAmount = q.Value,
+                Date = bill.Date
             }));
         
         foreach (var payment in bill.Payments)

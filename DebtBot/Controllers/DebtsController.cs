@@ -27,7 +27,7 @@ public class DebtsController : DebtBotControllerBase
     [HttpGet("{id}")]
     public IActionResult Get(Guid id)
     {
-        var debts = _debtService.Get(id);
+        var debts = _debtService.GetForUser(id).Items;
         
         return Ok(debts);
     }
@@ -36,7 +36,7 @@ public class DebtsController : DebtBotControllerBase
     [HttpGet("Own")]
     public IActionResult GetOwn()
     {
-        var debts = _debtService.Get(UserId!.Value);
+        var debts = _debtService.GetForUser(UserId!.Value).Items;
         
         return Ok(debts);
     }

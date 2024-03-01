@@ -1,4 +1,5 @@
-﻿using DebtBot.Models.Bill;
+﻿using DebtBot.Models;
+using DebtBot.Models.Bill;
 using DebtBot.Models.BillLine;
 using DebtBot.Models.User;
 
@@ -8,7 +9,7 @@ public interface IBillService
 {
     BillModel? Get(Guid id);
     List<BillModel> Get();
-    List<BillModel> GetForUser(Guid userId);
+    PagingResult<BillModel> GetForUser(Guid userId, int pageNumber = 0, int? countPerPage = null);
     Guid Add(BillCreationModel billModel, Guid creatorId);
     Guid Add(string billString, Guid creatorId);
     Guid Add(BillParserModel parsedBill, UserSearchModel creator);

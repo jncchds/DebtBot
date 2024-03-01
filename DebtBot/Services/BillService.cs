@@ -2,8 +2,10 @@
 using AutoMapper.QueryableExtensions;
 using DebtBot.DB;
 using DebtBot.DB.Entities;
+using DebtBot.Extensions;
 using DebtBot.Interfaces.Services;
 using DebtBot.Messages;
+using DebtBot.Models;
 using DebtBot.Models.Bill;
 using DebtBot.Models.BillLine;
 using DebtBot.Models.Enums;
@@ -84,7 +86,7 @@ public class BillService : IBillService
 		return bills;
 	}
     
-	public List<BillModel> GetForUser(Guid userId)
+	public PagingResult<BillModel> GetForUser(Guid userId, int pageNumber = 0, int? countPerPage = null)
 	{
 		var bills = _debtContext
 			.Bills
@@ -98,7 +100,8 @@ public class BillService : IBillService
 			.Include(q => q.Payments)
 			.ThenInclude(q => q.User)
 			.ProjectTo<BillModel>(_mapper.ConfigurationProvider)
-			.ToList();
+			.ToPagingResult(pageNumber, countPerPage);
+
 		return bills;
 	}
 	
@@ -297,7 +300,7 @@ public class BillService : IBillService
 
 	    _debtContext.SaveChanges();
 
-        _publishEndpoint.Publish(new EnsureBillParticipant(billId, creator.Id));
+        _publishEndpoint.Publish(new EnsureBillParticipant(billId, lineUser.Id));
     }
 
     private void addPayment(Guid billId, BillPaymentParserModel parsedPayment, UserModel creator)

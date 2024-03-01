@@ -1,4 +1,8 @@
+using AutoMapper;
+using DebtBot.Models;
+using DebtBot.Telegram.Commands.CallbackQueries;
 using System.Text;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace DebtBot.Extensions
 {
@@ -14,5 +18,30 @@ namespace DebtBot.Extensions
         
         public static (int index, string val) WhitespaceLocator(string w)
             => (index: w.IndexOfAny([' ', '\n', '\t', '\v', '\r']), val: w);
+
+        public static PagingResult<T> ToPagingResult<T>(this IQueryable<T> query, int pageNumber = 0, int? countPerPage = null)
+        {
+            var count = query.Count();
+            var items = query.Skip(pageNumber * countPerPage ?? 0).Take(countPerPage ?? count).ToList();
+            return new PagingResult<T>(countPerPage ?? count, pageNumber, count, items);
+        }
+
+        public static List<InlineKeyboardButton> ToInlineKeyboardButtons<T>(this PagingResult<T> pagingResults, string commandName)
+        {
+            var buttons = new List<InlineKeyboardButton>
+            {
+                pagingResults.IsFirstPage
+                ? InlineKeyboardButton.WithCallbackData(" ", IgnoreCallbackQuery.CommandString)
+                : InlineKeyboardButton.WithCallbackData("<", $"{commandName} {pagingResults.PageNumber - 1}"),
+
+                InlineKeyboardButton.WithCallbackData($"{pagingResults.PageNumber + 1}/{pagingResults.LastPageNumber + 1}", IgnoreCallbackQuery.CommandString),
+
+                pagingResults.IsLastPage
+                ? InlineKeyboardButton.WithCallbackData(" ", IgnoreCallbackQuery.CommandString)
+                : InlineKeyboardButton.WithCallbackData(">", $"{commandName} {pagingResults.PageNumber + 1}")
+            };
+
+            return buttons;
+        }
     }
 }

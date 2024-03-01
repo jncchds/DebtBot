@@ -1,5 +1,7 @@
 ﻿using AutoMapper;
 using DebtBot.DB;
+using DebtBot.DB.Entities;
+using DebtBot.Extensions;
 using DebtBot.Interfaces.Services;
 using DebtBot.Models;
 
@@ -16,13 +18,13 @@ public class BudgetService : IBudgetService
 		_mapper = mapper;
 	}
 
-	public List<SpendingModel> GetSpendings(Guid userId)
+	public PagingResult<SpendingModel> GetSpendings(Guid userId, int pageNumber = 0, int? countPerPage = null)
 	{
 		var spendings = _debtContext
 			.Spendings
 			.Where(s => s.UserId == userId)
-			.ToList();
+			.ToPagingResult(pageNumber, countPerPage);
 
-		return _mapper.Map<List<SpendingModel>>(spendings);
+		return new PagingResult<SpendingModel>(spendings.CountPerPage, spendings.PageNumber, spendings.TotalCount, _mapper.Map<List<SpendingModel>>(spendings.Items));
 	}
 }

@@ -18,6 +18,10 @@ public class Spending
     [Column(TypeName = "decimal(10, 4)")]
     public decimal PaymentAmount { get; set; }
     public string PaymentCurrencyCode { get; set; }
+
+    [Column(TypeName = "decimal(10, 4)")]
+    public decimal Portion { get; set; }
+    public DateTime Date { get; set; }
     
     [ForeignKey(nameof(BillId))]
     public virtual Bill Bill { get; set; }

@@ -1,11 +1,8 @@
-﻿using DebtBot.Interfaces.Services;
-using DebtBot.Interfaces.Telegram;
-using DebtBot.Models.Enums;
-using Microsoft.IdentityModel.Tokens;
+﻿using DebtBot.Interfaces.Telegram;
+using DebtBot.Messages;
+using MassTransit;
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Types.ReplyMarkups;
 
 namespace DebtBot.Telegram.Commands;
 
@@ -14,11 +11,11 @@ public class ShowBillCommand : ITelegramCommand, ITelegramCallbackQuery
     public const string CommandString = "/ShowBill";
     public string CommandName => CommandString;
     
-    private readonly IBillService _billService;
+    private readonly IPublishEndpoint _publishEndpoint;
 
-    public ShowBillCommand(IBillService billService)
+    public ShowBillCommand(IPublishEndpoint publishEndpoint)
     {
-        _billService = billService;
+        _publishEndpoint = publishEndpoint;
     }
 
     public async Task ExecuteAsync(CallbackQuery query, ITelegramBotClient botClient, CancellationToken cancellationToken)
@@ -30,7 +27,8 @@ public class ShowBillCommand : ITelegramCommand, ITelegramCallbackQuery
             return;
         }
 
-        await ShowBill(billId, query.Message!.Chat.Id, botClient, cancellationToken);
+        await _publishEndpoint.Publish(new SendBillMessage(billId, query.Message!.Chat.Id));
+
         await botClient.AnswerCallbackQueryAsync(query.Id, null, cancellationToken: cancellationToken);
     }
 
@@ -43,38 +41,11 @@ public class ShowBillCommand : ITelegramCommand, ITelegramCallbackQuery
             return;
         }
 
-        await ShowBill(billId.Value, processedMessage.ChatId, botClient, cancellationToken);
+        await _publishEndpoint.Publish(new SendBillMessage(billId.Value, processedMessage.ChatId));
     }
 
-    private async Task ShowBill(
-        Guid billId, 
-        long chatId,
-        ITelegramBotClient botClient,
-        CancellationToken cancellationToken)
+    public static string FormatCallbackData(Guid billId)
     {
-        var bill = _billService.Get(billId);
-
-        if (bill is null)
-        {
-            await botClient.SendTextMessageAsync(chatId, "Invalid bill id", cancellationToken: cancellationToken);
-            return;
-        }
-        
-        var markupList = new List<InlineKeyboardButton>();
-        if (bill!.Status == ProcessingState.Draft)
-        {
-            markupList.Add(InlineKeyboardButton.WithCallbackData(
-                "Finalize", 
-                $"{FinalizeBillCommand.CommandString} {billId}"));
-        }
-
-        var markup = markupList.IsNullOrEmpty() ? null : new InlineKeyboardMarkup(markupList);
-        
-        await botClient.SendTextMessageAsync(
-            chatId, 
-            bill!.ToString(),
-            replyMarkup: markup,
-            cancellationToken: cancellationToken,
-            parseMode: ParseMode.Html);
+        return $"{CommandString} {billId}";
     }
 }

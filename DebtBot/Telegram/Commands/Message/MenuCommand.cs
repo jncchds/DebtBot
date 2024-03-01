@@ -1,5 +1,4 @@
 ﻿using DebtBot.Interfaces.Telegram;
-using DebtBot.Telegram.Commands.CallbackQueries;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;

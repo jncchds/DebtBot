@@ -1,6 +1,8 @@
 ﻿using DebtBot.Interfaces.Services;
 using DebtBot.Interfaces.Telegram;
+using DebtBot.Messages;
 using DebtBot.Models.Enums;
+using MassTransit;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -13,10 +15,12 @@ public class FinalizeBillCommand : ITelegramCommand, ITelegramCallbackQuery
     public string CommandName => CommandString;
 
     private readonly IBillService _billService;
+    private readonly IPublishEndpoint _publishEndpoint;
 
-    public FinalizeBillCommand(IBillService billService)
+    public FinalizeBillCommand(IBillService billService, IPublishEndpoint publishEndpoint)
     {
         _billService = billService;
+        _publishEndpoint = publishEndpoint;
     }
 
     public async Task ExecuteAsync(
@@ -71,11 +75,16 @@ public class FinalizeBillCommand : ITelegramCommand, ITelegramCallbackQuery
         var ok = _billService.Finalize(billId);
         if (ok)
         {
-            await botClient.SendTextMessageAsync(chatId, "Bill finalized", cancellationToken: cancellationToken);
+            await _publishEndpoint.Publish(new SendBillMessage(billId, chatId));
         }
         else
         {
             await botClient.SendTextMessageAsync(chatId, "There was an error finalizing the bill", cancellationToken: cancellationToken);
         }
+    }
+
+    public static string FormatCallbackData(Guid billId)
+    {
+        return $"{CommandString} {billId}";
     }
 }
