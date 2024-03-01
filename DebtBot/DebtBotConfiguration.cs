@@ -34,5 +34,9 @@
     {
         public string BotToken { get; set; }
         public int CountPerPage { get; set; }
+        public string LogBotToken { get; set; }
+        public long LogChatId { get; set; }
+
+        public IConfigurationSection LogLevel { get; set; }
     }
 }
