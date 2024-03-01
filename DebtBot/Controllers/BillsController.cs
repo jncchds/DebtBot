@@ -3,8 +3,10 @@ using DebtBot.Extensions;
 using DebtBot.Identity;
 using DebtBot.Interfaces.Services;
 using DebtBot.Models.Bill;
+using DebtBot.Models.User;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using OfficeOpenXml;
 
 namespace DebtBot.Controllers;
 
@@ -14,13 +16,15 @@ namespace DebtBot.Controllers;
 public class BillsController : DebtBotControllerBase
 {
 	private readonly IBillService _billService;
+    private readonly IExcelService _excelService;
 
-	public BillsController(IBillService billService)
-	{
-		_billService = billService;
-	}
+    public BillsController(IBillService billService, IExcelService excelService)
+    {
+        _billService = billService;
+        _excelService = excelService;
+    }
 
-	[HttpGet("{id}")]
+    [HttpGet("{id}")]
 	public IActionResult Get(Guid id)
 	{
 		var bill = _billService.Get(id);
@@ -128,5 +132,26 @@ public class BillsController : DebtBotControllerBase
         }
         return Ok();
     }
-	
+
+    [AllowAnonymous]
+    [HttpPost("import")]
+    public IActionResult ImportFile(IFormFile file)
+    {
+        try
+        {
+            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+            foreach (var bill in _excelService.Import(file.OpenReadStream()))
+            { 
+                var guid = _billService.Add(bill, new UserSearchModel() { TelegramUserName = "@jnc_chds" });
+                if (!_billService.Finalize(guid))
+                    throw new Exception($"Failed to finalize bill {guid}");
+            }
+
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
 }
