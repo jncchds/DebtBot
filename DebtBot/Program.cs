@@ -49,7 +49,16 @@ builder.Services.AddHttpClient("telegram_bot_client")
 
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
-builder.Services.AddLogging();
+builder.Services.AddLogging(logging =>
+{
+    logging.ClearProviders();
+    logging.AddConsole();
+    var telegramConfiguration = builder.Configuration.GetSection($"{DebtBotConfiguration.SectionName}:Telegram").Get<TelegramConfiguration>();
+    if (!string.IsNullOrWhiteSpace(telegramConfiguration!.LogBotToken) && telegramConfiguration.LogChatId != 0)
+    {
+        logging.AddProvider(new TelegramLoggerProvider(telegramConfiguration.LogBotToken, telegramConfiguration.LogChatId, telegramConfiguration.LogLevel));
+    }
+});
 
 builder.Services.AddMassTransit(configurator =>
 {
