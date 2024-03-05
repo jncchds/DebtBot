@@ -141,10 +141,17 @@ public class BillsController : DebtBotControllerBase
         {
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
             foreach (var bill in _excelService.Import(file.OpenReadStream()))
-            { 
-                var guid = _billService.Add(bill, new UserSearchModel() { TelegramUserName = "@jnc_chds" });
-                if (!_billService.Finalize(guid))
-                    throw new Exception($"Failed to finalize bill {guid}");
+            {
+                try
+                {
+                    var guid = _billService.Add(bill, new UserSearchModel() { TelegramUserName = "@jnc_chds" });
+                    if (!_billService.Finalize(guid))
+                        Console.WriteLine($"Failed to finalize bill {guid}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
             }
 
             return Ok();

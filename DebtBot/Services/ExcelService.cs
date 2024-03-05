@@ -28,7 +28,7 @@ public class ExcelService : IExcelService
             var date = DateTime.MinValue;
             try
             {
-                date = worksheet.Cells[row, 1].GetValue<DateTime>();
+                date = worksheet.Cells[row, 1].GetValue<DateTime>().ToUniversalTime();
             }
             catch (Exception)
             {
@@ -47,6 +47,7 @@ public class ExcelService : IExcelService
                 Date = date,
                 Description = worksheet.Cells[row, 2].Value.ToString(),
                 CurrencyCode = worksheet.Cells[row, 3].Value.ToString()?.ToUpper() ?? "UAH",
+                PaymentCurrencyCode = worksheet.Cells[row, 3].Value.ToString()?.ToUpper() ?? "UAH",
                 TotalWithTips = paidAmount,
                 Lines = [],
                 Payments =
@@ -81,6 +82,11 @@ public class ExcelService : IExcelService
                     User = new Models.User.UserSearchModel() { DisplayName = user },
                     Part = ratio
                 });
+
+                if (line.Participants.Any(t => t.Part >= 1000000m))
+                {
+                    line.Participants.ForEach(t => t.Part = t.Part / 10000.0m);
+                }
             }
 
             bill.Lines.Add(line);
@@ -99,7 +105,7 @@ public class ExcelService : IExcelService
         {
             if (DateTime.TryParseExact(value, dateStringFormat,
                                        CultureInfo.InvariantCulture,
-                                       DateTimeStyles.None,
+                                       DateTimeStyles.AdjustToUniversal,
                                        out dateValue))
                 
                 return dateValue;
