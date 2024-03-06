@@ -33,8 +33,14 @@ public class TelegramLogger : ILogger
             entry += $"\n\n<b>{exception.Message}</b>\n{exception.StackTrace}";
             exception = exception.InnerException;
         }
-
-        _botClient.SendTextMessageAsync(_chatId, entry, parseMode: ParseMode.Html).Wait();
+        try
+        {
+            _botClient.SendTextMessageAsync(_chatId, entry, parseMode: ParseMode.Html).Wait();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Error sending log message to Telegram: {e.Message}");
+        }
     }
 }
 

@@ -26,6 +26,7 @@ builder.Services.AddScoped<IParserService, ParserService>();
 builder.Services.AddScoped<IBillService, BillService>();
 builder.Services.AddScoped<IDebtService, DebtService>();
 builder.Services.AddScoped<IBudgetService, BudgetService>();
+builder.Services.AddScoped<IExcelService, ExcelService>();
 
 // telegram
 builder.Services.AddScoped<UpdateHandler>();

@@ -22,6 +22,7 @@ public class BudgetService : IBudgetService
 	{
 		var spendings = _debtContext
 			.Spendings
+			.OrderByDescending(s => s.Date)
 			.Where(s => s.UserId == userId)
 			.ToPagingResult(pageNumber, countPerPage);
 

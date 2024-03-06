@@ -96,7 +96,7 @@ public class NotifyBillProcessedConsumer : IConsumer<NotifyBillProcessed>
         }
 		else
 		{
-			sb.AppendLine($"You owe {otheruserDisplayName} extra {amount:0.##} {currencyCode}");
+			sb.AppendLine($"You owe {otheruserDisplayName} extra {-amount:0.##} {currencyCode}");
 		}
     }
 }
