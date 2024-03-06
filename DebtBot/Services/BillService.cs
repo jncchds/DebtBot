@@ -185,9 +185,6 @@ public class BillService : IBillService
             _debtContext.Bills.Add(bill);
         }
 
-        //_publishEndpoint.Publish(new EnsureBillParticipant(bill.Id, creator.Id));
-        ensureBillParticipant(bill.Id, creator.Id);
-
         if (parsedBill.CurrencyCode is not null)
         {
             bill.CurrencyCode = parsedBill.CurrencyCode;
@@ -215,7 +212,12 @@ public class BillService : IBillService
 
         _debtContext.SaveChanges();
 
-        ensureBillParticipant(bill.Id, creator.Id);
+        transaction.Commit();
+
+        using var transaction2 = _debtContext.Database.BeginTransaction();
+
+        _publishEndpoint.Publish(new EnsureBillParticipant(bill.Id, creator.Id));
+        
         if (!parsedBill.Lines.IsNullOrEmpty())
         {
             addLines(bill.Id, parsedBill.Lines, creator);
@@ -228,7 +230,7 @@ public class BillService : IBillService
 
         _debtContext.SaveChanges();
 
-        transaction.Commit();
+        transaction2.Commit();
 
         return bill.Id;
     }
@@ -297,25 +299,9 @@ public class BillService : IBillService
             lineParticipant.Part = parsedParticipant.Part.Value;
         }
 
-        ensureBillParticipant(billId, lineUser.Id);
-
         _debtContext.SaveChanges();
 
-        //_publishEndpoint.Publish(new EnsureBillParticipant(billId, creator.Id));
-    }
-
-    private void ensureBillParticipant(Guid billId, Guid userId)
-    {
-        var participant = _debtContext.BillParticipants.FirstOrDefault(q => q.BillId == billId && q.UserId == userId);
-        if (participant is null)
-        {
-            participant = new BillParticipant()
-            {
-                BillId = billId,
-                UserId = userId
-            };
-            _debtContext.BillParticipants.Add(participant);
-        }
+        _publishEndpoint.Publish(new EnsureBillParticipant(billId, lineUser.Id));
     }
 
     private void addPayment(Guid billId, BillPaymentParserModel parsedPayment, UserModel creator)
@@ -342,8 +328,7 @@ public class BillService : IBillService
 
         _debtContext.SaveChanges();
 
-        //_publishEndpoint.Publish(new EnsureBillParticipant(billId, paymentUser.Id));
-        ensureBillParticipant(billId, paymentUser.Id);
+        _publishEndpoint.Publish(new EnsureBillParticipant(billId, paymentUser.Id));
     }
 
     public bool Finalize(Guid id)

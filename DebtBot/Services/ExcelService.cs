@@ -34,7 +34,7 @@ public class ExcelService : IExcelService
             {
                 try
                 {
-                    date = Parse(worksheet.Cells[row, 1].Value.ToString()!);
+                    date = ParseDate(worksheet.Cells[row, 1].Value.ToString()!);
                 }
                 catch (Exception ex)
                 {
@@ -95,7 +95,7 @@ public class ExcelService : IExcelService
         }
     }
 
-    private DateTime Parse(string value)
+    private DateTime ParseDate(string value)
     {
         string[] formats = {"dd.MM.yyyy HH:mm:ss", "dd.MM.yyyy", "dd.MM.yyyy HH:mm" };
 
