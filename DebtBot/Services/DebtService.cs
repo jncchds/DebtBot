@@ -35,6 +35,7 @@ public class DebtService : IDebtService
             .Include(t => t.CreditorUser)
             .Include(t => t.DebtorUser)
             .ThenInclude(t => t.ContactUser)
+            .OrderBy(t => t.DebtorUser.DisplayName)
             .ProjectTo<DebtModel>(_mapper.ConfigurationProvider)
             .ToPagingResult(pageNumber, countPerPage);
     }

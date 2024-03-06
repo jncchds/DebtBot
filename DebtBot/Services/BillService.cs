@@ -46,15 +46,47 @@ public class BillService : IBillService
         var bill = _debtContext
             .Bills
             .Where(q => q.Id == id)
-            .Include(q => q.Lines)
-            .ThenInclude(q => q.Participants)
-            .ThenInclude(q => q.User)
-            .Include(q => q.Payments)
-            .ThenInclude(q => q.User)
             .ProjectTo<BillModel>(_mapper.ConfigurationProvider)
             .FirstOrDefault();
 
         return bill;
+    }
+
+    public List<BillModel> Get()
+    {
+        var bills = _debtContext
+            .Bills
+            .OrderByDescending(q => q.Date)
+            .ProjectTo<BillModel>(_mapper.ConfigurationProvider)
+            .ToList();
+        return bills;
+    }
+
+    public PagingResult<BillModel> GetForUser(Guid userId, int pageNumber = 0, int? countPerPage = null)
+    {
+        var bills = _debtContext
+            .Bills
+            .OrderByDescending(q => q.Date)
+            .Where(b => b
+                .BillParticipants
+                .Any(p => p.UserId == userId))
+            .ProjectTo<BillModel>(_mapper.ConfigurationProvider)
+            .ToPagingResult(pageNumber, countPerPage);
+
+        return bills;
+    }
+
+    public List<BillModel> GetCreatedByUser(Guid userId)
+    {
+
+        var bills = _debtContext
+            .Bills
+            .OrderByDescending(q => q.Date)
+            .Where(q => q.CreatorId == userId)
+            .ProjectTo<BillModel>(_mapper.ConfigurationProvider)
+            .ToList();
+
+        return bills;
     }
 
     public BillLineModel? GetLine(Guid id)
@@ -68,40 +100,6 @@ public class BillService : IBillService
             .FirstOrDefault();
 
         return billLine;
-    }
-
-    public List<BillModel> Get()
-    {
-        var bills = _debtContext
-            .Bills
-            .Include(q => q.Creator)
-            .Include(q => q.Lines)
-            .ThenInclude(q => q.Participants)
-            .ThenInclude(q => q.User)
-            .Include(q => q.Payments)
-            .ThenInclude(q => q.User)
-            .ProjectTo<BillModel>(_mapper.ConfigurationProvider)
-            .ToList();
-        return bills;
-    }
-
-    public PagingResult<BillModel> GetForUser(Guid userId, int pageNumber = 0, int? countPerPage = null)
-    {
-        var bills = _debtContext
-            .Bills
-            .Where(b => b
-                .BillParticipants
-                .Any(p => p.UserId == userId))
-            .Include(q => q.Creator)
-            .Include(q => q.Lines)
-            .ThenInclude(q => q.Participants)
-            .ThenInclude(q => q.User)
-            .Include(q => q.Payments)
-            .ThenInclude(q => q.User)
-            .ProjectTo<BillModel>(_mapper.ConfigurationProvider)
-            .ToPagingResult(pageNumber, countPerPage);
-
-        return bills;
     }
 
     public Guid Add(BillCreationModel billModel, Guid creatorId)
@@ -392,21 +390,5 @@ public class BillService : IBillService
         }
 
         return false;
-    }
-
-    public List<BillModel> GetByUser(Guid userId)
-    {
-
-        var bills = _debtContext
-            .Bills
-            .Include(q => q.Lines)
-            .ThenInclude(q => q.Participants)
-            .ThenInclude(q => q.User)
-            .Include(q => q.Payments)
-            .ThenInclude(q => q.User)
-            .Where(q => q.CreatorId == userId || q.Payments.Any(w => w.UserId == userId) || q.Lines.Any(w => w.Participants.Any(e => e.UserId == userId)))
-            .ProjectTo<BillModel>(_mapper.ConfigurationProvider)
-            .ToList();
-        return bills;
     }
 }

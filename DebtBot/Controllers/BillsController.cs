@@ -40,7 +40,7 @@ public class BillsController : DebtBotControllerBase
     [HttpGet("Own")]
     public IActionResult GetOwn()
     {
-        var bills = _billService.GetByUser(UserId!.Value);
+        var bills = _billService.GetCreatedByUser(UserId!.Value);
 
         return Ok(bills);
     }
