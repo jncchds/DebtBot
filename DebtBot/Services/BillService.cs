@@ -209,14 +209,7 @@ public class BillService : IBillService
         {
             bill.TotalWithTips = parsedBill.TotalWithTips.Value;
         }
-
         _debtContext.SaveChanges();
-
-        transaction.Commit();
-
-        using var transaction2 = _debtContext.Database.BeginTransaction();
-
-        _publishEndpoint.Publish(new EnsureBillParticipant(bill.Id, creator.Id));
         
         if (!parsedBill.Lines.IsNullOrEmpty())
         {
@@ -230,7 +223,24 @@ public class BillService : IBillService
 
         _debtContext.SaveChanges();
 
-        transaction2.Commit();
+        transaction.Commit();
+
+        _ = Task.Run(() =>
+        {
+            _publishEndpoint.Publish(new EnsureBillParticipant(bill.Id, creator.Id));
+
+            bill.Lines.All(t => t.Participants.All(p =>
+            {
+                _publishEndpoint.Publish(new EnsureBillParticipant(bill.Id, p.UserId));
+                return true;
+            }));
+
+            bill.Payments.All(p =>
+            {
+                _publishEndpoint.Publish(new EnsureBillParticipant(bill.Id, p.UserId));
+                return true;
+            });
+        });
 
         return bill.Id;
     }
@@ -268,20 +278,9 @@ public class BillService : IBillService
         parsedLine.Participants.ForEach(q => addLineParticipant(billId, billLine.Id, q, creator));
     }
 
-    private UserModel dealWithUser(UserSearchModel model, UserModel creator)
-    {
-        var lineUser = _userService.AddUser(model);
-
-        _userContactService.AddContact(creator.Id, lineUser);
-        _userContactService.AddContact(lineUser.Id, creator);
-
-        return lineUser;
-    }
-
     private void addLineParticipant(Guid billId, Guid billLineId, BillLineParticipantParserModel parsedParticipant, UserModel creator)
     {
-        var lineUser = _userService.FindUser(parsedParticipant.User, creator.Id);
-        lineUser ??= dealWithUser(parsedParticipant.User, creator);
+        var lineUser = _userService.FindOrAddUser(parsedParticipant.User, creator);
 
         var lineParticipant = _debtContext.BillLineParticipants.FirstOrDefault(q => q.BillLineId == billLineId && q.UserId == lineUser.Id);
         if (lineParticipant is null)
@@ -300,14 +299,11 @@ public class BillService : IBillService
         }
 
         _debtContext.SaveChanges();
-
-        _publishEndpoint.Publish(new EnsureBillParticipant(billId, lineUser.Id));
     }
 
     private void addPayment(Guid billId, BillPaymentParserModel parsedPayment, UserModel creator)
     {
-        var paymentUser = _userService.FindUser(parsedPayment.User, creator.Id);
-        paymentUser ??= dealWithUser(parsedPayment.User, creator);
+        var paymentUser = _userService.FindOrAddUser(parsedPayment.User, creator);
 
         var payment = _debtContext.BillPayments.FirstOrDefault(q => q.BillId == billId && q.UserId == paymentUser.Id);
 
@@ -327,8 +323,6 @@ public class BillService : IBillService
         }
 
         _debtContext.SaveChanges();
-
-        _publishEndpoint.Publish(new EnsureBillParticipant(billId, paymentUser.Id));
     }
 
     public bool Finalize(Guid id)
@@ -375,5 +369,175 @@ public class BillService : IBillService
         }
 
         return false;
+    }
+
+    public Guid Add(BillImportModel parsedBill, UserModel creator)
+    {
+        using var transaction = _debtContext.Database.BeginTransaction();
+
+        if (creator is null)
+        {
+            throw new Exception("creator not found");
+        }
+
+        Bill? bill;
+        if (parsedBill.Id is not null)
+        {
+            bill = _debtContext.Bills.FirstOrDefault(q => q.Id == parsedBill.Id.Value)
+                   ?? throw new Exception("Bill not found");
+        }
+        else
+        {
+            bill = new Bill
+            {
+                CreatorId = creator.Id
+            };
+            _debtContext.Bills.Add(bill);
+        }
+
+        if (parsedBill.CurrencyCode is not null)
+        {
+            bill.CurrencyCode = parsedBill.CurrencyCode;
+        }
+
+        if (parsedBill.PaymentCurrencyCode is not null)
+        {
+            bill.PaymentCurrencyCode = parsedBill.PaymentCurrencyCode;
+        }
+
+        if (parsedBill.Description is not null)
+        {
+            bill.Description = parsedBill.Description;
+        }
+
+        if (parsedBill.Date is not null)
+        {
+            bill.Date = parsedBill.Date.Value;
+        }
+
+        if (parsedBill.TotalWithTips is not null)
+        {
+            bill.TotalWithTips = parsedBill.TotalWithTips.Value;
+        }
+        _debtContext.SaveChanges();
+
+        if (!parsedBill.Lines.IsNullOrEmpty())
+        {
+            addLines(bill.Id, parsedBill.Lines);
+        }
+
+        if (!parsedBill.Payments.IsNullOrEmpty())
+        {
+            addPayments(bill.Id, parsedBill.Payments);
+        }
+
+        _debtContext.SaveChanges();
+
+        transaction.Commit();
+
+        _ = Task.Run(() =>
+        {
+            _publishEndpoint.Publish(new EnsureBillParticipant(bill.Id, creator.Id));
+
+            bill.Lines.All(t => t.Participants.All(p =>
+            {
+                _publishEndpoint.Publish(new EnsureBillParticipant(bill.Id, p.UserId));
+                return true;
+            }));
+
+            bill.Payments.All(p =>
+            {
+                _publishEndpoint.Publish(new EnsureBillParticipant(bill.Id, p.UserId));
+                return true;
+            });
+        });
+
+        return bill.Id;
+    }
+
+    private void addPayments(Guid billId, List<BillPaymentImportModel> payments)
+    {
+        payments.ForEach(p => addPayment(billId, p));
+    }
+
+    private void addPayment(Guid billId, BillPaymentImportModel parsedPayment)
+    {
+        var payment = _debtContext.BillPayments.FirstOrDefault(q => q.BillId == billId && q.UserId == parsedPayment.UserId);
+
+        if (payment is null)
+        {
+            payment = new BillPayment()
+            {
+                BillId = billId,
+                UserId = parsedPayment.UserId
+            };
+            _debtContext.BillPayments.Add(payment);
+        }
+
+        if (parsedPayment.Amount is not null)
+        {
+            payment.Amount = parsedPayment.Amount.Value;
+        }
+
+        _debtContext.SaveChanges();
+    }
+
+    private void addLines(Guid billId, List<BillLineImportModel> parsedLines)
+    {
+        parsedLines.ForEach(l => addLine(billId, l));
+    }
+
+    private void addLine(Guid billId, BillLineImportModel parsedLine)
+    {
+        BillLine? billLine;
+        if (parsedLine.Id is not null)
+        {
+            billLine = _debtContext.BillLines.FirstOrDefault(q => q.Id == parsedLine.Id.Value)
+                   ?? throw new Exception("Bill not found");
+        }
+        else
+        {
+            billLine = new BillLine
+            {
+                BillId = billId
+            };
+            _debtContext.BillLines.Add(billLine);
+        }
+
+        if (parsedLine.ItemDescription is not null)
+        {
+            billLine.ItemDescription = parsedLine.ItemDescription;
+        }
+
+        if (parsedLine.Subtotal.HasValue)
+        {
+            billLine.Subtotal = parsedLine.Subtotal.Value;
+        }
+
+        _debtContext.SaveChanges();
+
+        // add participants
+        parsedLine.Participants.ForEach(q => addLineParticipant(billId, billLine.Id, q));
+    }
+
+    private void addLineParticipant(Guid billId, Guid billLineId, BillLineParticipantImportModel parsedParticipant)
+    {
+        var lineParticipant = _debtContext.BillLineParticipants.FirstOrDefault(q => q.BillLineId == billLineId && q.UserId == parsedParticipant.UserId);
+        if (lineParticipant is null)
+        {
+            lineParticipant = new BillLineParticipant()
+            {
+                BillLineId = billLineId,
+                UserId = parsedParticipant.UserId
+            };
+            _debtContext.BillLineParticipants.Add(lineParticipant);
+        }
+
+        if (parsedParticipant.Part is not null)
+        {
+            lineParticipant.Part = parsedParticipant.Part.Value;
+        }
+
+        _debtContext.SaveChanges();
     }
 }

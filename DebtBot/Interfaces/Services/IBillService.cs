@@ -13,6 +13,7 @@ public interface IBillService
     Guid Add(BillCreationModel billModel, Guid creatorId);
     Guid Add(string billString, Guid creatorId);
     Guid Add(BillParserModel parsedBill, UserSearchModel creator);
+    Guid Add(BillImportModel bill, UserModel creator);
     bool Finalize(Guid id);
     List<BillModel> GetCreatedByUser(Guid userId);
     bool HasAccess(Guid userId, BillModel? bill);

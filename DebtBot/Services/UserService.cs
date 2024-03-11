@@ -13,11 +13,13 @@ public class UserService : IUserService
 {
     private readonly DebtContext _debtContext;
     private readonly IMapper _mapper;
+    private readonly IUserContactService _userContactService;
 
-    public UserService(DebtContext db, IMapper mapper)
+    public UserService(DebtContext db, IMapper mapper, IUserContactService userContactService)
     {
         _debtContext = db;
         _mapper = mapper;
+        _userContactService = userContactService;
     }
 
     public IEnumerable<UserModel> GetUsers()
@@ -244,12 +246,24 @@ public class UserService : IUserService
             .ExecuteUpdate(q => q.SetProperty(p => p.TelegramBotEnabled, stateToSet));
     }
 
-    public UserModel AddUser(UserSearchModel model)
+    public UserModel FindOrAddUser(UserSearchModel model, UserModel? owner = null)
     {
+        var lineUser = FindUser(model, owner?.Id);
+        if (lineUser is not null)
+            return lineUser;
+
         var entity = _mapper.Map<User>(model);
         _debtContext.Users.Add(entity);
         _debtContext.SaveChanges();
 
-        return _mapper.Map<UserModel>(entity); 
+        lineUser = _mapper.Map<UserModel>(entity);
+
+        if (owner is not null)
+        {
+            _userContactService.AddContact(owner.Id, lineUser);
+            _userContactService.AddContact(lineUser.Id, owner);
+        }
+
+        return lineUser; 
     }
 }

@@ -16,5 +16,5 @@ public interface IUserService
     void ActualizeTelegramUser(long telegramId, string? userName, string firstName, string? lastName);
     UserModel? FindUser(UserSearchModel model, Guid? userId = null);
     void SetBotActiveState(Guid userId, bool stateToSet);
-    UserModel AddUser(UserSearchModel model);
+    UserModel FindOrAddUser(UserSearchModel model, UserModel? owner = null);
 }

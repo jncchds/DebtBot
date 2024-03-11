@@ -17,11 +17,13 @@ public class BillsController : DebtBotControllerBase
 {
 	private readonly IBillService _billService;
     private readonly IExcelService _excelService;
+    private readonly IUserService _userService;
 
-    public BillsController(IBillService billService, IExcelService excelService)
+    public BillsController(IBillService billService, IExcelService excelService, IUserService userService)
     {
         _billService = billService;
         _excelService = excelService;
+        _userService = userService;
     }
 
     [HttpGet("{id}")]
@@ -134,17 +136,29 @@ public class BillsController : DebtBotControllerBase
     }
 
     [AllowAnonymous]
-    [HttpPost("import")]
-    public IActionResult ImportFile(IFormFile file)
+    [HttpPost("import/{creatorTelegramUserName}")]
+    public IActionResult ImportFile(IFormFile file, string creatorTelegramUserName)
     {
         try
         {
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-            foreach (var bill in _excelService.Import(file.OpenReadStream()))
+            var importedUserDictionary = _excelService.ImportUsers(file.OpenReadStream());
+
+            var creator = _userService.FindOrAddUser(new UserSearchModel() { TelegramUserName = creatorTelegramUserName });
+
+            Dictionary<int, UserModel> userModels = [];
+            foreach (var userPair in importedUserDictionary)
+            {
+                var user = _userService.FindOrAddUser(userPair.Value, creator);
+                userModels.Add(userPair.Key, user);
+            }
+
+            var bills = _excelService.Import(file.OpenReadStream(), creator.Id, userModels);
+            foreach (var bill in bills)
             {
                 try
                 {
-                    var guid = _billService.Add(bill, new UserSearchModel() { TelegramUserName = "@jnc_chds" });
+                    var guid = _billService.Add(bill, creator);
                     if (!_billService.Finalize(guid))
                         Console.WriteLine($"Failed to finalize bill {guid}");
                 }

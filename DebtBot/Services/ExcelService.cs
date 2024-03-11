@@ -9,7 +9,31 @@ namespace DebtBot.Services;
 
 public class ExcelService : IExcelService
 {
-    public IEnumerable<BillParserModel> Import(Stream file)
+    public Dictionary<int, UserSearchModel> ImportUsers(Stream file)
+    {
+        using var package = new ExcelPackage(file);
+
+        var worksheet = package.Workbook.Worksheets[0];
+
+        int colCount = worksheet.Dimension.Columns;
+
+        Dictionary<int, UserSearchModel> users = [];
+
+        for(int col = 9; col <= colCount; col++)
+        {
+            if (String.IsNullOrEmpty(worksheet.Cells[1, col].Value?.ToString()))
+                continue;
+
+            users.Add(col, new UserSearchModel()
+            {
+                QueryString = worksheet.Cells[1, col].Value.ToString()!
+            });
+        }
+
+        return users;
+    }
+
+    public List<BillImportModel> Import(Stream file, Guid creator, Dictionary<int, UserModel> users)
     {
 
         using var package = new ExcelPackage(file);
@@ -18,6 +42,8 @@ public class ExcelService : IExcelService
 
         int rowCount = worksheet.Dimension.Rows;
         int colCount = worksheet.Dimension.Columns;
+
+        List<BillImportModel> bills = [];
 
         for (int row = 2; row <= rowCount; row++)
         {
@@ -42,7 +68,7 @@ public class ExcelService : IExcelService
                 }
             }
             
-            BillParserModel bill = new BillParserModel()
+            var bill = new BillImportModel()
             {
                 Date = date,
                 Description = worksheet.Cells[row, 2].Value.ToString(),
@@ -52,15 +78,15 @@ public class ExcelService : IExcelService
                 Lines = [],
                 Payments =
                 [
-                    new BillPaymentParserModel()
+                    new BillPaymentImportModel()
                     {
                         Amount = paidAmount,
-                        User = new UserSearchModel() { TelegramUserName = "@jnc_chds" }
+                        UserId = creator
                     }
                 ]
             };
 
-            var line = new BillLineParserModel()
+            var line = new BillLineImportModel()
             {
                 ItemDescription = bill.Description,
                 Subtotal = paidAmount,
@@ -74,12 +100,11 @@ public class ExcelService : IExcelService
                 if (String.IsNullOrEmpty(worksheet.Cells[row, col].Value?.ToString()))
                     continue;
 
-                string user = worksheet.Cells[1, col].Value.ToString()!;
                 decimal ratio = decimal.Parse(worksheet.Cells[row, col].Value.ToString()!);
 
-                line.Participants.Add(new BillLineParticipantParserModel()
+                line.Participants.Add(new BillLineParticipantImportModel()
                 {
-                    User = new Models.User.UserSearchModel() { DisplayName = user },
+                    UserId = users[col].Id,
                     Part = ratio
                 });
 
@@ -91,8 +116,10 @@ public class ExcelService : IExcelService
 
             bill.Lines.Add(line);
 
-            yield return bill;
+            bills.Add(bill);
         }
+
+        return bills;
     }
 
     private DateTime ParseDate(string value)
