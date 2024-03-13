@@ -159,7 +159,7 @@ public class BillsController : DebtBotControllerBase
                 try
                 {
                     var guid = _billService.Add(bill, creator);
-                    if (!_billService.Finalize(guid))
+                    if (!_billService.Finalize(guid, true))
                         Console.WriteLine($"Failed to finalize bill {guid}");
                 }
                 catch (Exception ex)

@@ -86,7 +86,9 @@ public class BillProcessor : IConsumer<BillFinalized>
             spentPaymentPerUserWithTips[payment.UserId] -= payment.Amount;
         }
 
-        var sponsorId = spentPaymentPerUserWithTips.MinBy(t => t.Value).Key;
+        var sponsorId = context.Message.forceSponsor ?
+            bill.CreatorId :
+            spentPaymentPerUserWithTips.MinBy(t => t.Value).Key;
         var sponsor = _debtContext.Users.First(t => t.Id == sponsorId);
         var records = new List<LedgerRecord>();
         foreach (var item in spentPaymentPerUserWithTips)

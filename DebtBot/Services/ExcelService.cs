@@ -67,6 +67,11 @@ public class ExcelService : IExcelService
                     throw new Exception($"{ex.Message} - {row}");
                 }
             }
+
+            if (paidAmount == 0.0m)
+            {
+                paidAmount = 1.0m;
+            }
             
             var bill = new BillImportModel()
             {
@@ -107,11 +112,21 @@ public class ExcelService : IExcelService
                     UserId = users[col].Id,
                     Part = ratio
                 });
+            }
 
-                if (line.Participants.Any(t => t.Part >= 1000000m))
+            if (line.Participants.Any(t => t.Part >= 1000000m))
+            {
+                line.Participants.ForEach(t => t.Part = t.Part / 10000.0m);
+            }
+
+            if (line.Participants.Sum(t => t.Part) == 0)
+            {
+                line.ItemDescription = "No participants";
+                line.Participants.Add(new BillLineParticipantImportModel()
                 {
-                    line.Participants.ForEach(t => t.Part = t.Part / 10000.0m);
-                }
+                    UserId = creator,
+                    Part = 1
+                });
             }
 
             bill.Lines.Add(line);
@@ -132,10 +147,10 @@ public class ExcelService : IExcelService
         {
             if (DateTime.TryParseExact(value, dateStringFormat,
                                        CultureInfo.InvariantCulture,
-                                       DateTimeStyles.AdjustToUniversal,
+                                       DateTimeStyles.AssumeLocal,
                                        out dateValue))
                 
-                return dateValue;
+                return dateValue.ToUniversalTime();
         }
 
         throw new Exception($"Format not detected - {value}");

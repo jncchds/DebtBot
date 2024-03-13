@@ -325,7 +325,7 @@ public class BillService : IBillService
         _debtContext.SaveChanges();
     }
 
-    public bool Finalize(Guid id)
+    public bool Finalize(Guid id, bool forceSponsor = false)
     {
         var bill = _debtContext.Bills.FirstOrDefault(q => q.Id == id);
         if (bill == null)
@@ -341,7 +341,7 @@ public class BillService : IBillService
         bill.Status = ProcessingState.Ready;
         _debtContext.SaveChanges();
 
-        _publishEndpoint.Publish(new BillFinalized(id));
+        _publishEndpoint.Publish(new BillFinalized(id, forceSponsor));
 
         return true;
     }
