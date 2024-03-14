@@ -11,9 +11,7 @@ public interface IBillService
     List<BillModel> Get();
     PagingResult<BillModel> GetForUser(Guid userId, int pageNumber = 0, int? countPerPage = null);
     Guid Add(BillCreationModel billModel, Guid creatorId);
-    Guid Add(string billString, Guid creatorId);
     Guid Add(BillParserModel parsedBill, UserSearchModel creator);
-    Guid Add(BillImportModel bill, UserModel creator);
     bool Finalize(Guid id, bool forceSponsor = false);
     List<BillModel> GetCreatedByUser(Guid userId);
     bool HasAccess(Guid userId, BillModel? bill);

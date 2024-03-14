@@ -4,6 +4,7 @@ using DebtBot.Identity;
 using DebtBot.Interfaces.Services;
 using DebtBot.Models.Bill;
 using DebtBot.Models.User;
+using DebtBot.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OfficeOpenXml;
@@ -18,12 +19,14 @@ public class BillsController : DebtBotControllerBase
 	private readonly IBillService _billService;
     private readonly IExcelService _excelService;
     private readonly IUserService _userService;
+    private readonly IParserService _parserService;
 
-    public BillsController(IBillService billService, IExcelService excelService, IUserService userService)
+    public BillsController(IBillService billService, IExcelService excelService, IUserService userService, IParserService parserService)
     {
         _billService = billService;
         _excelService = excelService;
         _userService = userService;
+        _parserService = parserService;
     }
 
     [HttpGet("{id}")]
@@ -110,7 +113,8 @@ public class BillsController : DebtBotControllerBase
         try
         {
             var message = Request.Body.ReadToEndAsync().Result;
-            var billGuid = _billService.Add(message, UserId!.Value);
+            var bill = _parserService.ParseBill(UserId!.Value, message);
+            var billGuid = _billService.Add(bill, new UserSearchModel { Id = UserId!.Value });
             
             if(!createDrafted)
             {
@@ -146,11 +150,11 @@ public class BillsController : DebtBotControllerBase
 
             var creator = _userService.FindOrAddUser(new UserSearchModel() { TelegramUserName = creatorTelegramUserName });
 
-            Dictionary<int, UserModel> userModels = [];
+            Dictionary<int, Guid> userModels = [];
             foreach (var userPair in importedUserDictionary)
             {
                 var user = _userService.FindOrAddUser(userPair.Value, creator);
-                userModels.Add(userPair.Key, user);
+                userModels.Add(userPair.Key, user.Id);
             }
 
             var bills = _excelService.Import(file.OpenReadStream(), creator.Id, userModels);
@@ -158,7 +162,7 @@ public class BillsController : DebtBotControllerBase
             {
                 try
                 {
-                    var guid = _billService.Add(bill, creator);
+                    var guid = _billService.Add(bill, new UserSearchModel { Id = creator.Id });
                     if (!_billService.Finalize(guid, true))
                         Console.WriteLine($"Failed to finalize bill {guid}");
                 }

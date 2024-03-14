@@ -33,7 +33,7 @@ public class ExcelService : IExcelService
         return users;
     }
 
-    public List<BillImportModel> Import(Stream file, Guid creator, Dictionary<int, UserModel> users)
+    public List<BillParserModel> Import(Stream file, Guid creator, Dictionary<int, Guid> users)
     {
 
         using var package = new ExcelPackage(file);
@@ -43,7 +43,7 @@ public class ExcelService : IExcelService
         int rowCount = worksheet.Dimension.Rows;
         int colCount = worksheet.Dimension.Columns;
 
-        List<BillImportModel> bills = [];
+        List<BillParserModel> bills = [];
 
         for (int row = 2; row <= rowCount; row++)
         {
@@ -73,7 +73,7 @@ public class ExcelService : IExcelService
                 paidAmount = 1.0m;
             }
             
-            var bill = new BillImportModel()
+            var bill = new BillParserModel()
             {
                 Date = date,
                 Description = worksheet.Cells[row, 2].Value.ToString(),
@@ -83,15 +83,15 @@ public class ExcelService : IExcelService
                 Lines = [],
                 Payments =
                 [
-                    new BillPaymentImportModel()
+                    new BillPaymentParserModel()
                     {
                         Amount = paidAmount,
-                        UserId = creator
+                        User = new UserSearchModel { Id = creator }
                     }
                 ]
             };
 
-            var line = new BillLineImportModel()
+            var line = new BillLineParserModel()
             {
                 ItemDescription = bill.Description,
                 Subtotal = paidAmount,
@@ -107,9 +107,9 @@ public class ExcelService : IExcelService
 
                 decimal ratio = decimal.Parse(worksheet.Cells[row, col].Value.ToString()!);
 
-                line.Participants.Add(new BillLineParticipantImportModel()
+                line.Participants.Add(new BillLineParticipantParserModel()
                 {
-                    UserId = users[col].Id,
+                    User = new UserSearchModel { Id = users[col] },
                     Part = ratio
                 });
             }
@@ -122,9 +122,9 @@ public class ExcelService : IExcelService
             if (line.Participants.Sum(t => t.Part) == 0)
             {
                 line.ItemDescription = "No participants";
-                line.Participants.Add(new BillLineParticipantImportModel()
+                line.Participants.Add(new BillLineParticipantParserModel()
                 {
-                    UserId = creator,
+                    User = new UserSearchModel { Id = creator },
                     Part = 1
                 });
             }
