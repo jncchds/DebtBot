@@ -4,6 +4,7 @@ using DebtBot.Identity;
 using DebtBot.Interfaces.Services;
 using DebtBot.Models.Bill;
 using DebtBot.Models.User;
+using DebtBot.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OfficeOpenXml;
@@ -17,11 +18,15 @@ public class BillsController : DebtBotControllerBase
 {
 	private readonly IBillService _billService;
     private readonly IExcelService _excelService;
+    private readonly IUserService _userService;
+    private readonly IParserService _parserService;
 
-    public BillsController(IBillService billService, IExcelService excelService)
+    public BillsController(IBillService billService, IExcelService excelService, IUserService userService, IParserService parserService)
     {
         _billService = billService;
         _excelService = excelService;
+        _userService = userService;
+        _parserService = parserService;
     }
 
     [HttpGet("{id}")]
@@ -108,7 +113,8 @@ public class BillsController : DebtBotControllerBase
         try
         {
             var message = Request.Body.ReadToEndAsync().Result;
-            var billGuid = _billService.Add(message, UserId!.Value);
+            var bill = _parserService.ParseBill(UserId!.Value, message);
+            var billGuid = _billService.Add(bill, new UserSearchModel { Id = UserId!.Value });
             
             if(!createDrafted)
             {
@@ -134,18 +140,30 @@ public class BillsController : DebtBotControllerBase
     }
 
     [AllowAnonymous]
-    [HttpPost("import")]
-    public IActionResult ImportFile(IFormFile file)
+    [HttpPost("import/{creatorTelegramUserName}")]
+    public IActionResult ImportFile(IFormFile file, string creatorTelegramUserName)
     {
         try
         {
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-            foreach (var bill in _excelService.Import(file.OpenReadStream()))
+            var importedUserDictionary = _excelService.ImportUsers(file.OpenReadStream());
+
+            var creator = _userService.FindOrAddUser(new UserSearchModel() { TelegramUserName = creatorTelegramUserName });
+
+            Dictionary<int, Guid> userModels = [];
+            foreach (var userPair in importedUserDictionary)
+            {
+                var user = _userService.FindOrAddUser(userPair.Value, creator);
+                userModels.Add(userPair.Key, user.Id);
+            }
+
+            var bills = _excelService.Import(file.OpenReadStream(), creator.Id, userModels);
+            foreach (var bill in bills)
             {
                 try
                 {
-                    var guid = _billService.Add(bill, new UserSearchModel() { TelegramUserName = "@jnc_chds" });
-                    if (!_billService.Finalize(guid))
+                    var guid = _billService.Add(bill, new UserSearchModel { Id = creator.Id });
+                    if (!_billService.Finalize(guid, true))
                         Console.WriteLine($"Failed to finalize bill {guid}");
                 }
                 catch (Exception ex)

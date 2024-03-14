@@ -21,24 +21,18 @@ public class BillService : IBillService
     private readonly DebtContext _debtContext;
     private readonly IMapper _mapper;
     private readonly IPublishEndpoint _publishEndpoint;
-    private readonly IParserService _parserService;
     private readonly IUserService _userService;
-    private readonly IUserContactService _userContactService;
 
     public BillService(
         DebtContext debtContext,
         IMapper mapper,
         IPublishEndpoint publishEndpoint,
-        IParserService parserService,
-        IUserService userService,
-        IUserContactService userContactService)
+        IUserService userService)
     {
         _debtContext = debtContext;
         _mapper = mapper;
         _publishEndpoint = publishEndpoint;
-        _parserService = parserService;
         _userService = userService;
-        _userContactService = userContactService;
     }
 
     public BillModel? Get(Guid id)
@@ -111,12 +105,6 @@ public class BillService : IBillService
         _debtContext.SaveChanges();
 
         return bill.Id;
-    }
-
-    public Guid Add(string billString, Guid creatorId)
-    {
-        BillCreationModel billModel = _parserService.ParseBill(creatorId, billString);
-        return Add(billModel, creatorId);
     }
 
     private void addLines(Guid billId, List<BillLineParserModel> parsedLines, UserModel creator)
@@ -209,14 +197,7 @@ public class BillService : IBillService
         {
             bill.TotalWithTips = parsedBill.TotalWithTips.Value;
         }
-
         _debtContext.SaveChanges();
-
-        transaction.Commit();
-
-        using var transaction2 = _debtContext.Database.BeginTransaction();
-
-        _publishEndpoint.Publish(new EnsureBillParticipant(bill.Id, creator.Id));
         
         if (!parsedBill.Lines.IsNullOrEmpty())
         {
@@ -230,7 +211,24 @@ public class BillService : IBillService
 
         _debtContext.SaveChanges();
 
-        transaction2.Commit();
+        transaction.Commit();
+
+        _ = Task.Run(() =>
+        {
+            _publishEndpoint.Publish(new EnsureBillParticipant(bill.Id, creator.Id));
+
+            bill.Lines.All(t => t.Participants.All(p =>
+            {
+                _publishEndpoint.Publish(new EnsureBillParticipant(bill.Id, p.UserId));
+                return true;
+            }));
+
+            bill.Payments.All(p =>
+            {
+                _publishEndpoint.Publish(new EnsureBillParticipant(bill.Id, p.UserId));
+                return true;
+            });
+        });
 
         return bill.Id;
     }
@@ -268,20 +266,9 @@ public class BillService : IBillService
         parsedLine.Participants.ForEach(q => addLineParticipant(billId, billLine.Id, q, creator));
     }
 
-    private UserModel dealWithUser(UserSearchModel model, UserModel creator)
-    {
-        var lineUser = _userService.AddUser(model);
-
-        _userContactService.AddContact(creator.Id, lineUser);
-        _userContactService.AddContact(lineUser.Id, creator);
-
-        return lineUser;
-    }
-
     private void addLineParticipant(Guid billId, Guid billLineId, BillLineParticipantParserModel parsedParticipant, UserModel creator)
     {
-        var lineUser = _userService.FindUser(parsedParticipant.User, creator.Id);
-        lineUser ??= dealWithUser(parsedParticipant.User, creator);
+        var lineUser = _userService.FindOrAddUser(parsedParticipant.User, creator);
 
         var lineParticipant = _debtContext.BillLineParticipants.FirstOrDefault(q => q.BillLineId == billLineId && q.UserId == lineUser.Id);
         if (lineParticipant is null)
@@ -300,14 +287,11 @@ public class BillService : IBillService
         }
 
         _debtContext.SaveChanges();
-
-        _publishEndpoint.Publish(new EnsureBillParticipant(billId, lineUser.Id));
     }
 
     private void addPayment(Guid billId, BillPaymentParserModel parsedPayment, UserModel creator)
     {
-        var paymentUser = _userService.FindUser(parsedPayment.User, creator.Id);
-        paymentUser ??= dealWithUser(parsedPayment.User, creator);
+        var paymentUser = _userService.FindOrAddUser(parsedPayment.User, creator);
 
         var payment = _debtContext.BillPayments.FirstOrDefault(q => q.BillId == billId && q.UserId == paymentUser.Id);
 
@@ -327,11 +311,9 @@ public class BillService : IBillService
         }
 
         _debtContext.SaveChanges();
-
-        _publishEndpoint.Publish(new EnsureBillParticipant(billId, paymentUser.Id));
     }
 
-    public bool Finalize(Guid id)
+    public bool Finalize(Guid id, bool forceSponsor = false)
     {
         var bill = _debtContext.Bills.FirstOrDefault(q => q.Id == id);
         if (bill == null)
@@ -347,7 +329,7 @@ public class BillService : IBillService
         bill.Status = ProcessingState.Ready;
         _debtContext.SaveChanges();
 
-        _publishEndpoint.Publish(new BillFinalized(id));
+        _publishEndpoint.Publish(new BillFinalized(id, forceSponsor));
 
         return true;
     }

@@ -9,7 +9,31 @@ namespace DebtBot.Services;
 
 public class ExcelService : IExcelService
 {
-    public IEnumerable<BillParserModel> Import(Stream file)
+    public Dictionary<int, UserSearchModel> ImportUsers(Stream file)
+    {
+        using var package = new ExcelPackage(file);
+
+        var worksheet = package.Workbook.Worksheets[0];
+
+        int colCount = worksheet.Dimension.Columns;
+
+        Dictionary<int, UserSearchModel> users = [];
+
+        for(int col = 9; col <= colCount; col++)
+        {
+            if (String.IsNullOrEmpty(worksheet.Cells[1, col].Value?.ToString()))
+                continue;
+
+            users.Add(col, new UserSearchModel()
+            {
+                QueryString = worksheet.Cells[1, col].Value.ToString()!
+            });
+        }
+
+        return users;
+    }
+
+    public List<BillParserModel> Import(Stream file, Guid creator, Dictionary<int, Guid> users)
     {
 
         using var package = new ExcelPackage(file);
@@ -18,6 +42,8 @@ public class ExcelService : IExcelService
 
         int rowCount = worksheet.Dimension.Rows;
         int colCount = worksheet.Dimension.Columns;
+
+        List<BillParserModel> bills = [];
 
         for (int row = 2; row <= rowCount; row++)
         {
@@ -41,8 +67,13 @@ public class ExcelService : IExcelService
                     throw new Exception($"{ex.Message} - {row}");
                 }
             }
+
+            if (paidAmount == 0.0m)
+            {
+                paidAmount = 1.0m;
+            }
             
-            BillParserModel bill = new BillParserModel()
+            var bill = new BillParserModel()
             {
                 Date = date,
                 Description = worksheet.Cells[row, 2].Value.ToString(),
@@ -55,7 +86,7 @@ public class ExcelService : IExcelService
                     new BillPaymentParserModel()
                     {
                         Amount = paidAmount,
-                        User = new UserSearchModel() { TelegramUserName = "@jnc_chds" }
+                        User = new UserSearchModel { Id = creator }
                     }
                 ]
             };
@@ -74,25 +105,36 @@ public class ExcelService : IExcelService
                 if (String.IsNullOrEmpty(worksheet.Cells[row, col].Value?.ToString()))
                     continue;
 
-                string user = worksheet.Cells[1, col].Value.ToString()!;
                 decimal ratio = decimal.Parse(worksheet.Cells[row, col].Value.ToString()!);
 
                 line.Participants.Add(new BillLineParticipantParserModel()
                 {
-                    User = new Models.User.UserSearchModel() { DisplayName = user },
+                    User = new UserSearchModel { Id = users[col] },
                     Part = ratio
                 });
+            }
 
-                if (line.Participants.Any(t => t.Part >= 1000000m))
+            if (line.Participants.Any(t => t.Part >= 1000000m))
+            {
+                line.Participants.ForEach(t => t.Part = t.Part / 10000.0m);
+            }
+
+            if (line.Participants.Sum(t => t.Part) == 0)
+            {
+                line.ItemDescription = "No participants";
+                line.Participants.Add(new BillLineParticipantParserModel()
                 {
-                    line.Participants.ForEach(t => t.Part = t.Part / 10000.0m);
-                }
+                    User = new UserSearchModel { Id = creator },
+                    Part = 1
+                });
             }
 
             bill.Lines.Add(line);
 
-            yield return bill;
+            bills.Add(bill);
         }
+
+        return bills;
     }
 
     private DateTime ParseDate(string value)
@@ -105,10 +147,10 @@ public class ExcelService : IExcelService
         {
             if (DateTime.TryParseExact(value, dateStringFormat,
                                        CultureInfo.InvariantCulture,
-                                       DateTimeStyles.AdjustToUniversal,
+                                       DateTimeStyles.AssumeLocal,
                                        out dateValue))
                 
-                return dateValue;
+                return dateValue.ToUniversalTime();
         }
 
         throw new Exception($"Format not detected - {value}");

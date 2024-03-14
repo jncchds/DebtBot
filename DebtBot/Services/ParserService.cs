@@ -13,17 +13,15 @@ namespace DebtBot.Services;
 public class ParserService : IParserService
 {
     private readonly DebtContext _debtContext;
-    private readonly IUserService _userService;
 
-    public ParserService(DebtContext debtContext, IUserService userService)
+    public ParserService(DebtContext debtContext)
     {
         _debtContext = debtContext;
-        _userService = userService;
     }
 
-    public BillCreationModel ParseBill(Guid creatorId, string billString)
+    public BillParserModel ParseBill(Guid creatorId, string billString)
     {
-        var billModel = new BillCreationModel()
+        var billModel = new BillParserModel()
         {
             Date = DateTime.UtcNow
         };
@@ -51,10 +49,10 @@ public class ParserService : IParserService
         var paymentsSection = sections[2].Split("\n");
         billModel.Payments = paymentsSection
             .Select(Extensions.Extensions.WhitespaceLocator)
-            .Select(q => new BillPaymentCreationModel
+            .Select(q => new BillPaymentParserModel
             {
                 Amount = decimal.Parse(q.val.Substring(0, q.index)),
-                UserId = DetectUser(creatorId, q.val.Substring(q.index + 1)) ?? Guid.Empty
+                User = new UserSearchModel { QueryString = q.val.Substring(q.index + 1) }
             })
             .ToList();
 
@@ -62,16 +60,16 @@ public class ParserService : IParserService
         var linesSections = sections.Skip(3);
         billModel.Lines = linesSections
             .Select(q => q.Split("\n"))
-            .Select(q => new BillLineCreationModel
+            .Select(q => new BillLineParserModel
             {
                 ItemDescription = q[0],
                 Subtotal = decimal.Parse(q[1]),
                 Participants = q.Skip(2)
                                 .Select(Extensions.Extensions.WhitespaceLocator)
-                                .Select(w => new BillLineParticipantCreationModel
+                                .Select(w => new BillLineParticipantParserModel
                                 {
                                     Part = decimal.Parse(w.val.Substring(0, w.index)),
-                                    UserId = DetectUser(creatorId, w.val.Substring(w.index + 1)) ?? Guid.Empty
+                                    User = new UserSearchModel { QueryString = w.val.Substring(w.index + 1) }
                                 })
                                 .ToList()
             })

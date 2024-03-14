@@ -3,5 +3,5 @@
 namespace DebtBot.Services;
 public interface IParserService
 {
-    BillCreationModel ParseBill(Guid creatorId, string billString);
+    BillParserModel ParseBill(Guid creatorId, string billString);
 }

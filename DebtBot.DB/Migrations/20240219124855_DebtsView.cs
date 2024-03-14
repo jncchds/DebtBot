@@ -21,7 +21,7 @@ from
         from
             ""LedgerRecords""
 
-        union
+        union all
 
         select ""DebtorUserId"" as ""CreditorUserId"", ""CreditorUserId"" as ""DebtorUserId"", ""Amount""*(-1) as ""Amount"", ""CurrencyCode""
         from
