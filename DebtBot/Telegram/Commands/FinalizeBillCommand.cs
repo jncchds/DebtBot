@@ -56,9 +56,9 @@ public class FinalizeBillCommand : ITelegramCommand, ITelegramCallbackQuery
         {
             if (!Guid.TryParse(trimmed, out billId))
             {
-                await botClient.SendTextMessageAsync(processedMessage.ChatId, $"Bill id not detected",
-                    cancellationToken: cancellationToken,
-                    parseMode: ParseMode.MarkdownV2);
+                await _publishEndpoint.Publish(new SendTelegramMessage(
+                    processedMessage.ChatId, 
+                    "Bill id not detected"));
                 return;
             }
         }
@@ -79,7 +79,7 @@ public class FinalizeBillCommand : ITelegramCommand, ITelegramCallbackQuery
         }
         else
         {
-            await botClient.SendTextMessageAsync(chatId, "There was an error finalizing the bill", cancellationToken: cancellationToken);
+            await _publishEndpoint.Publish(new SendTelegramMessage(chatId, "There was an error finalizing the bill"));
         }
     }
 

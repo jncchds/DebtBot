@@ -1,4 +1,6 @@
 ﻿using DebtBot.Interfaces.Telegram;
+using DebtBot.Messages;
+using MassTransit;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -8,31 +10,37 @@ namespace DebtBot.Telegram.Commands.Message;
 public class MenuCommand : ITelegramCommand
 {
     public const string CommandString = "/Menu";
+    private readonly IPublishEndpoint _publishEndpoint;
+
     public string CommandName => CommandString;
 
+    public MenuCommand(IPublishEndpoint publishEndpoint)
+    {
+        _publishEndpoint = publishEndpoint;
+    }
 
     public async Task ExecuteAsync(
         ProcessedMessage processedMessage, 
         ITelegramBotClient botClient,
         CancellationToken cancellationToken)
     {
-        await botClient.SendTextMessageAsync(
-            processedMessage.ChatId, 
-            $"<b>MENU</b>", 
-            cancellationToken: cancellationToken,
-            replyMarkup: new InlineKeyboardMarkup(new[]
-            {
-                new[]
-                {
-                    InlineKeyboardButton.WithCallbackData("Debts", DebtsCallbackQuery.CommandString),
+        var message = new SendTelegramMessage(
+            processedMessage.ChatId,
+            $"<b>MENU</b>",
+            InlineKeyboard:
+            [
+                new() {
+                    new("Debts", DebtsCallbackQuery.CommandString),
                 },
-                [
-                    InlineKeyboardButton.WithCallbackData("Spendings", SpendingsCallbackQuery.CommandString)
-                ],
-                [
-                    InlineKeyboardButton.WithCallbackData("Show bills", ShowBillsCommand.CommandString)
-                ]
-            }),
-            parseMode: ParseMode.Html);
+                new() {
+                    new("Spendings", SpendingsCallbackQuery.CommandString)
+                },
+                new() {
+                    new("Show bills", ShowBillsCommand.CommandString)
+                }
+            ]);
+
+        await _publishEndpoint.Publish(message);
+
     }
 }

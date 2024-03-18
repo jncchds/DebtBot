@@ -1,6 +1,8 @@
 ﻿using System.Text;
 using DebtBot.Interfaces.Services;
 using DebtBot.Interfaces.Telegram;
+using DebtBot.Messages;
+using MassTransit;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
 
@@ -9,10 +11,13 @@ namespace DebtBot.Telegram.Commands.Message;
 public class ShowBillLineCommand : ITelegramCommand
 {
     private readonly IBillService _billService;
+    private readonly IPublishEndpoint _publishEndpoint;
 
-    public ShowBillLineCommand(IBillService billService)
+    public ShowBillLineCommand(IBillService billService,
+        IPublishEndpoint publishEndpoint)
     {
         _billService = billService;
+        _publishEndpoint = publishEndpoint;
     }
 
     public const string CommandString = "/ShowBillLine";
@@ -24,7 +29,7 @@ public class ShowBillLineCommand : ITelegramCommand
         var billLineId = Guid.TryParse(processedMessage.ProcessedText, out var result) ? result : (Guid?)null;
         if (billLineId is null)
         {
-            await botClient.SendTextMessageAsync(processedMessage.ChatId, "Failed to parse bill line id", cancellationToken: cancellationToken);
+            await _publishEndpoint.Publish(new SendTelegramMessage(processedMessage.ChatId, "Failed to parse bill line id"));
             return;
         }
 
@@ -32,7 +37,7 @@ public class ShowBillLineCommand : ITelegramCommand
 
         if (billLine is null)
         {
-            await botClient.SendTextMessageAsync(processedMessage.ChatId, "Invalid bill line id", cancellationToken: cancellationToken);
+            await _publishEndpoint.Publish(new SendTelegramMessage(processedMessage.ChatId, "Invalid bill line id"));
             return;
         }
 
@@ -42,6 +47,6 @@ public class ShowBillLineCommand : ITelegramCommand
         sb.AppendLine($"<span class=\"tg-spoiler\">BillLine {billLine.Id}</span>");
         billLine.AppendToStringBuilder(sb, bill!.CurrencyCode);
 
-        await botClient.SendTextMessageAsync(processedMessage.ChatId, sb.ToString(), cancellationToken: cancellationToken, parseMode: ParseMode.Html);
+        await _publishEndpoint.Publish(new SendTelegramMessage(processedMessage.ChatId, sb.ToString()));
     }
 }

@@ -1,11 +1,14 @@
 ﻿using DebtBot.Extensions;
 using DebtBot.Interfaces.Services;
 using DebtBot.Interfaces.Telegram;
+using DebtBot.Messages;
 using DebtBot.Services;
+using MassTransit;
 using Microsoft.Extensions.Options;
 using System.Text;
 using Telegram.Bot;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace DebtBot.Telegram.Commands;
 
@@ -13,15 +16,18 @@ public class DebtsCallbackQuery : ITelegramCallbackQuery, ITelegramCommand
 {
     private readonly IDebtService _debtService;
     private readonly ITelegramService _telegramService;
+    private readonly IPublishEndpoint _publishEndpoint;
     private readonly TelegramConfiguration _telegramConfig;
 
     public DebtsCallbackQuery(
         IDebtService debtService,
         ITelegramService telegramService,
-        IOptions<DebtBotConfiguration> debtBotConfig)
+        IOptions<DebtBotConfiguration> debtBotConfig,
+        IPublishEndpoint publishEndpoint)
     {
         _debtService = debtService;
         _telegramService = telegramService;
+        _publishEndpoint = publishEndpoint;
         _telegramConfig = debtBotConfig.Value.Telegram;
     }
 
@@ -67,6 +73,11 @@ public class DebtsCallbackQuery : ITelegramCallbackQuery, ITelegramCommand
             sb.AppendLine(item.ToCreditorString());
         }
 
-        await botClient.SendOrUpdateTelegramMessage(chatId, messageId, sb.ToString(), [debts.ToInlineKeyboardButtons(CommandString)], cancellationToken);
+        await _publishEndpoint.Publish(
+            new SendTelegramMessage(
+                chatId, 
+                sb.ToString(), 
+                InlineKeyboard: [debts.ToInlineKeyboardButtons(CommandString)]
+            ));
     }
 }

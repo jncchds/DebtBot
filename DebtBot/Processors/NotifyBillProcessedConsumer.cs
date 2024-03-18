@@ -16,15 +16,18 @@ public class NotifyBillProcessedConsumer : IConsumer<NotifyBillProcessed>
 	private readonly DebtContext _debtContext;
 	private readonly ITelegramBotClient _telegramBotClient;
     private readonly IMapper _mapper;
+    private readonly IPublishEndpoint _publishEndpoint;
 
     public NotifyBillProcessedConsumer(
 		DebtContext debtContext, 
 		ITelegramBotClient telegramBotClient,
-		IMapper mapper)
+		IMapper mapper,
+		IPublishEndpoint publishEndpoint)
 	{
 		_debtContext = debtContext;
 		_telegramBotClient = telegramBotClient;
         _mapper = mapper;
+		_publishEndpoint = publishEndpoint;
     }
 
 	public Task Consume(ConsumeContext<NotifyBillProcessed> context)
@@ -74,15 +77,21 @@ public class NotifyBillProcessedConsumer : IConsumer<NotifyBillProcessed>
 			{
 				AppendDebt(sb, lr.CreditorUser.DisplayName, -lr.Amount, lr.CurrencyCode);
 			}
-			
-			_telegramBotClient.SendTextMessageAsync(
-				participant.User.TelegramId!,
-                sb.ToString(),
-                replyMarkup: new InlineKeyboardMarkup(InlineKeyboardButton.WithCallbackData(
-					"Show bill", 
-					ShowBillCommand.FormatCallbackData(bill.Id)
-					)
-				));
+
+			var message = new SendTelegramMessage(
+				participant.User.TelegramId!.Value,
+				sb.ToString(),
+				InlineKeyboard:
+                    [
+                        new() 
+						{
+							new("Show bill", ShowBillCommand.FormatCallbackData(bill.Id)) 
+						}
+					]
+				);
+
+
+            _publishEndpoint.Publish(message);
 		}
 
 		return Task.CompletedTask;
