@@ -14,4 +14,4 @@ public record SendTelegramMessage
     int? ReplyToMessageId = null,
     ParseMode ParseMode = ParseMode.Html,
     bool DisableNotification = false
-)
+);
