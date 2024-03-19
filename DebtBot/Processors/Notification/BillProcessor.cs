@@ -8,22 +8,22 @@ using Polly;
 
 namespace DebtBot.Processors.Notification;
 
-public class ShowBillProcessor : INotificationProcessorBase
+public class BillProcessor : INotificationProcessorBase
 {
     private readonly IBillService _billService;
     private readonly IPublishEndpoint _publishEndpoint;
 
-    public ShowBillProcessor(IBillService billService, IPublishEndpoint publishEndpoint)
+    public BillProcessor(IBillService billService, IPublishEndpoint publishEndpoint)
     {
         _billService = billService;
         _publishEndpoint = publishEndpoint;
     }
 
-    public NotificationType NotificationType => NotificationType.ShowBill;
+    public NotificationType NotificationType => NotificationType.Bill;
 
-    public async Task Process(SendNotificationBaseMessage message)
+    public async Task Process(SendNotificationBase message)
     {
-        var showBillMessage = (SendShowBillNotificationMessage)message;
+        var showBillMessage = (SendBillNotification)message;
 
         var bill = _billService.Get(showBillMessage.BillId);
 

@@ -3,7 +3,7 @@ using MassTransit;
 
 namespace DebtBot.Processors.Notification;
 
-public class SendNotificationConsumer : IConsumer<SendNotificationBaseMessage>
+public class SendNotificationConsumer : IConsumer<SendNotificationBase>
 {
     private readonly IEnumerable<Notification.INotificationProcessorBase> _notificationProcessors;
 
@@ -12,7 +12,7 @@ public class SendNotificationConsumer : IConsumer<SendNotificationBaseMessage>
         _notificationProcessors = notificationProcessors;
     }
 
-    public Task Consume(ConsumeContext<SendNotificationBaseMessage> context)
+    public Task Consume(ConsumeContext<SendNotificationBase> context)
     {
         var message = context.Message;
         

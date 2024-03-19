@@ -123,6 +123,6 @@ public class BillProcessor : IConsumer<BillFinalized>
         bill.Status = ProcessingState.Processed;
         await _debtContext.SaveChangesAsync();
 
-        await _publishEndpoint.Publish(new SendBillProcessedNotificationMessage() { BillId = bill.Id });
+        await _publishEndpoint.Publish(new SendBillProcessedNotification() { BillId = bill.Id });
     }
 }

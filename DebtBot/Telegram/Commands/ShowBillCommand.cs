@@ -28,7 +28,7 @@ public class ShowBillCommand : ITelegramCommand, ITelegramCallbackQuery
             return;
         }
 
-        await _publishEndpoint.Publish(new SendShowBillNotificationMessage() { BillId = billId, ChatId = query.Message!.Chat.Id });
+        await _publishEndpoint.Publish(new SendBillNotification() { BillId = billId, ChatId = query.Message!.Chat.Id });
 
         await botClient.AnswerCallbackQueryAsync(query.Id, null, cancellationToken: cancellationToken);
     }
@@ -42,7 +42,7 @@ public class ShowBillCommand : ITelegramCommand, ITelegramCallbackQuery
             return;
         }
 
-        await _publishEndpoint.Publish(new SendShowBillNotificationMessage() { BillId = billId.Value, ChatId = processedMessage.ChatId });
+        await _publishEndpoint.Publish(new SendBillNotification() { BillId = billId.Value, ChatId = processedMessage.ChatId });
     }
 
     public static string FormatCallbackData(Guid billId)

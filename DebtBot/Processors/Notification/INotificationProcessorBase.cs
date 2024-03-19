@@ -6,5 +6,5 @@ public interface INotificationProcessorBase
 {
     NotificationType NotificationType { get; }
 
-    Task Process(SendNotificationBaseMessage message);
+    Task Process(SendNotificationBase message);
 }

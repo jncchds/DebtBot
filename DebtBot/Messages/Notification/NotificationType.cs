@@ -4,5 +4,5 @@ public enum NotificationType : byte
 {
     None = 0,
     BillProcessed = 1,
-    ShowBill = 2
+    Bill = 2
 }

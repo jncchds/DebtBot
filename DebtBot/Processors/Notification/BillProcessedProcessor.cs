@@ -31,9 +31,9 @@ public class BillProcessedNotificationProcessor : INotificationProcessorBase
 
     public NotificationType NotificationType => NotificationType.BillProcessed;
 
-    public Task Process(SendNotificationBaseMessage message)
+    public Task Process(SendNotificationBase message)
     {
-        var billMessage = (SendBillProcessedNotificationMessage)message;
+        var billMessage = (SendBillProcessedNotification)message;
 
         var bill = _debtContext
             .Bills

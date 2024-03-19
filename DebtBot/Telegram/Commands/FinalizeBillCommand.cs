@@ -75,7 +75,7 @@ public class FinalizeBillCommand : ITelegramCommand, ITelegramCallbackQuery
         var ok = _billService.Finalize(billId);
         if (ok)
         {
-            await _publishEndpoint.Publish(new SendShowBillNotificationMessage() { BillId = billId, ChatId = chatId });
+            await _publishEndpoint.Publish(new SendBillNotification() { BillId = billId, ChatId = chatId });
         }
         else
         {
