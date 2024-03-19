@@ -26,22 +26,21 @@ public class SendBillMessageConsumer : IConsumer<SendBillMessage>
 
         if (bill is null)
         {
-            await _botClient.SendTextMessageAsync(context.Message.ChatId, "Invalid bill id");
+            await context.Publish(new SendTelegramMessage(
+                context.Message.ChatId, 
+                "Invalid bill id"));
             return;
         }
 
-        var markupList = new List<InlineKeyboardButton>();
+        var markup = new List<InlineButtonRecord>();
         if (bill!.Status == ProcessingState.Draft)
         {
-            markupList.Add(InlineKeyboardButton.WithCallbackData("Finalize", FinalizeBillCommand.FormatCallbackData(context.Message.BillId)));
+            markup.Add(new ("Finalize", FinalizeBillCommand.FormatCallbackData(context.Message.BillId)));
         }
 
-        var markup = markupList.IsNullOrEmpty() ? null : new InlineKeyboardMarkup(markupList);
-
-        await _botClient.SendTextMessageAsync(
-            context.Message.ChatId,
-            bill!.ToString(),
-            replyMarkup: markup,
-            parseMode: ParseMode.Html);
+        await context.Publish(new SendTelegramMessage(
+            context.Message.ChatId, 
+            bill!.ToString(), 
+            InlineKeyboard: [ markup ]));
     }
 }

@@ -15,6 +15,7 @@ using System.Text;
 using Telegram.Bot;
 using DebtBot.Telegram;
 using DebtBot.Interfaces.Telegram;
+using DebtBot.Processors;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +33,8 @@ builder.Services.AddScoped<IExcelService, ExcelService>();
 builder.Services.AddScoped<UpdateHandler>();
 builder.Services.AddScoped<ReceiverService>();
 builder.Services.AddHostedService<PollingService>();
+
+builder.Services.AddSingleton<RateLimittingProcessor>();
 
 
 builder.Services.Scan(q => q

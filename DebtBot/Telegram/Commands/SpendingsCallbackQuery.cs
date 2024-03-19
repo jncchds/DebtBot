@@ -1,7 +1,9 @@
 ﻿using DebtBot.Extensions;
 using DebtBot.Interfaces.Services;
 using DebtBot.Interfaces.Telegram;
+using DebtBot.Messages;
 using DebtBot.Services;
+using MassTransit;
 using Microsoft.Extensions.Options;
 using System.Text;
 using Telegram.Bot;
@@ -14,15 +16,18 @@ public class SpendingsCallbackQuery : ITelegramCallbackQuery, ITelegramCommand
 {
     private readonly ITelegramService _telegramService;
     private readonly IBudgetService _budgetService;
+    private readonly IPublishEndpoint _publishEndpoint;
     private readonly TelegramConfiguration _telegramConfig;
 
     public SpendingsCallbackQuery(
         ITelegramService telegramService,
         IBudgetService budgetService,
-        IOptions<DebtBotConfiguration> debtBotConfig)
+        IOptions<DebtBotConfiguration> debtBotConfig,
+        IPublishEndpoint publishEndpoint)
     {
         _telegramService = telegramService;
         _budgetService = budgetService;
+        _publishEndpoint = publishEndpoint;
         _telegramConfig = debtBotConfig.Value.Telegram;
     }
 
@@ -75,6 +80,11 @@ public class SpendingsCallbackQuery : ITelegramCallbackQuery, ITelegramCommand
             buttons.Add(InlineKeyboardButton.WithCallbackData(i.ToString(), ShowBillCommand.FormatCallbackData(spending.BillId)));
         }
 
-        await botClient.SendOrUpdateTelegramMessage(chatId, messageId, sb.ToString(), [buttons, spendingsPage.ToInlineKeyboardButtons(CommandString)], cancellationToken);
+        await _publishEndpoint.Publish(            
+            new SendTelegramMessage(
+                chatId,
+                sb.ToString(),
+                InlineKeyboard: [spendingsPage.ToInlineKeyboardButtons(CommandString)]
+                ));
     }
 }

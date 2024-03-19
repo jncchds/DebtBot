@@ -1,4 +1,5 @@
 using AutoMapper;
+using DebtBot.Messages;
 using DebtBot.Models;
 using DebtBot.Telegram.Commands.CallbackQueries;
 using System.Text;
@@ -26,19 +27,19 @@ namespace DebtBot.Extensions
             return new PagingResult<T>(countPerPage ?? count, pageNumber, count, items);
         }
 
-        public static List<InlineKeyboardButton> ToInlineKeyboardButtons<T>(this PagingResult<T> pagingResults, string commandName)
+        public static List<InlineButtonRecord> ToInlineKeyboardButtons<T>(this PagingResult<T> pagingResults, string commandName)
         {
-            var buttons = new List<InlineKeyboardButton>
+            var buttons = new List<InlineButtonRecord>
             {
                 pagingResults.IsFirstPage
-                ? InlineKeyboardButton.WithCallbackData(" ", IgnoreCallbackQuery.CommandString)
-                : InlineKeyboardButton.WithCallbackData("<", $"{commandName} {pagingResults.PageNumber - 1}"),
+                ? new(" ", IgnoreCallbackQuery.CommandString)
+                : new("<", $"{commandName} {pagingResults.PageNumber - 1}"),
 
-                InlineKeyboardButton.WithCallbackData($"{pagingResults.PageNumber + 1}/{pagingResults.LastPageNumber + 1}", IgnoreCallbackQuery.CommandString),
+                new($"{pagingResults.PageNumber + 1}/{pagingResults.LastPageNumber + 1}", IgnoreCallbackQuery.CommandString),
 
                 pagingResults.IsLastPage
-                ? InlineKeyboardButton.WithCallbackData(" ", IgnoreCallbackQuery.CommandString)
-                : InlineKeyboardButton.WithCallbackData(">", $"{commandName} {pagingResults.PageNumber + 1}")
+                ? new(" ", IgnoreCallbackQuery.CommandString)
+                : new(">", $"{commandName} {pagingResults.PageNumber + 1}")
             };
 
             return buttons;

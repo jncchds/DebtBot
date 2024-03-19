@@ -1,4 +1,5 @@
 ﻿using DebtBot.Interfaces.Telegram;
+using DebtBot.Messages;
 using DebtBot.Services;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
@@ -15,19 +16,22 @@ public class UpdateHandler : IUpdateHandler
     private readonly IEnumerable<ITelegramCommand> _commands;
     private readonly IEnumerable<ITelegramCallbackQuery> _callbackQueries;
     private readonly ITelegramService _telegramService;
+    private readonly MassTransit.IPublishEndpoint _publishEndpoint;
 
     public UpdateHandler(
         ITelegramBotClient botClient,
         ILogger<UpdateHandler> logger,
         IEnumerable<ITelegramCommand> commands,
         IEnumerable<ITelegramCallbackQuery> callbackQueries, 
-        ITelegramService telegramService)
+        ITelegramService telegramService,
+        MassTransit.IPublishEndpoint publishEndpoint)
     {
         _botClient = botClient;
         _logger = logger;
         _commands = commands;
         _callbackQueries = callbackQueries;
         _telegramService = telegramService;
+        _publishEndpoint = publishEndpoint;
     }
     public async Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
     {
@@ -102,7 +106,7 @@ public class UpdateHandler : IUpdateHandler
     {
         if (message.Chat.Type == ChatType.Channel)
         {
-            await _botClient.SendTextMessageAsync(message.Chat.Id, $"Hello! Currently channels are not supported", cancellationToken: cancellationToken);
+            await _publishEndpoint.Publish(new SendTelegramMessage(message.Chat.Id, $"Hello! Currently channels are not supported"));
             return;
         }
 

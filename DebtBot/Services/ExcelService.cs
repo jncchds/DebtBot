@@ -68,15 +68,18 @@ public class ExcelService : IExcelService
                 }
             }
 
+            var description = worksheet.Cells[row, 2].Value.ToString();
+
             if (paidAmount == 0.0m)
             {
                 paidAmount = 1.0m;
+                description = $"No amount - {description}";
             }
             
             var bill = new BillParserModel()
             {
                 Date = date,
-                Description = worksheet.Cells[row, 2].Value.ToString(),
+                Description = description,
                 CurrencyCode = worksheet.Cells[row, 3].Value.ToString()?.ToUpper() ?? "UAH",
                 PaymentCurrencyCode = worksheet.Cells[row, 3].Value.ToString()?.ToUpper() ?? "UAH",
                 TotalWithTips = paidAmount,
