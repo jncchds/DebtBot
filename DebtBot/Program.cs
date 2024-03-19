@@ -3,7 +3,11 @@ using DebtBot.Crutch;
 using DebtBot.DB;
 using DebtBot.Identity;
 using DebtBot.Interfaces.Services;
+using DebtBot.Interfaces.Telegram;
+using DebtBot.Processors;
+using DebtBot.Processors.Notification;
 using DebtBot.Services;
+using DebtBot.Telegram;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -13,9 +17,6 @@ using Microsoft.OpenApi.Models;
 using System.Reflection;
 using System.Text;
 using Telegram.Bot;
-using DebtBot.Telegram;
-using DebtBot.Interfaces.Telegram;
-using DebtBot.Processors;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,11 +37,10 @@ builder.Services.AddHostedService<PollingService>();
 
 builder.Services.AddSingleton<RateLimittingProcessor>();
 
-
 builder.Services.Scan(q => q
     .FromCallingAssembly()
     .AddClasses(c =>
-        c.AssignableToAny([typeof(ITelegramCommand), typeof(ITelegramCallbackQuery)]))
+        c.AssignableToAny([typeof(ITelegramCommand), typeof(ITelegramCallbackQuery), typeof(INotificationProcessorBase)]))
     .AsSelfWithInterfaces()
     .WithScopedLifetime());
 

@@ -4,6 +4,7 @@ using DebtBot.Models.Enums;
 using DebtBot.Messages;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
+using DebtBot.Messages.Notification;
 
 namespace DebtBot.Processors;
 
@@ -122,6 +123,6 @@ public class BillProcessor : IConsumer<BillFinalized>
         bill.Status = ProcessingState.Processed;
         await _debtContext.SaveChangesAsync();
 
-        await _publishEndpoint.Publish(new NotifyBillProcessed(billId));
+        await _publishEndpoint.Publish(new SendBillProcessedNotificationMessage() { BillId = bill.Id });
     }
 }
