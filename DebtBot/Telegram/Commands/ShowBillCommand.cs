@@ -1,5 +1,6 @@
 ﻿using DebtBot.Interfaces.Telegram;
 using DebtBot.Messages;
+using DebtBot.Messages.Notification;
 using MassTransit;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -27,7 +28,7 @@ public class ShowBillCommand : ITelegramCommand, ITelegramCallbackQuery
             return;
         }
 
-        await _publishEndpoint.Publish(new SendBillMessage(billId, query.Message!.Chat.Id));
+        await _publishEndpoint.Publish(new SendBillNotification() { BillId = billId, ChatId = query.Message!.Chat.Id });
 
         await botClient.AnswerCallbackQueryAsync(query.Id, null, cancellationToken: cancellationToken);
     }
@@ -41,7 +42,7 @@ public class ShowBillCommand : ITelegramCommand, ITelegramCallbackQuery
             return;
         }
 
-        await _publishEndpoint.Publish(new SendBillMessage(billId.Value, processedMessage.ChatId));
+        await _publishEndpoint.Publish(new SendBillNotification() { BillId = billId.Value, ChatId = processedMessage.ChatId });
     }
 
     public static string FormatCallbackData(Guid billId)

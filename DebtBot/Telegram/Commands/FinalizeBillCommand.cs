@@ -1,11 +1,11 @@
 ﻿using DebtBot.Interfaces.Services;
 using DebtBot.Interfaces.Telegram;
 using DebtBot.Messages;
+using DebtBot.Messages.Notification;
 using DebtBot.Models.Enums;
 using MassTransit;
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
 
 namespace DebtBot.Telegram.Commands;
 
@@ -75,7 +75,7 @@ public class FinalizeBillCommand : ITelegramCommand, ITelegramCallbackQuery
         var ok = _billService.Finalize(billId);
         if (ok)
         {
-            await _publishEndpoint.Publish(new SendBillMessage(billId, chatId));
+            await _publishEndpoint.Publish(new SendBillNotification() { BillId = billId, ChatId = chatId });
         }
         else
         {
