@@ -29,6 +29,8 @@ public class User
     public virtual ICollection<LedgerRecord> DebtorLedgerRecords { get; set; }
     [InverseProperty(nameof(Spending.User))]
     public virtual ICollection<Spending> Spendings { get; set; }
+    [InverseProperty(nameof(NotificationSubscription.User))]
+    public virtual ICollection<NotificationSubscription> Subscriptions { get; set; }
 
     [Timestamp]
     public byte[] ModifiedAt { get; set; }

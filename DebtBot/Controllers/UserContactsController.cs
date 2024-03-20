@@ -67,4 +67,40 @@ public class UserContactsController : DebtBotControllerBase
 
         return Ok();
     }
+
+    [Authorize]
+    [HttpPost("subscription/request")]
+    public IActionResult RequestSubscription(Guid contactId)
+    {
+        _userContactService.RequestSubscription(UserId!.Value, contactId);
+
+        return Ok();
+    }
+
+    [Authorize(IdentityData.AdminUserPolicyName)]
+    [HttpPost("subscription/add")]
+    public IActionResult AddSubscription(Guid userId, Guid contactId)
+    {
+        _userContactService.RequestSubscription(userId, contactId, true);
+
+        return Ok();
+    }
+
+    [Authorize]
+    [HttpPost("subscription/confirm")]
+    public IActionResult ConfirmSubscription(Guid contactId)
+    {
+        _userContactService.ConfirmSubscription(UserId!.Value, contactId);
+
+        return Ok();
+    }
+
+    [Authorize]
+    [HttpPost("subscription/decline")]
+    public IActionResult DeclineSubscription(Guid contactId)
+    {
+        _userContactService.DeclineSubscription(UserId!.Value, contactId);
+
+        return Ok();
+    }
 }

@@ -16,6 +16,7 @@ public class DebtContext : DbContext
     public DbSet<UserContactLink> UserContactsLinks { get; set; }
     public DbSet<Spending> Spendings { get; set; }
     public DbSet<BillParticipant> BillParticipants { get; set; }
+    public DbSet<NotificationSubscription> NotificationSubscriptions { get; set; }
 
     public DebtContext(DbContextOptions<DebtContext> options) : base(options)
     {
