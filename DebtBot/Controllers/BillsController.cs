@@ -72,8 +72,9 @@ public class BillsController : DebtBotControllerBase
     ///		Description (multiple rows, no empty lines)
     ///		
     ///		Total with tips in bill currency
-    ///		Currency Code (3 letters)
-    ///		Payment currency code (3 letters) [optional]
+    ///		Bill currency Code (3 letters)
+    ///		Payment currency code (3 letters) [optional], default - bill currency
+    ///		Charge currency code (3 letters) [optional], default - payment currency
     ///		
     ///		[Payments:]
     ///		Amount1 User1

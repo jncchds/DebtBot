@@ -183,6 +183,11 @@ public class BillService : IBillService
             bill.PaymentCurrencyCode = parsedBill.PaymentCurrencyCode;
         }
 
+        if (parsedBill.ChargeInPaymentCurrency is not null)
+        {
+            bill.ChargeInPaymentCurrency = parsedBill.ChargeInPaymentCurrency.Value;
+        }
+
         if (parsedBill.Description is not null)
         {
             bill.Description = parsedBill.Description;
