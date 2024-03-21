@@ -11,6 +11,8 @@ public class Bill
     public Guid CreatorId { get; set; }
     public string CurrencyCode { get; set; }
     public string PaymentCurrencyCode { get; set; }
+    public bool ChargeInPaymentCurrency { get; set; }
+
     [Column(TypeName = "decimal(10, 4)")]
     public decimal TotalWithTips { get; set; }
     public string Description { get; set; }

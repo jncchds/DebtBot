@@ -170,14 +170,14 @@ public class TelegramService : ITelegramService
 
         billModel.TotalWithTips = decimal.Parse(summarySection[0]);
         billModel.CurrencyCode = summarySection[1];
-        if (summarySection.Length > 2)
-        {
-            billModel.PaymentCurrencyCode = summarySection[2];
-        }
-        else
-        {
-            billModel.PaymentCurrencyCode = billModel.CurrencyCode;
-        }
+         
+        billModel.PaymentCurrencyCode = summarySection.Length < 3 ? billModel.CurrencyCode : summarySection[2];
+        
+        billModel.ChargeInPaymentCurrency = summarySection.Length < 4 
+                                            || string.Equals(
+                                                summarySection[3], 
+                                                billModel.CurrencyCode,
+                                                StringComparison.InvariantCultureIgnoreCase);
 
         // payments
         if (sections.Length > 2)

@@ -7,6 +7,7 @@ public class BillParserModel
 	public Guid? Id { get; set; }
 	public string? CurrencyCode { get; set; }
 	public string? PaymentCurrencyCode { get; set; }
+	public bool? ChargeInPaymentCurrency { get; set; }
 	public string? Description { get; set; }
 	public DateTime? Date { get; set; }
 	public decimal? TotalWithTips { get; set; }

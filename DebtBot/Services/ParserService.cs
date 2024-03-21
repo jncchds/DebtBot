@@ -1,12 +1,7 @@
 ﻿using DebtBot.DB;
 using DebtBot.Models.Bill;
-using DebtBot.Models.BillLine;
-using DebtBot.Models.BillLineParticipant;
-using DebtBot.Models;
 using Microsoft.EntityFrameworkCore;
 using DebtBot.Models.User;
-using System.Text.RegularExpressions;
-using DebtBot.Interfaces.Services;
 
 namespace DebtBot.Services;
 
@@ -21,7 +16,7 @@ public class ParserService : IParserService
 
     public BillParserModel ParseBill(Guid creatorId, string billString)
     {
-        var billModel = new BillParserModel()
+        var billModel = new BillParserModel
         {
             Date = DateTime.UtcNow
         };
@@ -36,14 +31,14 @@ public class ParserService : IParserService
 
         billModel.TotalWithTips = decimal.Parse(summarySection[0]);
         billModel.CurrencyCode = summarySection[1];
-        if (summarySection.Length > 2)
-        {
-            billModel.PaymentCurrencyCode = summarySection[2];
-        }
-        else
-        {
-            billModel.PaymentCurrencyCode = billModel.CurrencyCode;
-        }
+         
+        billModel.PaymentCurrencyCode = summarySection.Length < 3 ? billModel.CurrencyCode : summarySection[2];
+        
+        billModel.ChargeInPaymentCurrency = summarySection.Length < 4 
+                                            || string.Equals(
+                                                 summarySection[3], 
+                                                 billModel.CurrencyCode,
+                                                 StringComparison.InvariantCultureIgnoreCase);
 
         // payments
         var paymentsSection = sections[2].Split("\n");

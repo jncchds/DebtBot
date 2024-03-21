@@ -11,6 +11,7 @@ public class BillModel
     public UserDisplayModel Creator { get; set; }
     public string CurrencyCode { get; set; }
     public string PaymentCurrencyCode { get; set; }
+    public bool ChargeInPaymentCurrency { get; set; }
     public string Description { get; set; }
     public DateTime Date { get; set; }
     public ProcessingState Status { get; set; }
@@ -42,6 +43,7 @@ public class BillModel
         sb.AppendLine($"<b>Total with tips:</b> {TotalWithTips:0.##} {CurrencyCode}");
         sb.AppendLine($"<b>Tips:</b> {(tipAdjustment - 1m) * 100.0m:0.##}%");
         sb.AppendLine($"<b>Paid:</b> {(Payments?.Sum(t => t.Amount) ?? 0.0m):0.##} {PaymentCurrencyCode}");
+        sb.AppendLine($"<b>Charged in:</b> {(ChargeInPaymentCurrency ? PaymentCurrencyCode : CurrencyCode)}");
 
         if ((Payments ?? []).Count != 0)
         {
