@@ -7,9 +7,9 @@ services:
       - '8080:8080'
     environment:
       - ASPNETCORE_HTTP_PORTS=8080
-      # You can specify one of these or both:  
+      # You can specify both of these or just one of them, deleting the other:  
       - DEFAULT_USER_TELEGRAM_ID=123456789
-      - DEFAULT_USER_TELEGRAM_USERNAME=telegram_username 
+      - DEFAULT_USER_TELEGRAM_USERNAME=@telegram_username 
     depends_on:
       - db
       - rabbit

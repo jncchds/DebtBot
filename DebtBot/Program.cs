@@ -186,6 +186,7 @@ static void CreateDefaultUser(IServiceProvider services)
 
         if (firstAdmin != null)
         {
+            Console.WriteLine("Admin user already exists, skipping default user creation");
             return;
         }
 

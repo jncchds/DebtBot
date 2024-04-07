@@ -1,6 +1,7 @@
 ﻿using DebtBot.Interfaces.Services;
 using DebtBot.Interfaces.Telegram;
 using DebtBot.Messages;
+using DebtBot.Models.User;
 using DebtBot.Services;
 using MassTransit;
 using Telegram.Bot;
@@ -24,7 +25,16 @@ public class BearerCommand : ITelegramCommand
 
     public async Task ExecuteAsync(ProcessedMessage processedMessage, ITelegramBotClient botClient, CancellationToken cancellationToken)
     {
-        var user = _userService.FindUser(new Models.User.UserSearchModel { TelegramId = processedMessage.FromId });
+        UserModel? user;
+        if (processedMessage.UserSearchModels.Count > 0)
+        {
+            user = _userService.FindUser(processedMessage.UserSearchModels.First());
+        }
+        else
+        {
+            user = _userService.FindUser(new Models.User.UserSearchModel { TelegramId = processedMessage.FromId });
+        }
+
         if (user == null)
         {
             await _publishEndpoint.Publish(new SendTelegramMessage(processedMessage.ChatId, "User not found"));
