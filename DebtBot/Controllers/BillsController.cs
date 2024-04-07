@@ -139,7 +139,7 @@ public class BillsController : DebtBotControllerBase
         return Ok();
     }
 
-    [AllowAnonymous]
+    [Authorize(IdentityData.AdminUserPolicyName)]
     [HttpPost("import/{creatorTelegramUserName}")]
     public IActionResult ImportFile(IFormFile file, string creatorTelegramUserName)
     {

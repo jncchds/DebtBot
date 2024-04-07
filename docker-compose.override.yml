@@ -1,9 +1,14 @@
 version: '3.4'
 
 services:
+
   debtbot:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+    build:
+      context: .
+      dockerfile: DebtBot/Dockerfile
+
   db:
     ports:
       - '5432:5432'

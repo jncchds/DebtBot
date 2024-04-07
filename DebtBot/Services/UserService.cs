@@ -2,10 +2,16 @@
 using AutoMapper.QueryableExtensions;
 using DebtBot.DB;
 using DebtBot.DB.Entities;
+using DebtBot.Identity;
 using DebtBot.Interfaces.Services;
 using DebtBot.Models.Enums;
 using DebtBot.Models.User;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace DebtBot.Services;
 
@@ -14,12 +20,14 @@ public class UserService : IUserService
     private readonly DebtContext _debtContext;
     private readonly IMapper _mapper;
     private readonly IUserContactService _userContactService;
+    private readonly JwtConfiguration _jwtConfig;
 
-    public UserService(DebtContext db, IMapper mapper, IUserContactService userContactService)
+    public UserService(DebtContext db, IMapper mapper, IUserContactService userContactService, IOptions<DebtBotConfiguration> debtBotConfig)
     {
         _debtContext = db;
         _mapper = mapper;
         _userContactService = userContactService;
+        _jwtConfig = debtBotConfig.Value.JwtConfiguration;
     }
 
     public IEnumerable<UserModel> GetUsers()
@@ -265,5 +273,31 @@ public class UserService : IUserService
         }
 
         return lineUser; 
+    }
+
+    public string GenerateJwtToken(UserModel userModel)
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, userModel.Id.ToString()),
+            new Claim(ClaimTypes.Name, userModel.DisplayName),
+        };
+
+        if (userModel.Role == UserRole.Admin)
+        {
+            claims.Add(new Claim(IdentityData.AdminUserClaimName, "true"));
+        }
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtConfig.Key));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var token = new JwtSecurityToken(
+            _jwtConfig.Issuer,
+            _jwtConfig.Audience,
+            claims,
+            expires: DateTime.Now.AddMinutes(_jwtConfig.LifeTime),
+            signingCredentials: creds);
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }

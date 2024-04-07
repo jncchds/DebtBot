@@ -4,6 +4,7 @@ using DebtBot.DB;
 using DebtBot.Identity;
 using DebtBot.Interfaces.Services;
 using DebtBot.Interfaces.Telegram;
+using DebtBot.Models.Enums;
 using DebtBot.Processors;
 using DebtBot.Processors.Notification;
 using DebtBot.Services;
@@ -106,17 +107,17 @@ builder.Services.AddSwaggerGen(c =>
     });
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
-                    {
-                        new OpenApiSecurityScheme
-                        {
-                            Reference = new OpenApiReference
-                            {
-                                Type = ReferenceType.SecurityScheme,
-                                Id = "Bearer"
-                            }
-                        },
-                        Array.Empty<string>()
-                    }
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
     });
 
     //c.OperationFilter<SecurityRequirementsOperationFilter>();
@@ -159,32 +160,9 @@ var app = builder.Build();
 
 var debtBotConfig = app.Services.GetRequiredService<IOptions<DebtBotConfiguration>>().Value;
 
-// Migrate database
-for (int i = 0; i < debtBotConfig.Migration.RetryCount; i++)
-{
-    try
-    {
-        using (var scope = app.Services.CreateScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<DebtContext>();
-            db.Database.Migrate();
-            break;
-        }
-    }
-    catch (Exception ex)
-    {
-        if (i < debtBotConfig.Migration.RetryCount)
-        {
-            Console.WriteLine($"Error migrating database: {ex.Message}");
-            Console.WriteLine("Retrying...");
-            Thread.Sleep(debtBotConfig.Migration.RetryDelay);
-        }
-        else
-        {
-            throw;
-        }
-    }
-}
+ApplyDatabaseMigrations(app.Services, debtBotConfig);
+
+CreateDefaultUser(app.Services);
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -198,3 +176,81 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+static void CreateDefaultUser(IServiceProvider services)
+{
+    using (var scope = services.CreateScope())
+    {
+        var userService = scope.ServiceProvider.GetRequiredService<IUserService>();
+        var firstAdmin = userService.GetFirstAdmin();
+
+        if (firstAdmin != null)
+        {
+            return;
+        }
+
+        string? defaultTelegramIdVar = Environment.GetEnvironmentVariable("DEFAULT_USER_TELEGRAM_ID");
+        long? defaultTelegramId = null;
+        string? defaultTelegramUserName = Environment.GetEnvironmentVariable("DEFAULT_USER_TELEGRAM_USERNAME");
+
+        if (!string.IsNullOrWhiteSpace(defaultTelegramIdVar))
+        {
+            if (!long.TryParse(defaultTelegramIdVar, out var id))
+            {
+                throw new Exception($"Invalid telegram id {defaultTelegramIdVar}");
+            }
+
+            defaultTelegramId = id;
+        }
+
+        if (string.IsNullOrWhiteSpace(defaultTelegramUserName) && defaultTelegramId == null)
+        {
+            throw new Exception("No admins found and no default user provided, please fill in DEFAULT_USER_TELEGRAM_ID and/or DEFAULT_USER_TELEGRAM_USERNAME");
+        }
+
+        Console.WriteLine("Creating default user");
+
+        var user = userService.FindOrAddUser(new DebtBot.Models.User.UserSearchModel
+        {
+            TelegramId = defaultTelegramId,
+            TelegramUserName = defaultTelegramUserName
+        });
+        if (user == null)
+        {
+            throw new Exception("Failed to create default user");
+        }
+        if (!userService.SetRole(user.Id, UserRole.Admin))
+        {
+            throw new Exception("Failed to set Admin role to default user");
+        }
+    }
+}
+
+static void ApplyDatabaseMigrations(IServiceProvider services, DebtBotConfiguration debtBotConfig)
+{
+    for (int i = 0; i < debtBotConfig.Migration.RetryCount; i++)
+    {
+        try
+        {
+            using (var scope = services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<DebtContext>();
+                db.Database.Migrate();
+                break;
+            }
+        }
+        catch (Exception ex)
+        {
+            if (i < debtBotConfig.Migration.RetryCount)
+            {
+                Console.WriteLine($"Error migrating database: {ex.Message}");
+                Console.WriteLine("Retrying...");
+                Thread.Sleep(debtBotConfig.Migration.RetryDelay);
+            }
+            else
+            {
+                throw;
+            }
+        }
+    }
+}
