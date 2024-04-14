@@ -34,7 +34,7 @@ public class DebtsCallbackQuery : ITelegramCallbackQuery, ITelegramCommand
     public const string CommandString = "/Debts";
     public string CommandName => CommandString;
 
-    public async Task ExecuteAsync(
+    public async Task<string?> ExecuteAsync(
         CallbackQuery query,
         ITelegramBotClient botClient,
         CancellationToken cancellationToken)
@@ -51,7 +51,7 @@ public class DebtsCallbackQuery : ITelegramCallbackQuery, ITelegramCommand
 
         await ShowDebts(query.From.Id, query.Message!.Chat.Id, botClient, pageNumber, countPerPage, messageId, cancellationToken);
 
-        await botClient.AnswerCallbackQueryAsync(query.Id, cancellationToken: cancellationToken);
+        return null;
     }
 
     public async Task ExecuteAsync(ProcessedMessage processedMessage, ITelegramBotClient botClient, CancellationToken cancellationToken)

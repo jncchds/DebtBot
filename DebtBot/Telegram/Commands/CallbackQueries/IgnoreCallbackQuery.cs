@@ -9,8 +9,8 @@ public class IgnoreCallbackQuery : ITelegramCallbackQuery
     public const string CommandString = "/Ignore";
     public string CommandName => CommandString;
 
-    public async Task ExecuteAsync(CallbackQuery query, ITelegramBotClient botClient, CancellationToken cancellationToken)
+    public async Task<string?> ExecuteAsync(CallbackQuery query, ITelegramBotClient botClient, CancellationToken cancellationToken)
     {
-        await botClient.AnswerCallbackQueryAsync(query.Id, cancellationToken: cancellationToken);
+        return null;
     }
 }

@@ -19,18 +19,17 @@ public class ShowBillCommand : ITelegramCommand, ITelegramCallbackQuery
         _publishEndpoint = publishEndpoint;
     }
 
-    public async Task ExecuteAsync(CallbackQuery query, ITelegramBotClient botClient, CancellationToken cancellationToken)
+    public async Task<string?> ExecuteAsync(CallbackQuery query, ITelegramBotClient botClient, CancellationToken cancellationToken)
     {
         var guidString = query.Data!.Split(" ").Skip(1).FirstOrDefault();
         if (!Guid.TryParse(guidString, out var billId))
         {
-            await botClient.AnswerCallbackQueryAsync(query.Id, "bill guid not detected", cancellationToken: cancellationToken);
-            return;
+            return "bill guid not detected";
         }
 
         await _publishEndpoint.Publish(new SendBillNotification() { BillId = billId, ChatId = query.Message!.Chat.Id });
 
-        await botClient.AnswerCallbackQueryAsync(query.Id, null, cancellationToken: cancellationToken);
+        return null;
     }
 
     public async Task ExecuteAsync(ProcessedMessage processedMessage, ITelegramBotClient botClient, CancellationToken cancellationToken)

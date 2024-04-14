@@ -23,7 +23,7 @@ public class FinalizeBillCommand : ITelegramCommand, ITelegramCallbackQuery
         _publishEndpoint = publishEndpoint;
     }
 
-    public async Task ExecuteAsync(
+    public async Task<string?> ExecuteAsync(
         CallbackQuery query, 
         ITelegramBotClient botClient, 
         CancellationToken cancellationToken)
@@ -32,12 +32,12 @@ public class FinalizeBillCommand : ITelegramCommand, ITelegramCallbackQuery
         Guid billId;
         if (!Guid.TryParse(guidString, out billId))
         {
-            await botClient.AnswerCallbackQueryAsync(query.Id, "bill guid not detected", cancellationToken: cancellationToken);
-            return;
+            return "bill guid not detected";
         }
 
         await FinalizeAsync(billId, query.Message!.Chat.Id, botClient, cancellationToken);
-        await botClient.AnswerCallbackQueryAsync(query.Id, null, cancellationToken: cancellationToken);
+
+        return null;
     }
 
     public async Task ExecuteAsync(

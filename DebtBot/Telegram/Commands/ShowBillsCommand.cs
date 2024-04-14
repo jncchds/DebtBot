@@ -34,7 +34,7 @@ public class ShowBillsCommand: ITelegramCommand, ITelegramCallbackQuery
 		_publishEndpoint = publishEndpoint;
 	}
 
-	public async Task ExecuteAsync(
+	public async Task<string?> ExecuteAsync(
 		CallbackQuery query,
 		ITelegramBotClient botClient,
 		CancellationToken cancellationToken)
@@ -52,14 +52,14 @@ public class ShowBillsCommand: ITelegramCommand, ITelegramCallbackQuery
 		var telegramId = query.From.Id;
 		var chatId = query.Message!.Chat.Id;
 			
-		await ShowBills(telegramId, chatId, botClient, pageNumber, countPerPage, messageId, cancellationToken);
+		var ret = await ShowBills(telegramId, chatId, botClient, pageNumber, countPerPage, messageId, cancellationToken);
 
-		await botClient.AnswerCallbackQueryAsync(query.Id, cancellationToken: cancellationToken);
+		return ret;
 	}
 
 	public async Task ExecuteAsync(ProcessedMessage processedMessage, ITelegramBotClient botClient, CancellationToken cancellationToken)
 	{
-		await ShowBills(
+		var ret = await ShowBills(
 			processedMessage.FromId, 
 			processedMessage.ChatId, 
 			botClient,
@@ -67,16 +67,20 @@ public class ShowBillsCommand: ITelegramCommand, ITelegramCallbackQuery
 			_telegramConfig.CountPerPage,
 			null,
 			cancellationToken);
+
+		if (!string.IsNullOrWhiteSpace(ret))
+		{
+			await _publishEndpoint.Publish(new SendTelegramMessage(processedMessage.ChatId, ret));
+        }
 	}
 
-	private async Task ShowBills(long telegramId, long chatId, ITelegramBotClient botClient,
+	private async Task<string?> ShowBills(long telegramId, long chatId, ITelegramBotClient botClient,
 		int pageNumber, int? countPerPage, int? messageId, CancellationToken cancellationToken)
     {
         var userId = _telegramService.GetUserByTelegramId(telegramId);
         if (userId is null)
         {
-			await _publishEndpoint.Publish(new SendTelegramMessage(chatId, "User not detected"));
-            return;
+			return "User not detected";
         }
 
         var billsPage = _billService.GetForUser(userId.Value, pageNumber, countPerPage);
@@ -94,5 +98,7 @@ public class ShowBillsCommand: ITelegramCommand, ITelegramCallbackQuery
 		});
 
 		await _publishEndpoint.Publish(new SendTelegramMessage(chatId, sb.ToString(), [ buttons, billsPage.ToInlineKeyboardButtons(CommandString)], MessageId: messageId));
+
+		return null;
     }
 }

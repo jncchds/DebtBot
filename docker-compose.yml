@@ -10,6 +10,11 @@ services:
       # You can specify both of these or just one of them, deleting the other:  
       - DEFAULT_USER_TELEGRAM_ID=123456789
       - DEFAULT_USER_TELEGRAM_USERNAME=@telegram_username 
+      - DebtBot_Logging__LogLevel__Default=
+      - DebtBot_DebtBot__Telegram__BotToken=
+      - DebtBot_DebtBot__Telegram__LogBotToken=
+      - DebtBot_DebtBot__Telegram__LogChatId=
+      - DebtBot_DebtBot__Telegram__LogLevel__Default=
     depends_on:
       - db
       - rabbit
