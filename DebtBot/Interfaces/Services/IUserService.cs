@@ -17,4 +17,5 @@ public interface IUserService
     UserModel? FindUser(UserSearchModel model, Guid? userId = null);
     void SetBotActiveState(Guid userId, bool stateToSet);
     UserModel FindOrAddUser(UserSearchModel model, UserModel? owner = null);
+    string GenerateJwtToken(UserModel userModel);
 }

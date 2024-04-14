@@ -94,7 +94,8 @@ public class UpdateHandler : IUpdateHandler
         
         if (callback != null)
         {
-            await callback.ExecuteAsync(callbackQuery, _botClient, cancellationToken);
+            string? ret = await callback.ExecuteAsync(callbackQuery, _botClient, cancellationToken);
+            await _botClient.AnswerCallbackQueryAsync(callbackQuery.Id, ret, cancellationToken: cancellationToken);
         }
         else
         {

@@ -72,6 +72,46 @@ public class UserContactService : IUserContactService
         _debtContext.SaveChanges();
     }
 
+    public void RequestSubscription(Guid userId, Guid contactId, bool forceSubscribe = false)
+    {
+        var subscription = _debtContext.NotificationSubscriptions.FirstOrDefault(t => t.UserId == contactId && t.SubscriberId == userId);
+        if (subscription == null)
+        {
+            subscription = new NotificationSubscription()
+            {
+                UserId = contactId,
+                SubscriberId = userId,
+                IsConfirmed = forceSubscribe
+            };
+
+            _debtContext.NotificationSubscriptions.Add(subscription);
+
+            _debtContext.SaveChanges();
+        }
+    }
+
+    public void ConfirmSubscription(Guid userId, Guid contactId)
+    {
+        var subscription = _debtContext.NotificationSubscriptions.FirstOrDefault(t => t.UserId == userId && t.SubscriberId == contactId);
+        if (subscription != null)
+        {
+            subscription.IsConfirmed = true;
+
+            _debtContext.SaveChanges();
+        }
+    }
+
+    public void DeclineSubscription(Guid userId, Guid contactId)
+    {
+        var subscription = _debtContext.NotificationSubscriptions.FirstOrDefault(t => t.UserId == userId && t.SubscriberId == contactId);
+        if (subscription != null)
+        {
+            _debtContext.NotificationSubscriptions.Remove(subscription);
+
+            _debtContext.SaveChanges();
+        }
+    }
+
     private User? FindUser(User user)
     {
         return _debtContext.Users.FirstOrDefault(t =>

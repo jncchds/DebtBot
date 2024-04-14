@@ -18,12 +18,10 @@ namespace DebtBot.Controllers;
 public class IdentityController : ControllerBase
 {
     private readonly IUserService _userService;
-    private readonly JwtConfiguration _jwtConfig;
 
     public IdentityController(IOptions<DebtBotConfiguration> debtBotConfig, IUserService userService)
     {
         _userService = userService;
-        _jwtConfig = debtBotConfig.Value.JwtConfiguration;
     }
 
     [HttpGet("{id}")]
@@ -46,31 +44,7 @@ public class IdentityController : ControllerBase
 
     private IActionResult GenerateUserJwt(UserModel userModel)
     {
-        var claims = new List<Claim>
-        {
-            new Claim(ClaimTypes.NameIdentifier, userModel.Id.ToString()),
-            new Claim(ClaimTypes.Name, userModel.DisplayName),
-        };
-
-        if (userModel.Role == UserRole.Admin)
-        {
-            claims.Add( new Claim(IdentityData.AdminUserClaimName, "true") );
-        }
-
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtConfig.Key));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-        var token = new JwtSecurityToken(
-            _jwtConfig.Issuer,
-            _jwtConfig.Audience,
-            claims,
-            expires: DateTime.Now.AddMinutes(_jwtConfig.LifeTime),
-            signingCredentials: creds);
-
-        return Ok(new
-        {
-            token = new JwtSecurityTokenHandler().WriteToken(token)
-        });
+        return Ok(_userService.GenerateJwtToken(userModel));
     }
 }
 

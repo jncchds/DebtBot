@@ -10,6 +10,7 @@ public class ProcessedMessage
 	public string? BotCommand { get; set; }
 	public long ChatId { get; set; }
 	public long FromId { get; set; }
+
     internal ObjectType? ObjectType;
     internal Guid? ObjectId;
 }

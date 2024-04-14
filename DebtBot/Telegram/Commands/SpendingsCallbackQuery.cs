@@ -34,7 +34,7 @@ public class SpendingsCallbackQuery : ITelegramCallbackQuery, ITelegramCommand
     public const string CommandString = "/Spendings";
     public string CommandName => CommandString;
 
-    public async Task ExecuteAsync(
+    public async Task<string?> ExecuteAsync(
         CallbackQuery query,
         ITelegramBotClient botClient,
         CancellationToken cancellationToken)
@@ -51,7 +51,7 @@ public class SpendingsCallbackQuery : ITelegramCallbackQuery, ITelegramCommand
 
         await ShowSpendings(query.From.Id, query.Message!.Chat.Id, botClient, pageNumber, countPerPage, messageId, cancellationToken);
 
-        await botClient.AnswerCallbackQueryAsync(query.Id, cancellationToken: cancellationToken);
+        return null;
     }
 
     public async Task ExecuteAsync(ProcessedMessage processedMessage, ITelegramBotClient botClient, CancellationToken cancellationToken)

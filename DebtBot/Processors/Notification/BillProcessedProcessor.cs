@@ -39,6 +39,8 @@ public class BillProcessedNotificationProcessor : INotificationProcessorBase
             .Bills
             .Include(q => q.BillParticipants)
             .ThenInclude(p => p.User)
+            .ThenInclude(u => u.Subscriptions)
+            .ThenInclude(s => s.Subscriber)
             .Include(b => b.Spendings)
             .Include(b => b.LedgerRecords)
             .ThenInclude(lr => lr.CreditorUser)
@@ -52,31 +54,42 @@ public class BillProcessedNotificationProcessor : INotificationProcessorBase
         }
 
         // send message to send notification
-        foreach (var participant in bill.BillParticipants.Where(p => p.User.TelegramBotEnabled))
+        foreach (var participant in bill.BillParticipants)
         {
-            SendNotification(bill, participant);
+            SendNotification(bill, participant, participant.User);
+
+            foreach(var subscription in participant.User.Subscriptions)
+            {
+                if (!subscription.IsConfirmed)
+                    continue;
+
+                SendNotification(bill, participant, subscription.Subscriber);
+            }
         }
 
         return Task.CompletedTask;
     }
 
-    private void AppendDebt(StringBuilder sb, string otheruserDisplayName, decimal amount, string currencyCode)
+    private void AppendDebt(StringBuilder sb, string userDisplayName, string otheruserDisplayName, decimal amount, string currencyCode)
     {
         if (amount > 0)
         {
-            sb.AppendLine($"{otheruserDisplayName} owes you extra {amount:0.##} {currencyCode}");
+            sb.AppendLine($"{otheruserDisplayName} owes {userDisplayName} extra {amount:0.##} {currencyCode}");
         }
         else
         {
-            sb.AppendLine($"You owe {otheruserDisplayName} extra {-amount:0.##} {currencyCode}");
+            sb.AppendLine($"{userDisplayName} owes {otheruserDisplayName} extra {-amount:0.##} {currencyCode}");
         }
     }
 
-    public void SendNotification(Bill bill, BillParticipant participant)
+    public void SendNotification(Bill bill, BillParticipant participant, User user)
     {
+        if (!user.TelegramBotEnabled)
+            return;
+
         var sb = new StringBuilder();
 
-        sb.AppendLine("You participated in Bill");
+        sb.AppendLine($"{participant.User.DisplayName} participated in Bill");
         sb.AppendLine($"{bill.Description}");
         sb.AppendLine();
 
@@ -93,16 +106,16 @@ public class BillProcessedNotificationProcessor : INotificationProcessorBase
 
         foreach (var lr in bill.LedgerRecords.Where(r => r.CreditorUserId == participant.UserId))
         {
-            AppendDebt(sb, lr.DebtorUser.DisplayName, lr.Amount, lr.CurrencyCode);
+            AppendDebt(sb, participant.User.DisplayName, lr.DebtorUser.DisplayName, lr.Amount, lr.CurrencyCode);
         }
         sb.AppendLine();
         foreach (var lr in bill.LedgerRecords.Where(r => r.DebtorUserId == participant.UserId))
         {
-            AppendDebt(sb, lr.CreditorUser.DisplayName, -lr.Amount, lr.CurrencyCode);
+            AppendDebt(sb, participant.User.DisplayName, lr.CreditorUser.DisplayName, -lr.Amount, lr.CurrencyCode);
         }
 
         var telegramMessage = new SendTelegramMessage(
-            participant.User.TelegramId!.Value,
+            user.TelegramId!.Value,
             sb.ToString(),
             InlineKeyboard:
                 [
@@ -112,7 +125,6 @@ public class BillProcessedNotificationProcessor : INotificationProcessorBase
                     }
                 ]
             );
-
 
         _publishEndpoint.Publish(telegramMessage);
     }
