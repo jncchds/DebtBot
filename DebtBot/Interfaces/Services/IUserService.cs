@@ -9,7 +9,7 @@ public interface IUserService
     void DeleteUser(Guid id);
     UserModel? GetUserById(Guid id);
     IEnumerable<UserModel> GetUsers();
-    void UpdateUser(UserModel user);
+    void UpdateUser(Guid id, UserCreationModel user);
     bool SetRole(Guid id, UserRole role);
     UserModel? GetFirstAdmin();
     UserModel CreateAdmin();

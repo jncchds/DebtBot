@@ -51,10 +51,34 @@ public class UserService : IUserService
         return _mapper.Map<UserModel>(entity);
     }
 
-    public void UpdateUser(UserModel user)
+    public void UpdateUser(Guid id, UserCreationModel user)
     {
-        var entity = _mapper.Map<User>(user);
-        _debtContext.Users.Update(entity);
+        var entity = _debtContext.Users.FirstOrDefault(u => u.Id == id);
+        if (entity is null)
+        {
+            return;
+        }
+        if (user.TelegramId != null)
+        {
+            entity.TelegramId = user.TelegramId.Value;
+        }
+        if (user.TelegramUserName != null)
+        {
+            entity.TelegramUserName = user.TelegramUserName;
+        }
+        if (user.DisplayName != null)
+        {
+            entity.DisplayName = user.DisplayName;
+        }
+        if (user.Email != null)
+        {
+            entity.Email = user.Email;
+        }
+        if (user.Phone != null)
+        {
+            entity.Phone = user.Phone;
+        }
+
         _debtContext.SaveChanges();
     }
 

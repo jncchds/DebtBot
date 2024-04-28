@@ -57,10 +57,10 @@ public class UsersController : DebtBotControllerBase
         return Ok();
     }
 
-    [HttpPut()]
-    public ActionResult Put(UserModel user)
+    [HttpPut("{id}")]
+    public ActionResult Put(Guid id, UserCreationModel user)
     {
-        _userService.UpdateUser(user);
+        _userService.UpdateUser(id, user);
 
         return Ok();
     }
