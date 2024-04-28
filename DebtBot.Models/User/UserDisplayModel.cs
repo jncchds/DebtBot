@@ -11,14 +11,16 @@ public class UserDisplayModel
 
     public override string ToString()
     {
-        var name = string.IsNullOrEmpty(TelegramUserName) ? DisplayName : $"{TelegramUserName} ({DisplayName})";
+        var name = string.Equals(TelegramUserName, DisplayName, StringComparison.InvariantCultureIgnoreCase)
+            ? DisplayName
+            : $"{TelegramUserName} ({DisplayName})";
 
         if (!String.IsNullOrEmpty(TelegramUserName))
-            return $"{TelegramUserName}";
+            return $"{name}";
 
         if (TelegramId is not null)
-            return $"<a href=\"tg://user?id={TelegramId})\">{name}</a>";
+            return $"<a href=\"tg://user?id={TelegramId}\")>{DisplayName}</a>";
 
-        return name;
+        return DisplayName;
     }
 }

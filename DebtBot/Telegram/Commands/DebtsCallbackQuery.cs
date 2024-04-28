@@ -70,7 +70,7 @@ public class DebtsCallbackQuery : ITelegramCallbackQuery, ITelegramCommand
         sb.AppendLine();
         foreach (var item in debts.Items)
         {
-            sb.AppendLine(item.ToCreditorString());
+            sb.AppendLine(item.ToString());
         }
 
         await _publishEndpoint.Publish(

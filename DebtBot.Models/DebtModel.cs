@@ -11,11 +11,8 @@ public class DebtModel
 
     public override string ToString()
     {
-        return $"{DebtorUser} owes {CreditorUser} {Amount} {CurrencyCode}";
-    }
-
-    public string ToCreditorString()
-    {
-        return $"{DebtorUser} owes you {Amount:0.##} {CurrencyCode}";
+        return (Amount < 0) ?
+            $"{CreditorUser} owes {DebtorUser} {Amount:0.##} {CurrencyCode}" :
+            $"{DebtorUser} owes {CreditorUser} {Amount:0.##} {CurrencyCode}";
     }
 }
