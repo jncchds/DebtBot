@@ -169,10 +169,10 @@ public class TelegramService : ITelegramService
         var summarySection = sections[1].Split("\n");
 
         billModel.TotalWithTips = decimal.Parse(summarySection[0]);
-        billModel.CurrencyCode = summarySection[1];
+        billModel.CurrencyCode = summarySection[1]?.ToUpper();
         if (summarySection.Length > 2)
         {
-            billModel.PaymentCurrencyCode = summarySection[2];
+            billModel.PaymentCurrencyCode = summarySection[2]?.ToUpper();
         }
         else
         {
