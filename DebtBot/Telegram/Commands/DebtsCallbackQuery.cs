@@ -77,7 +77,8 @@ public class DebtsCallbackQuery : ITelegramCallbackQuery, ITelegramCommand
             new SendTelegramMessage(
                 chatId, 
                 sb.ToString(), 
-                InlineKeyboard: [debts.ToInlineKeyboardButtons(CommandString)]
+                InlineKeyboard: [debts.ToInlineKeyboardButtons(CommandString)],
+                MessageId: messageId
             ));
     }
 }
