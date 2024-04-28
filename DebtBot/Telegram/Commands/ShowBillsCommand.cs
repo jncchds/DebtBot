@@ -90,11 +90,12 @@ public class ShowBillsCommand: ITelegramCommand, ITelegramCallbackQuery
 		var sb = new StringBuilder();
 		sb.AppendLine("<b>Bills:</b>");
 		sb.AppendLine();
-		int i = pageNumber * (countPerPage ?? 0);
+		int i = billsPage.TotalCount - pageNumber * (countPerPage ?? 0);
 		billsPage.Items.ForEach(q =>
 		{
-			sb.AppendLine($"<b>{++i}.</b> {q.Date} by {q.Creator}\n{q.Description}\n");
+			sb.AppendLine($"<b>{i}.</b> {q.Date} by {q.Creator}\n{q.Description}\n");
 			buttons.Add(new(i.ToString(), ShowBillCommand.FormatCallbackData(q.Id)));
+			i--;
 		});
 
 		await _publishEndpoint.Publish(new SendTelegramMessage(chatId, sb.ToString(), [ buttons, billsPage.ToInlineKeyboardButtons(CommandString)], MessageId: messageId));

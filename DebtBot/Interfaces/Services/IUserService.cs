@@ -9,9 +9,10 @@ public interface IUserService
     void DeleteUser(Guid id);
     UserModel? GetUserById(Guid id);
     IEnumerable<UserModel> GetUsers();
-    void UpdateUser(UserModel user);
+    void UpdateUser(Guid id, UserCreationModel user);
     bool SetRole(Guid id, UserRole role);
-    public UserModel GetFirstAdmin();
+    UserModel? GetFirstAdmin();
+    UserModel CreateAdmin();
     void MergeUsers(Guid oldUserId, Guid newUserId);
     void ActualizeTelegramUser(long telegramId, string? userName, string firstName, string? lastName);
     UserModel? FindUser(UserSearchModel model, Guid? userId = null);

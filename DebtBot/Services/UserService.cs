@@ -51,10 +51,34 @@ public class UserService : IUserService
         return _mapper.Map<UserModel>(entity);
     }
 
-    public void UpdateUser(UserModel user)
+    public void UpdateUser(Guid id, UserCreationModel user)
     {
-        var entity = _mapper.Map<User>(user);
-        _debtContext.Users.Update(entity);
+        var entity = _debtContext.Users.FirstOrDefault(u => u.Id == id);
+        if (entity is null)
+        {
+            return;
+        }
+        if (user.TelegramId != null)
+        {
+            entity.TelegramId = user.TelegramId.Value;
+        }
+        if (user.TelegramUserName != null)
+        {
+            entity.TelegramUserName = user.TelegramUserName;
+        }
+        if (user.DisplayName != null)
+        {
+            entity.DisplayName = user.DisplayName;
+        }
+        if (user.Email != null)
+        {
+            entity.Email = user.Email;
+        }
+        if (user.Phone != null)
+        {
+            entity.Phone = user.Phone;
+        }
+
         _debtContext.SaveChanges();
     }
 
@@ -81,23 +105,30 @@ public class UserService : IUserService
         }
     }
 
-    public UserModel GetFirstAdmin()
+    public UserModel? GetFirstAdmin()
     {
-
         var user = _debtContext.Users.FirstOrDefault(q => q.Role == UserRole.Admin);
-        if (user is null)
-        {
-            user = new()
-            {
-                DisplayName = "Admin",
-                Role = UserRole.Admin
-            };
 
-            _debtContext.Users.Add(user);
-            _debtContext.SaveChanges();
-        }
+        if (user == null)
+            return null;
 
         return _mapper.Map<UserModel>(user);
+    }
+
+    public UserModel CreateAdmin()
+    {
+        var user = new User()
+        {
+            DisplayName = "Admin",
+            Role = UserRole.Admin
+        };
+
+        _debtContext.Users.Add(user);
+        _debtContext.SaveChanges();
+
+
+        return _mapper.Map<UserModel>(user);
+
     }
 
     public void MergeUsers(Guid oldUserId, Guid newUserId)

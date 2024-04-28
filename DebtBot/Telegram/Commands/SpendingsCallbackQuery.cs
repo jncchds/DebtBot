@@ -66,25 +66,27 @@ public class SpendingsCallbackQuery : ITelegramCallbackQuery, ITelegramCommand
 
         var spendingsPage = _budgetService.GetSpendings(user!.Value, pageNumber, countPerPage);
 
-        var buttons = new List<InlineKeyboardButton>();
+        var buttons = new List<InlineButtonRecord>();
 
         var sb = new StringBuilder();
         sb.AppendLine("<b>Spendings:</b>");
         sb.AppendLine();
-        int i = pageNumber * (countPerPage ?? 0);
+        int i = spendingsPage.TotalCount - pageNumber * (countPerPage ?? 0);
         foreach (var spending in spendingsPage.Items)
         {
-            sb.Append($"<b>{++i}</b>. ");
+            sb.Append($"<b>{i}</b>. ");
             sb.AppendLine(spending.ToString());
             sb.AppendLine();
-            buttons.Add(InlineKeyboardButton.WithCallbackData(i.ToString(), ShowBillCommand.FormatCallbackData(spending.BillId)));
+            buttons.Add(new InlineButtonRecord(i.ToString(), ShowBillCommand.FormatCallbackData(spending.BillId)));
+            i--;
         }
 
         await _publishEndpoint.Publish(            
             new SendTelegramMessage(
                 chatId,
                 sb.ToString(),
-                InlineKeyboard: [spendingsPage.ToInlineKeyboardButtons(CommandString)]
+                InlineKeyboard: [buttons, spendingsPage.ToInlineKeyboardButtons(CommandString)],
+                MessageId: messageId
                 ));
     }
 }
