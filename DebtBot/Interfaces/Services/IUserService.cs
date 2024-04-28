@@ -11,7 +11,8 @@ public interface IUserService
     IEnumerable<UserModel> GetUsers();
     void UpdateUser(UserModel user);
     bool SetRole(Guid id, UserRole role);
-    public UserModel GetFirstAdmin();
+    UserModel? GetFirstAdmin();
+    UserModel CreateAdmin();
     void MergeUsers(Guid oldUserId, Guid newUserId);
     void ActualizeTelegramUser(long telegramId, string? userName, string firstName, string? lastName);
     UserModel? FindUser(UserSearchModel model, Guid? userId = null);

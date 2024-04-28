@@ -38,7 +38,7 @@ public class IdentityController : ControllerBase
     [HttpGet]
     public IActionResult Get()
     {
-        var userModel = _userService.GetFirstAdmin();
+        var userModel = _userService.GetFirstAdmin() ?? _userService.CreateAdmin();
         return GenerateUserJwt(userModel);
     }
 

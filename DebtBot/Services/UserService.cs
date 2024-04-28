@@ -81,23 +81,30 @@ public class UserService : IUserService
         }
     }
 
-    public UserModel GetFirstAdmin()
+    public UserModel? GetFirstAdmin()
     {
-
         var user = _debtContext.Users.FirstOrDefault(q => q.Role == UserRole.Admin);
-        if (user is null)
-        {
-            user = new()
-            {
-                DisplayName = "Admin",
-                Role = UserRole.Admin
-            };
 
-            _debtContext.Users.Add(user);
-            _debtContext.SaveChanges();
-        }
+        if (user == null)
+            return null;
 
         return _mapper.Map<UserModel>(user);
+    }
+
+    public UserModel CreateAdmin()
+    {
+        var user = new User()
+        {
+            DisplayName = "Admin",
+            Role = UserRole.Admin
+        };
+
+        _debtContext.Users.Add(user);
+        _debtContext.SaveChanges();
+
+
+        return _mapper.Map<UserModel>(user);
+
     }
 
     public void MergeUsers(Guid oldUserId, Guid newUserId)
