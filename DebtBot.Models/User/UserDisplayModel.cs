@@ -19,7 +19,7 @@ public class UserDisplayModel
             return $"{name}";
 
         if (TelegramId is not null)
-            return $"<a href=\"tg://user?id={TelegramId}\")>{DisplayName}</a>";
+            return $"<a href=\"tg://user?id={TelegramId}\">{DisplayName}</a>";
 
         return DisplayName;
     }
