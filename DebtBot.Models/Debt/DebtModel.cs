@@ -1,6 +1,6 @@
 ﻿using DebtBot.Models.User;
 
-namespace DebtBot.Models;
+namespace DebtBot.Models.Debt;
 
 public class DebtModel
 {
@@ -11,8 +11,8 @@ public class DebtModel
 
     public override string ToString()
     {
-        return (Amount < 0) ?
-            $"{CreditorUser} owes {DebtorUser} {Amount:0.##} {CurrencyCode}" :
+        return Amount < 0 ?
+            $"{CreditorUser} owes {DebtorUser} {-Amount:0.##} {CurrencyCode}" :
             $"{DebtorUser} owes {CreditorUser} {Amount:0.##} {CurrencyCode}";
     }
 }

@@ -67,10 +67,14 @@ public class DebtsCallbackQuery : ITelegramCallbackQuery, ITelegramCommand
         var debts = _debtService.GetForUser(user!.Value, pageNumber, countPerPage);
         var sb = new StringBuilder();
         sb.AppendLine("<b>Debts:</b>");
-        sb.AppendLine();
-        foreach (var item in debts.Items)
+        foreach (var item in debts.Items.GroupBy(t => t.CreditorUser.Id))
         {
-            sb.AppendLine(item.ToString());
+            sb.AppendLine();
+            sb.AppendLine($"For {item.First().CreditorUser.ToString()}:");
+            foreach (var debtGroup in item)
+            {
+                sb.AppendLine($"  {debtGroup.DebtorUser.ToString()}: {debtGroup.Amount:0.##} {debtGroup.CurrencyCode}");
+            }
         }
 
         await _publishEndpoint.Publish(

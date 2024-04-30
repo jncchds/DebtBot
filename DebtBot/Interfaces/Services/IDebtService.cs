@@ -1,4 +1,5 @@
 ﻿using DebtBot.Models;
+using DebtBot.Models.Debt;
 
 namespace DebtBot.Interfaces.Services;
 public interface IDebtService

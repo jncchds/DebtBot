@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using DebtBot.DB.Entities;
-using DebtBot.Models;
+using DebtBot.Models.Debt;
 
 namespace DebtBot.Mappings;
 
