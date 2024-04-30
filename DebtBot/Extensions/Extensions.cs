@@ -31,6 +31,10 @@ namespace DebtBot.Extensions
         {
             var buttons = new List<InlineButtonRecord>
             {
+                !pagingResults.MoreThenFivePassed
+                ? new(" ", IgnoreCallbackQuery.CommandString)
+                : new("<<", $"{commandName} {pagingResults.PageNumber - 5}"),
+
                 pagingResults.IsFirstPage
                 ? new(" ", IgnoreCallbackQuery.CommandString)
                 : new("<", $"{commandName} {pagingResults.PageNumber - 1}"),
@@ -39,7 +43,11 @@ namespace DebtBot.Extensions
 
                 pagingResults.IsLastPage
                 ? new(" ", IgnoreCallbackQuery.CommandString)
-                : new(">", $"{commandName} {pagingResults.PageNumber + 1}")
+                : new(">", $"{commandName} {pagingResults.PageNumber + 1}"),
+
+                !pagingResults.MoreThenFiveLeft
+                ? new(" ", IgnoreCallbackQuery.CommandString)
+                : new(">>", $"{commandName} {pagingResults.PageNumber + 5}")
             };
 
             return buttons;
