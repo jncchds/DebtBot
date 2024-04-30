@@ -4,6 +4,7 @@ using DebtBot.DB;
 using DebtBot.Extensions;
 using DebtBot.Interfaces.Services;
 using DebtBot.Models;
+using DebtBot.Models.Debt;
 using Microsoft.EntityFrameworkCore;
 
 namespace DebtBot.Services;
@@ -31,11 +32,16 @@ public class DebtService : IDebtService
     {
         return _debtContext
             .Debts
-            .Where(t => t.CreditorUserId == userId)
+            .Where(t => t.CreditorUserId == userId 
+                || _debtContext
+                    .NotificationSubscriptions
+                    .Where(s => s.IsConfirmed)
+                    .Any(s => s.UserId == t.CreditorUserId && s.SubscriberId == userId))
             .Include(t => t.CreditorUser)
             .Include(t => t.DebtorUser)
             .ThenInclude(t => t.ContactUser)
-            .OrderBy(t => t.DebtorUser.DisplayName)
+            .OrderBy(t => t.CreditorUserId)
+            .ThenBy(t => t.DebtorUser.DisplayName)
             .ProjectTo<DebtModel>(_mapper.ConfigurationProvider)
             .ToPagingResult(pageNumber, countPerPage);
     }

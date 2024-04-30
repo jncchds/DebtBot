@@ -219,7 +219,8 @@ static void CreateDefaultUser(IServiceProvider services)
         var user = userService.FindOrAddUser(new DebtBot.Models.User.UserSearchModel
         {
             TelegramId = defaultTelegramId,
-            TelegramUserName = defaultTelegramUserName
+            TelegramUserName = defaultTelegramUserName,
+            DisplayName = "Admin"
         });
         if (user == null)
         {
