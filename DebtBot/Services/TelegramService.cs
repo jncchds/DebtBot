@@ -160,13 +160,13 @@ public class TelegramService : ITelegramService
             Date = DateTime.UtcNow
         };
 
-        var sections = parsedText.Split("\n\n");
+        var sections = parsedText.Split("\n\n", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
 
         // description
         billModel.Description = sections[0];
 
         // summary
-        var summarySection = sections[1].Split("\n");
+        var summarySection = sections[1].Split("\n", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
 
         billModel.TotalWithTips = decimal.Parse(summarySection[0]);
         billModel.CurrencyCode = summarySection[1]?.ToUpper();
@@ -203,7 +203,7 @@ public class TelegramService : ITelegramService
     private List<BillLineParserModel> parseLines(IEnumerable<string> linesSections, List<UserSearchModel> userSearchModels)
     {
         return linesSections
-            .Select(q => q.Split("\n", StringSplitOptions.TrimEntries))
+            .Select(q => q.Split("\n", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
             .Select(q => new BillLineParserModel()
             {
                 ItemDescription = q[0],
@@ -213,7 +213,7 @@ public class TelegramService : ITelegramService
                     .Select(w => new BillLineParticipantParserModel()
                     {
                         Part = decimal.Parse(w.val.Substring(0, w.index)),
-                        User = findMentionedUser(w.val.Substring(w.index + 1), userSearchModels)
+                        User = findMentionedUser(w.val.Substring(w.index + 1).Trim(), userSearchModels)
                     })
                     .ToList()
             })
@@ -222,13 +222,13 @@ public class TelegramService : ITelegramService
     
     public List<BillPaymentParserModel> ParsePayments(string parsedText, List<UserSearchModel> userSearchModels)
     {
-        var paymentsSection = parsedText.Split("\n");
+        var paymentsSection = parsedText.Split("\n", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
         return paymentsSection
             .Select(Extensions.Extensions.WhitespaceLocator)
             .Select(q => new BillPaymentParserModel()
             {
                 Amount = decimal.Parse(q.val.Substring(0, q.index)),
-                User = findMentionedUser(q.val.Substring(q.index + 1), userSearchModels)
+                User = findMentionedUser(q.val.Substring(q.index + 1).Trim(), userSearchModels)
             })
             .ToList();
     }

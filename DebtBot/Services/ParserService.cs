@@ -26,13 +26,13 @@ public class ParserService : IParserService
             Date = DateTime.UtcNow
         };
 
-        var sections = billString.Split("\n\n");
+        var sections = billString.Split("\n\n", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
 
         // description
         billModel.Description = sections[0];
 
         // summary
-        var summarySection = sections[1].Split("\n");
+        var summarySection = sections[1].Split("\n", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
 
         billModel.TotalWithTips = decimal.Parse(summarySection[0]);
         billModel.CurrencyCode = summarySection[1]?.ToUpper();
@@ -46,20 +46,20 @@ public class ParserService : IParserService
         }
 
         // payments
-        var paymentsSection = sections[2].Split("\n");
+        var paymentsSection = sections[2].Split("\n", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
         billModel.Payments = paymentsSection
             .Select(Extensions.Extensions.WhitespaceLocator)
             .Select(q => new BillPaymentParserModel
             {
                 Amount = decimal.Parse(q.val.Substring(0, q.index)),
-                User = new UserSearchModel { QueryString = q.val.Substring(q.index + 1) }
+                User = new UserSearchModel { QueryString = q.val.Substring(q.index + 1).Trim() }
             })
             .ToList();
 
         // lines
         var linesSections = sections.Skip(3);
         billModel.Lines = linesSections
-            .Select(q => q.Split("\n"))
+            .Select(q => q.Split("\n", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
             .Select(q => new BillLineParserModel
             {
                 ItemDescription = q[0],
@@ -69,7 +69,7 @@ public class ParserService : IParserService
                                 .Select(w => new BillLineParticipantParserModel
                                 {
                                     Part = decimal.Parse(w.val.Substring(0, w.index)),
-                                    User = new UserSearchModel { QueryString = w.val.Substring(w.index + 1) }
+                                    User = new UserSearchModel { QueryString = w.val.Substring(w.index + 1).Trim() }
                                 })
                                 .ToList()
             })
