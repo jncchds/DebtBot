@@ -242,22 +242,22 @@ public class UserService : IUserService
         }
         if (user is null && !string.IsNullOrEmpty(model.TelegramUserName))
         {
-            user = _debtContext.Users.FirstOrDefault(u => u.TelegramUserName == model.TelegramUserName);
+            user = _debtContext.Users.FirstOrDefault(u => EF.Functions.ILike(u.TelegramUserName!, model.TelegramUserName));
         }
         if (user is null && !string.IsNullOrEmpty(model.Phone))
         {
-            user = _debtContext.Users.FirstOrDefault(u => u.Phone == model.Phone);
+            user = _debtContext.Users.FirstOrDefault(u => EF.Functions.ILike(u.Phone!, model.Phone));
         }
         if (user is null && !string.IsNullOrEmpty(model.Email))
         {
-            user = _debtContext.Users.FirstOrDefault(u => u.Email == model.Email);
+            user = _debtContext.Users.FirstOrDefault(u => EF.Functions.ILike(u.Email!, model.Email));
         }
         if (user is null && !string.IsNullOrEmpty(model.QueryString))
         {
             user = _debtContext.Users.FirstOrDefault(u => u.TelegramId.ToString() == model.QueryString);
-            user ??= _debtContext.Users.FirstOrDefault(u => u.TelegramUserName == model.QueryString);
-            user ??= _debtContext.Users.FirstOrDefault(u => u.Phone == model.QueryString);
-            user ??= _debtContext.Users.FirstOrDefault(u => u.Email == model.QueryString);
+            user ??= _debtContext.Users.FirstOrDefault(u => EF.Functions.ILike(u.TelegramUserName ?? "", model.QueryString));
+            user ??= _debtContext.Users.FirstOrDefault(u => EF.Functions.ILike(u.Phone ?? "", model.QueryString));
+            user ??= _debtContext.Users.FirstOrDefault(u => EF.Functions.ILike(u.Email ?? "", model.QueryString));
         }
 
         var searchString = model.DisplayName ?? model.QueryString;
@@ -266,7 +266,7 @@ public class UserService : IUserService
             && !string.IsNullOrEmpty(searchString))
         {
             user = _debtContext.UserContactsLinks
-                .Where(t => t.UserId == userId && t.DisplayName == searchString)
+                .Where(t => t.UserId == userId && EF.Functions.ILike(t.DisplayName ?? "", searchString))
                 .Select(t => t.ContactUser)
                 .FirstOrDefault();
         }
