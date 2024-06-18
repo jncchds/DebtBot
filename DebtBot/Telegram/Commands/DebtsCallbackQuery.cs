@@ -70,10 +70,10 @@ public class DebtsCallbackQuery : ITelegramCallbackQuery, ITelegramCommand
         foreach (var item in debts.Items.GroupBy(t => t.CreditorUser.Id))
         {
             sb.AppendLine();
-            sb.AppendLine($"For {item.First().CreditorUser.ToString()}:");
+            sb.AppendLine($"To {item.First().CreditorUser.ToString()}:");
             foreach (var debtGroup in item)
             {
-                sb.AppendLine($"  {debtGroup.DebtorUser.ToString()}: {debtGroup.Amount:0.##} {debtGroup.CurrencyCode}");
+                sb.AppendLine($"  {debtGroup.DebtorUser.ToString()} owes {debtGroup.Amount:0.##} {debtGroup.CurrencyCode}");
             }
         }
 
