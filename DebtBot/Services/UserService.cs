@@ -143,6 +143,23 @@ public class UserService : IUserService
 
         using var transaction = _debtContext.Database.BeginTransaction();
         
+        // Updates Bills where oldUser is creator
+
+        _debtContext.Bills
+            .Where(q => q.CreatorId == oldUserId)
+            .ExecuteUpdate(u => u.SetProperty(u => u.CreatorId, newUserId));
+
+        // Updates BillPayments where oldUser is payer
+
+        _debtContext.BillPayments
+            .Where(q => q.UserId == oldUserId)
+            .ExecuteUpdate(u => u.SetProperty(u => u.UserId, newUserId));
+
+        // Updates BillLineParticipants where oldUser is participant
+
+        _debtContext.BillLineParticipants
+            .Where(q => q.UserId == oldUserId)
+            .ExecuteUpdate(u => u.SetProperty(u => u.UserId, newUserId));
 
         // Updates LedgerRecords where oldUser is creditor
         
@@ -164,9 +181,9 @@ public class UserService : IUserService
                     .Any(c => c.UserId == newUserId && c.ContactUserId == t.ContactUserId))
             .ExecuteUpdate(t => t.SetProperty(t => t.UserId, newUserId));
 
-        _debtContext.UserContactsLinks
-            .Where(t => t.UserId == oldUserId)
-            .ExecuteDelete();
+        //_debtContext.UserContactsLinks
+        //    .Where(t => t.UserId == oldUserId)
+        //    .ExecuteDelete();
 
         // User contacts with oldUser
 
@@ -176,15 +193,51 @@ public class UserService : IUserService
                     .Any(c => c.ContactUserId == newUserId && c.UserId == t.UserId))
             .ExecuteUpdate(t => t.SetProperty(t => t.ContactUserId, newUserId));
 
-        _debtContext.UserContactsLinks
-            .Where(t => t.ContactUserId == oldUserId)
-            .ExecuteDelete();
+        //_debtContext.UserContactsLinks
+        //    .Where(t => t.ContactUserId == oldUserId)
+        //    .ExecuteDelete();
         
         // Budgets of oldUser
 
         _debtContext.Spendings
             .Where(q => q.UserId == oldUserId)
             .ExecuteUpdate(s => s.SetProperty(p => p.UserId, newUserId));
+
+        // Updates BillParticipants where oldUser is participant
+
+        _debtContext.BillParticipants
+            .Where(q => q.UserId == oldUserId)
+            .ExecuteUpdate(u => u.SetProperty(u => u.UserId, newUserId));
+
+        // Updates NotificationSubscriptions both ways
+
+        _debtContext.NotificationSubscriptions
+            .Where(q => q.UserId == oldUserId
+                && !_debtContext.NotificationSubscriptions
+                    .Any(c => c.UserId == newUserId && c.SubscriberId == q.SubscriberId))
+            .ExecuteUpdate(u => u.SetProperty(u => u.UserId, newUserId));
+
+        //_debtContext.NotificationSubscriptions
+        //    .Where(t => t.UserId == oldUserId)
+        //    .ExecuteDelete();
+
+        _debtContext.NotificationSubscriptions
+            .Where(q => q.SubscriberId == oldUserId
+                && !_debtContext.NotificationSubscriptions
+                    .Any(c => c.SubscriberId == newUserId && c.UserId == q.UserId))
+            .ExecuteUpdate(u => u.SetProperty(u => u.SubscriberId, newUserId));
+
+        //_debtContext.NotificationSubscriptions
+        //    .Where(t => t.SubscriberId == oldUserId)
+        //    .ExecuteDelete();
+
+        newUser.DisplayName = newUser.DisplayName ?? oldUser.DisplayName;
+        newUser.TelegramId = newUser.TelegramId ?? oldUser.TelegramId;
+        newUser.TelegramUserName = newUser.TelegramUserName ?? oldUser.TelegramUserName;
+        newUser.Phone = newUser.Phone ?? oldUser.Phone;
+        newUser.Email = newUser.Email ?? oldUser.Email;
+        newUser.TelegramBotEnabled = newUser.TelegramBotEnabled || oldUser.TelegramBotEnabled;
+        newUser.Role = oldUser.Role == UserRole.Admin ? UserRole.Admin : newUser.Role;
 
         _debtContext.Users.Remove(oldUser);
 

@@ -25,6 +25,8 @@ public class Spending
     
     [ForeignKey(nameof(BillId))]
     public virtual Bill Bill { get; set; }
+
+    [DeleteBehavior(DeleteBehavior.Restrict)]
     [ForeignKey(nameof(UserId))]
     public virtual User User { get; set; }
 }
