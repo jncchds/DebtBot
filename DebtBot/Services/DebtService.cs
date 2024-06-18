@@ -41,7 +41,8 @@ public class DebtService : IDebtService
             .Include(t => t.DebtorUser)
             .ThenInclude(t => t.ContactUser)
             .OrderBy(t => t.CreditorUserId)
-            .ThenBy(t => t.DebtorUser.DisplayName)
+            .ThenBy(t => (t.DebtorUser.ContactUser.TelegramUserName ?? t.DebtorUser.DisplayName).ToUpper())
+            .ThenBy(t => t.CurrencyCode)
             .ProjectTo<DebtModel>(_mapper.ConfigurationProvider)
             .ToPagingResult(pageNumber, countPerPage);
     }

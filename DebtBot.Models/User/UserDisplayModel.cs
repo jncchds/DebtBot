@@ -11,11 +11,11 @@ public class UserDisplayModel
 
     public override string ToString()
     {
-        if (TelegramId is not null)
-            return $"<a href=\"tg://user?id={TelegramId}\">{DisplayName}</a>";
-
         if (!String.IsNullOrEmpty(TelegramUserName))
             return $"{TelegramUserName}";
+
+        if (TelegramId is not null)
+            return $"<a href=\"tg://user?id={TelegramId}\">{DisplayName}</a>";
 
         return DisplayName;
     }

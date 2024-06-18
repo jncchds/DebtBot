@@ -14,8 +14,11 @@ public class LedgerRecord
     public decimal Amount { get; set; }
     public string CurrencyCode { get; set; }
 
+    [DeleteBehavior(DeleteBehavior.Restrict)]
     [ForeignKey(nameof(CreditorUserId))]
     public virtual User CreditorUser { get; set; }
+
+    [DeleteBehavior(DeleteBehavior.Restrict)]
     [ForeignKey(nameof(DebtorUserId))]
     public virtual User DebtorUser { get; set; }
     [ForeignKey(nameof(BillId))]
