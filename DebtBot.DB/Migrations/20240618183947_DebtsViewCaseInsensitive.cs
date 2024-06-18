@@ -16,7 +16,7 @@ drop trigger Ledger_record_updated on ""LedgerRecords""
 ");
 
             migrationBuilder.Sql(@"
-drop function Refresh_debts_view_func
+drop function Refresh_debts_view
 ");
 
             migrationBuilder.Sql(@"
