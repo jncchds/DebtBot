@@ -60,7 +60,16 @@ public class AddLinesCommand : ITelegramCommand
         }
 
         var lines = _telegramService.ParseLines(parsedText, processedMessage.UserSearchModels);
-		_billService.AddLines(billId, lines, new UserSearchModel { TelegramId = processedMessage.FromId });
+
+        if (!lines.IsValid)
+        {
+            await _publishEndpoint.Publish(new SendTelegramMessage(
+                processedMessage.ChatId,
+                string.Join("\n", lines.Errors)));
+            return;
+        }
+
+        _billService.AddLines(billId, lines.Result!, new UserSearchModel { TelegramId = processedMessage.FromId });
         await _publishEndpoint.Publish(new SendTelegramMessage(
             processedMessage.ChatId, 
             $"Lines added to bill with id ```{billId}```", 

@@ -114,7 +114,11 @@ public class BillsController : DebtBotControllerBase
         {
             var message = Request.Body.ReadToEndAsync().Result;
             var bill = _parserService.ParseBill(UserId!.Value, message);
-            var billGuid = _billService.Add(bill, new UserSearchModel { Id = UserId!.Value });
+            if (!bill.IsValid)
+            {
+                return BadRequest(bill.Errors);
+            }
+            var billGuid = _billService.Add(bill.Result!, new UserSearchModel { Id = UserId!.Value });
             
             if(!createDrafted)
             {
