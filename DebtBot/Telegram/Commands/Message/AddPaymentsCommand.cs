@@ -57,7 +57,16 @@ public class AddPaymentsCommand : ITelegramCommand
         }
 
         var payments = _telegramService.ParsePayments(parsedText, processedMessage.UserSearchModels);
-        _billService.AddPayments(billId, payments, new UserSearchModel { TelegramId = processedMessage.FromId });
+
+        if (!payments.IsValid)
+        {
+            await _publishEndpoint.Publish(new SendTelegramMessage(
+                processedMessage.ChatId,
+                string.Join("\n", payments.Errors)));
+            return;
+        }
+
+        _billService.AddPayments(billId, payments.Result!, new UserSearchModel { TelegramId = processedMessage.FromId });
         await _publishEndpoint.Publish(new SendTelegramMessage(
             processedMessage.ChatId,
             $"Payments added to bill with id ```{billId}```", ParseMode: ParseMode.MarkdownV2));

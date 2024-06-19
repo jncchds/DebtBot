@@ -52,5 +52,5 @@ public static class TelegramBotExtensions
     }
 
     public static List<List<string>> DefaultReplyKeyboard =>
-        new([[ "/Debts", "/ShowBills", "/Spendings" ]]);
+        new([[ "/Debts", "/Bills", "/Spendings" ]]);
 }

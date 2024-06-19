@@ -34,7 +34,12 @@ public class ShowBillCommand : ITelegramCommand, ITelegramCallbackQuery
 
     public async Task ExecuteAsync(ProcessedMessage processedMessage, ITelegramBotClient botClient, CancellationToken cancellationToken)
     {
-        var billId = Guid.TryParse(processedMessage.ProcessedText, out var result) ? result : (Guid?)null;
+        Guid? billId = null;
+        if (processedMessage.ObjectType == Models.Enums.ObjectType.Bill)
+            billId = processedMessage.ObjectId!.Value;
+        else
+            billId = Guid.TryParse(processedMessage.ProcessedText, out var result) ? result : (Guid?)null;
+
         if (billId is null)
         {
             await _publishEndpoint.Publish(new SendTelegramMessage(processedMessage.ChatId, "Failed to parse bill id"));

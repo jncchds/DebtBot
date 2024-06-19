@@ -1,10 +1,12 @@
 ﻿using DebtBot.Interfaces.Services;
 using DebtBot.Interfaces.Telegram;
+using DebtBot.Messages;
 using DebtBot.Messages.Notification;
 using DebtBot.Models.User;
 using DebtBot.Services;
 using MassTransit;
 using Telegram.Bot;
+using static MassTransit.Util.ChartTable;
 
 namespace DebtBot.Telegram.Commands.Message;
 
@@ -32,7 +34,16 @@ public class AddBillCommand : ITelegramCommand
         CancellationToken cancellationToken)
     {
         var parsedBill = _telegramService.ParseBill(processedMessage.ProcessedText, processedMessage.UserSearchModels);
-        var billId = _billService.Add(parsedBill, new UserSearchModel() { TelegramId = processedMessage.FromId });
+
+        if (!parsedBill.IsValid)
+        {
+            await _publishEndpoint.Publish(new SendTelegramMessage(
+                processedMessage.ChatId,
+                string.Join("\n", parsedBill.Errors)));
+            return;
+        }
+
+        var billId = _billService.Add(parsedBill.Result!, new UserSearchModel() { TelegramId = processedMessage.FromId });
 
         await _publishEndpoint.Publish(new SendBillNotification() { BillId = billId, ChatId = processedMessage.ChatId });
     }

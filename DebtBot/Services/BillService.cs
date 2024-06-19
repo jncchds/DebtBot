@@ -217,13 +217,13 @@ public class BillService : IBillService
         {
             _publishEndpoint.Publish(new EnsureBillParticipant(bill.Id, creator.Id));
 
-            bill.Lines.All(t => t.Participants.All(p =>
+            bill.Lines?.All(t => t.Participants?.All(p =>
             {
                 _publishEndpoint.Publish(new EnsureBillParticipant(bill.Id, p.UserId));
                 return true;
-            }));
+            }) ?? true);
 
-            bill.Payments.All(p =>
+            bill.Payments?.All(p =>
             {
                 _publishEndpoint.Publish(new EnsureBillParticipant(bill.Id, p.UserId));
                 return true;

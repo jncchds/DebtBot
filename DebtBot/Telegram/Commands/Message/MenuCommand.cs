@@ -36,7 +36,7 @@ public class MenuCommand : ITelegramCommand
                     new("Spendings", SpendingsCallbackQuery.CommandString)
                 },
                 new() {
-                    new("Show bills", ShowBillsCommand.CommandString)
+                    new("Bills", BillsCommand.CommandString)
                 }
             ]);
 

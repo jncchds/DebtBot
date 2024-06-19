@@ -1,12 +1,13 @@
-﻿using System.Text;
-using System.Text.RegularExpressions;
-using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Types;
-using DebtBot.Models.User;
-using DebtBot.Interfaces.Services;
+﻿using DebtBot.Interfaces.Services;
+using DebtBot.Models;
 using DebtBot.Models.Bill;
-using DebtBot.Telegram;
 using DebtBot.Models.Enums;
+using DebtBot.Models.User;
+using DebtBot.Telegram;
+using System.Text;
+using System.Text.RegularExpressions;
+using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
 
 namespace DebtBot.Services;
 
@@ -153,14 +154,33 @@ public class TelegramService : ITelegramService
         }
     }
 
-    public BillParserModel ParseBill(string parsedText, List<UserSearchModel> userSearchModels)
+    public ValidationModel<BillParserModel> ParseBill(string parsedText, List<UserSearchModel> userSearchModels)
     {
         var billModel = new BillParserModel
         {
             Date = DateTime.UtcNow
         };
 
+        decimal decVal;
+        string? strVal;
+        var returnModel = new ValidationModel<BillParserModel>
+        {
+            Result = billModel
+        };
+
+        if (string.IsNullOrWhiteSpace(parsedText))
+        {
+            returnModel.Errors.Add("Message is empty");
+            return returnModel;
+        }
+
         var sections = parsedText.Split("\n\n", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+
+        if (sections.Length < 2)
+        {
+            returnModel.Errors.Add("Bill must contain the header (amount and currency)");
+            return returnModel;
+        }
 
         // description
         billModel.Description = sections[0];
@@ -168,68 +188,187 @@ public class TelegramService : ITelegramService
         // summary
         var summarySection = sections[1].Split("\n", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
 
-        billModel.TotalWithTips = decimal.Parse(summarySection[0]);
-        billModel.CurrencyCode = summarySection[1]?.ToUpper();
+        if (summarySection.Length < 2)
+        {
+            returnModel.Errors.Add("Bill must contain bill currency");
+            return returnModel;
+        }
+
+        if (!decimal.TryParse(summarySection[0], out decVal))
+        {
+            returnModel.Errors.Add("Failed to parse bill total with tips");
+            return returnModel;
+        }
+
+        billModel.TotalWithTips = decVal;
+
+        strVal = summarySection[1]?.ToUpper();
+        if (strVal?.Length != 3)
+        {
+            returnModel.Errors.Add("Bill currency code must be 3 characters long");
+            return returnModel;
+        }
+
+        billModel.CurrencyCode = strVal;
         if (summarySection.Length > 2)
         {
-            billModel.PaymentCurrencyCode = summarySection[2]?.ToUpper();
+            strVal = summarySection[2]?.ToUpper();
+            if (strVal?.Length != 3)
+            {
+                returnModel.Errors.Add("Bill payment currency code must be 3 characters long");
+                return returnModel;
+            }
+            billModel.PaymentCurrencyCode = strVal;
         }
         else
         {
             billModel.PaymentCurrencyCode = billModel.CurrencyCode;
         }
 
+        if (sections.Length < 3)
+            return returnModel;
+
         // payments
-        if (sections.Length > 2)
+        var payments = ParsePayments(sections[2], userSearchModels);
+        if (payments.Errors.Any())
         {
-            billModel.Payments = ParsePayments(sections[2], userSearchModels);
+            returnModel.Errors.AddRange(payments.Errors);
+            return returnModel;
         }
+
+        billModel.Payments = payments.Result!;
 
         // lines
-        if (sections.Length > 3)
-        {
-            billModel.Lines = parseLines(sections.Skip(3), userSearchModels);
-        }
+        if (sections.Length < 4)
+            return returnModel;
 
-        return billModel;
+        var lines = parseLines(sections.Skip(3), userSearchModels);
+        if (lines.Errors.Any())
+        {
+            returnModel.Errors.AddRange(lines.Errors);
+            return returnModel;
+        }
+        billModel.Lines = lines.Result!;
+
+        return returnModel;
     }
 
-    public List<BillLineParserModel> ParseLines(string parsedText, List<UserSearchModel> userSearchModels)
+    public ValidationModel<List<BillLineParserModel>> ParseLines(string parsedText, List<UserSearchModel> userSearchModels)
     {
         var sections = parsedText.Split("\n\n", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         return parseLines(sections, userSearchModels);
     }
     
-    private List<BillLineParserModel> parseLines(IEnumerable<string> linesSections, List<UserSearchModel> userSearchModels)
+    private ValidationModel<List<BillLineParserModel>> parseLines(IEnumerable<string> linesSections, List<UserSearchModel> userSearchModels)
     {
-        return linesSections
+        var returnModel = new ValidationModel<List<BillLineParserModel>>();
+        decimal decVal;
+        string? strVal;
+
+        var lines = linesSections
             .Select(q => q.Split("\n", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
-            .Select(q => new BillLineParserModel()
+            .Select(q =>
             {
-                ItemDescription = q[0],
-                Subtotal = decimal.Parse(q[1]),
-                Participants = q.Skip(2)
-                    .Select(Extensions.Extensions.WhitespaceLocator)
-                    .Select(w => new BillLineParticipantParserModel()
-                    {
-                        Part = decimal.Parse(w.val.Substring(0, w.index)),
-                        User = findMentionedUser(w.val.Substring(w.index + 1).Trim(), userSearchModels)
-                    })
-                    .ToList()
+                if (q.Length < 2)
+                {
+                    returnModel.Errors.Add("Line must contain description and subtotal");
+                    return null;
+                }
+                var participants = q.Skip(2)
+                        .Select(Extensions.Extensions.WhitespaceLocator)
+                        .Select(w =>
+                        {
+                            if (w.index == -1)
+                            {
+                                returnModel.Errors.Add("Line participation must contain a part and a user separated with a space");
+                                return null;
+                            }
+                            strVal = w.val.Substring(0, w.index);
+                            if (!decimal.TryParse(strVal, out decVal))
+                            {
+                                returnModel.Errors.Add($"Failed to parse participant part <pre>{strVal}</pre>");
+                                return null;
+                            }
+                            strVal = w.val.Substring(w.index + 1).Trim();
+                            if (string.IsNullOrWhiteSpace(strVal))
+                            {
+                                returnModel.Errors.Add($"Participant must contain a user");
+                                return null;
+                            }
+                            return new BillLineParticipantParserModel()
+                            {
+                                Part = decVal,
+                                User = findMentionedUser(strVal, userSearchModels)
+                            };
+                        })
+                        .ToList();
+
+                if (returnModel.Errors.Any())
+                    return null;
+
+                if (!decimal.TryParse(q[1], out decVal))
+                {
+                    returnModel.Errors.Add($"Failed to parse line subtotal <pre>{q[1]}</pre>");
+                    return null;
+                }
+
+                return new BillLineParserModel()
+                {
+                    ItemDescription = q[0],
+                    Subtotal = decVal,
+                    Participants = participants.Select(t => t!).ToList()
+                };
             })
             .ToList();
+
+        if (!returnModel.Errors.Any())
+            returnModel.Result = lines.Select(t => t!).ToList();
+
+        return returnModel;
     }
     
-    public List<BillPaymentParserModel> ParsePayments(string parsedText, List<UserSearchModel> userSearchModels)
+    public ValidationModel<List<BillPaymentParserModel>> ParsePayments(string parsedText, List<UserSearchModel> userSearchModels)
     {
+        var returnModel = new ValidationModel<List<BillPaymentParserModel>>();
+        decimal decVal;
+        string? strVal;
+
         var paymentsSection = parsedText.Split("\n", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-        return paymentsSection
+        var payments = paymentsSection
             .Select(Extensions.Extensions.WhitespaceLocator)
-            .Select(q => new BillPaymentParserModel()
+            .Select(q =>
             {
-                Amount = decimal.Parse(q.val.Substring(0, q.index)),
-                User = findMentionedUser(q.val.Substring(q.index + 1).Trim(), userSearchModels)
+                if (q.index == -1)
+                {
+                    returnModel.Errors.Add("Payment must contain an amount and a user, separated with a space");
+                    return null;
+                }
+                
+                strVal = q.val.Substring(0, q.index);
+                if (!decimal.TryParse(strVal, out decVal))
+                {
+                    returnModel.Errors.Add($"Failed to parse payment amount");
+                    return null;
+                }
+
+                strVal = q.val.Substring(q.index + 1).Trim();
+                if (string.IsNullOrWhiteSpace(strVal))
+                {
+                    returnModel.Errors.Add($"Payment must contain a user");
+                    return null;
+                }
+                
+                return new BillPaymentParserModel()
+                {
+                    Amount = decVal,
+                    User = findMentionedUser(strVal, userSearchModels)
+                };
             })
             .ToList();
+
+        if (!returnModel.Errors.Any())
+            returnModel.Result = payments.Select(t => t!).ToList();
+
+        return returnModel;
     }
 }
