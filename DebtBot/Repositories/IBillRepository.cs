@@ -14,7 +14,7 @@ public interface IBillRepository
     List<BillModel> Get();
     BillModel? Get(Guid id);
     List<BillModel> GetCreatedByUser(Guid userId);
-    PagingResult<BillListModel> GetForUser(Guid userId, int pageNumber = 0, int? countPerPage = null);
+    PagingResult<BillListModel> GetForUser(Guid userId, Guid? filterByUserId, string? filterByCurrencyCode, int pageNumber = 0, int? countPerPage = null);
     BillLineModel? GetLine(Guid id);
     bool SetBillStatus(Guid billId, ProcessingState status);
 }

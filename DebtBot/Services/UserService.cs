@@ -42,6 +42,12 @@ public class UserService : IUserService
         return user;
     }
 
+    public UserDisplayModel? GetUserDisplayModelById(Guid id)
+    {
+        var user = _debtContext.Users.Where(u => u.Id == id).ProjectTo<UserDisplayModel>(_mapper.ConfigurationProvider).FirstOrDefault();
+        return user;
+    }
+
     public UserModel AddUser(UserCreationModel user)
     {
         var entity = _mapper.Map<User>(user);

@@ -187,9 +187,9 @@ public class BillService : IBillService
         return _billRepository.Get();
     }
 
-    public PagingResult<BillListModel> GetForUser(Guid userId, int pageNumber = 0, int? countPerPage = null)
+    public PagingResult<BillListModel> GetForUser(Guid userId, Guid? filterByUserId, string? filterByCurrencyCode, int pageNumber = 0, int? countPerPage = null)
     {
-        return _billRepository.GetForUser(userId, pageNumber, countPerPage);
+        return _billRepository.GetForUser(userId, filterByUserId, filterByCurrencyCode, pageNumber, countPerPage);
     }
 
     public Guid Add(BillCreationModel billModel, Guid creatorId)

@@ -47,9 +47,9 @@ public class BillRepository : IBillRepository
         return bills;
     }
 
-    public PagingResult<BillListModel> GetForUser(Guid userId, int pageNumber = 0, int? countPerPage = null)
+    public PagingResult<BillListModel> GetForUser(Guid userId, Guid? filterByUserId, string? filterByCurrencyCode, int pageNumber = 0, int? countPerPage = null)
     {
-        var bills = _debtContext
+        var query = _debtContext
             .Bills
             .Include(t => t.LedgerRecords)
             .ThenInclude(t => t.CreditorUser)
@@ -58,8 +58,21 @@ public class BillRepository : IBillRepository
             .OrderByDescending(q => q.Date)
             .Where(b => b
                 .BillParticipants
-                .Any(p => p.UserId == userId))
-            .ProjectTo<BillListModel>(_mapper.ConfigurationProvider)
+                .Any(p => p.UserId == userId));
+
+        if (filterByCurrencyCode != null)
+        {
+            query = query.Where(b => b.PaymentCurrencyCode == filterByCurrencyCode);
+        }
+
+        if (filterByUserId != null)
+        {
+            query = query.Where(b => b.LedgerRecords
+                .Any(q => (q.CreditorUserId == filterByUserId && q.DebtorUserId == userId) 
+                    || (q.DebtorUserId == filterByUserId && q.CreditorUserId == userId)));
+        }
+
+        var bills = query.ProjectTo<BillListModel>(_mapper.ConfigurationProvider)
             .ToPagingResult(pageNumber, countPerPage);
 
         return bills;

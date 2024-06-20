@@ -27,27 +27,27 @@ namespace DebtBot.Extensions
             return new PagingResult<T>(countPerPage ?? count, pageNumber, count, items);
         }
 
-        public static List<InlineButtonRecord> ToInlineKeyboardButtons<T>(this PagingResult<T> pagingResults, string commandName)
+        public static List<InlineButtonRecord> ToInlineKeyboardButtons<T>(this PagingResult<T> pagingResults, string commandName, string parameters = "")
         {
             var buttons = new List<InlineButtonRecord>
             {
                 !pagingResults.MoreThenFivePassed
                 ? new(" ", IgnoreCallbackQuery.CommandString)
-                : new("<<", $"{commandName} {pagingResults.PageNumber - 5}"),
+                : new("<<", $"{commandName} {pagingResults.PageNumber - 5} {parameters}"),
 
                 pagingResults.IsFirstPage
                 ? new(" ", IgnoreCallbackQuery.CommandString)
-                : new("<", $"{commandName} {pagingResults.PageNumber - 1}"),
+                : new("<", $"{commandName} {pagingResults.PageNumber - 1} {parameters}"),
 
                 new($"{pagingResults.PageNumber + 1}/{pagingResults.LastPageNumber + 1}", IgnoreCallbackQuery.CommandString),
 
                 pagingResults.IsLastPage
                 ? new(" ", IgnoreCallbackQuery.CommandString)
-                : new(">", $"{commandName} {pagingResults.PageNumber + 1}"),
+                : new(">", $"{commandName} {pagingResults.PageNumber + 1} {parameters}"),
 
                 !pagingResults.MoreThenFiveLeft
                 ? new(" ", IgnoreCallbackQuery.CommandString)
-                : new(">>", $"{commandName} {pagingResults.PageNumber + 5}")
+                : new(">>", $"{commandName} {pagingResults.PageNumber + 5} {parameters}")
             };
 
             return buttons;
