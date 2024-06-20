@@ -92,7 +92,21 @@ public class BillsCommand : ITelegramCommand, ITelegramCallbackQuery
         int i = billsPage.TotalCount - pageNumber * (countPerPage ?? 0);
         billsPage.Items.ForEach(q =>
         {
-            sb.AppendLine($"<b>{i}.</b> {q.Date} by {q.Creator}\n{q.Description}\n");
+            string ledgerLine = string.Empty;
+            if (q.LedgerRecords?.Any() ?? false)
+            {
+                var record = q.LedgerRecords.FirstOrDefault(q => q.CreditorUser.Id == userId || q.DebtorUser.Id == userId);
+                if (record is null)
+                {
+                    ledgerLine = "\n   (created by you)";
+                }
+                else
+                {
+                    bool isCreditor = record.CreditorUser.Id == userId;
+                    ledgerLine = $"\n   owe {(isCreditor ? '-' : '+')}{record.Amount:0.##} {record.CurrencyCode} to {(isCreditor ? record.DebtorUser : record.CreditorUser)}";
+                }
+            }
+            sb.AppendLine($"<b>{i}.</b> {q.Date} ({q.Status}){ledgerLine}\n{q.Description}\n");
             buttons.Add(new(i.ToString(), ShowBillCommand.FormatCallbackData(q.Id)));
             i--;
         });

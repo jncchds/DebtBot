@@ -7,6 +7,7 @@ using DebtBot.Interfaces.Telegram;
 using DebtBot.Models.Enums;
 using DebtBot.Processors;
 using DebtBot.Processors.Notification;
+using DebtBot.Repositories;
 using DebtBot.Services;
 using DebtBot.Telegram;
 using MassTransit;
@@ -25,6 +26,9 @@ builder.Configuration
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
     .AddEnvironmentVariables("DebtBot_");
+
+// Add repositories to the container.
+builder.Services.AddScoped<IBillRepository, BillRepository>();
 
 // Add services to the container.
 builder.Services.AddScoped<IUserService, UserService>();
