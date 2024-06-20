@@ -9,7 +9,7 @@ public interface IBillService
 {
     BillModel? Get(Guid id);
     List<BillModel> Get();
-    PagingResult<BillModel> GetForUser(Guid userId, int pageNumber = 0, int? countPerPage = null);
+    PagingResult<BillListModel> GetForUser(Guid userId, Guid? filterByUserId, string? filterByCurrencyCode, int pageNumber = 0, int? countPerPage = null);
     Guid Add(BillCreationModel billModel, Guid creatorId);
     Guid Add(BillParserModel parsedBill, UserSearchModel creator);
     bool Finalize(Guid id, bool forceSponsor = false);

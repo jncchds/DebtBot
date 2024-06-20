@@ -1,13 +1,8 @@
-﻿using DebtBot.Identity;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-using DebtBot.Models.Enums;
+﻿using DebtBot.Interfaces;
 using DebtBot.Interfaces.Services;
 using DebtBot.Models.User;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace DebtBot.Controllers;
 
@@ -18,10 +13,12 @@ namespace DebtBot.Controllers;
 public class IdentityController : ControllerBase
 {
     private readonly IUserService _userService;
+    private readonly IIdentityService _identityService;
 
-    public IdentityController(IOptions<DebtBotConfiguration> debtBotConfig, IUserService userService)
+    public IdentityController(IOptions<DebtBotConfiguration> debtBotConfig, IUserService userService, IIdentityService identityService)
     {
         _userService = userService;
+        _identityService = identityService;
     }
 
     [HttpGet("{id}")]
@@ -44,7 +41,7 @@ public class IdentityController : ControllerBase
 
     private IActionResult GenerateUserJwt(UserModel userModel)
     {
-        return Ok(_userService.GenerateJwtToken(userModel));
+        return Ok(_identityService.GenerateJwtToken(userModel));
     }
 }
 

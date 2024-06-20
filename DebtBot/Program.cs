@@ -2,11 +2,13 @@ using DebtBot;
 using DebtBot.Crutch;
 using DebtBot.DB;
 using DebtBot.Identity;
+using DebtBot.Interfaces;
 using DebtBot.Interfaces.Services;
 using DebtBot.Interfaces.Telegram;
 using DebtBot.Models.Enums;
 using DebtBot.Processors;
 using DebtBot.Processors.Notification;
+using DebtBot.Repositories;
 using DebtBot.Services;
 using DebtBot.Telegram;
 using MassTransit;
@@ -26,6 +28,10 @@ builder.Configuration
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
     .AddEnvironmentVariables("DebtBot_");
 
+// Add repositories to the container.
+builder.Services.AddScoped<IBillRepository, BillRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+
 // Add services to the container.
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IUserContactService, UserContactService>();
@@ -35,6 +41,7 @@ builder.Services.AddScoped<IBillService, BillService>();
 builder.Services.AddScoped<IDebtService, DebtService>();
 builder.Services.AddScoped<IBudgetService, BudgetService>();
 builder.Services.AddScoped<IExcelService, ExcelService>();
+builder.Services.AddScoped<IIdentityService, IdentityService>();
 
 // telegram
 builder.Services.AddScoped<UpdateHandler>();

@@ -4,7 +4,6 @@ namespace DebtBot.Models.Bill;
 
 public class BillParserModel
 {
-	public Guid? Id { get; set; }
 	public string? CurrencyCode { get; set; }
 	public string? PaymentCurrencyCode { get; set; }
 	public string? Description { get; set; }

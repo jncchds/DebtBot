@@ -65,15 +65,20 @@ public class DebtsCallbackQuery : ITelegramCallbackQuery, ITelegramCommand
         var user = _telegramService.GetUserByTelegramId(telegramId);
 
         var debts = _debtService.GetForUser(user!.Value, pageNumber, countPerPage);
+        var buttons = new List<InlineButtonRecord>();
         var sb = new StringBuilder();
+        int debtIndex = debts.TotalCount - pageNumber * (countPerPage ?? 0);
+        
         sb.AppendLine("<b>Debts:</b>");
-        foreach (var item in debts.Items.GroupBy(t => t.CreditorUser.Id))
+        foreach (var debtGroup in debts.Items.GroupBy(t => t.CreditorUser.Id))
         {
             sb.AppendLine();
-            sb.AppendLine($"To {item.First().CreditorUser.ToString()}:");
-            foreach (var debtGroup in item)
+            sb.AppendLine($"To {debtGroup.First().CreditorUser.ToString()}:");
+            foreach (var debt in debtGroup)
             {
-                sb.AppendLine($"  {debtGroup.DebtorUser.ToString()} owes {debtGroup.Amount:0.##} {debtGroup.CurrencyCode}");
+                sb.AppendLine($"  <b>{debtIndex}.</b> {debt.DebtorUser.ToString()} owes {debt.Amount:0.##} {debt.CurrencyCode}");
+                buttons.Add(new(debtIndex.ToString(), BillsCommand.FormatCallbackData(debt.DebtorUser.Id, debt.CurrencyCode, true)));
+                debtIndex--;
             }
         }
 
@@ -81,7 +86,7 @@ public class DebtsCallbackQuery : ITelegramCallbackQuery, ITelegramCommand
             new SendTelegramMessage(
                 chatId, 
                 sb.ToString(), 
-                InlineKeyboard: [debts.ToInlineKeyboardButtons(CommandString)],
+                InlineKeyboard: [buttons, debts.ToInlineKeyboardButtons(CommandString)],
                 MessageId: messageId
             ));
     }

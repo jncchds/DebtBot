@@ -19,10 +19,11 @@ public class ShowBillsCommand: BillsCommand, ITelegramCommand, ITelegramCallback
 
     public ShowBillsCommand(
 		IBillService billService,
-		ITelegramService telegramService,
+        IUserService userService,
+        ITelegramService telegramService,
 		IOptions<DebtBotConfiguration> debtBotConfig,
 		IPublishEndpoint publishEndpoint)
-		: base(billService, telegramService, debtBotConfig, publishEndpoint)
+		: base(billService, userService, telegramService, debtBotConfig, publishEndpoint)
 	{
-	}
+    }
 }

@@ -11,6 +11,8 @@ public class BillProfile : Profile
 {
 	public BillProfile()
     {
+        CreateProjection<Bill, BillListModel>();
+
         CreateProjection<Bill, BillModel>();
 
         CreateProjection<BillPayment, BillPaymentModel>();
