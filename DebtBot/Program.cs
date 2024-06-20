@@ -2,6 +2,7 @@ using DebtBot;
 using DebtBot.Crutch;
 using DebtBot.DB;
 using DebtBot.Identity;
+using DebtBot.Interfaces;
 using DebtBot.Interfaces.Services;
 using DebtBot.Interfaces.Telegram;
 using DebtBot.Models.Enums;
@@ -29,6 +30,7 @@ builder.Configuration
 
 // Add repositories to the container.
 builder.Services.AddScoped<IBillRepository, BillRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 // Add services to the container.
 builder.Services.AddScoped<IUserService, UserService>();
@@ -39,6 +41,7 @@ builder.Services.AddScoped<IBillService, BillService>();
 builder.Services.AddScoped<IDebtService, DebtService>();
 builder.Services.AddScoped<IBudgetService, BudgetService>();
 builder.Services.AddScoped<IExcelService, ExcelService>();
+builder.Services.AddScoped<IIdentityService, IdentityService>();
 
 // telegram
 builder.Services.AddScoped<UpdateHandler>();

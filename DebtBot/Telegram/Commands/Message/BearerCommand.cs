@@ -1,4 +1,5 @@
-﻿using DebtBot.Interfaces.Services;
+﻿using DebtBot.Interfaces;
+using DebtBot.Interfaces.Services;
 using DebtBot.Interfaces.Telegram;
 using DebtBot.Messages;
 using DebtBot.Models.User;
@@ -11,12 +12,14 @@ namespace DebtBot.Telegram.Commands.Message;
 public class BearerCommand : ITelegramCommand
 {
     private readonly IUserService _userService;
+    private readonly IIdentityService _identityService;
     private readonly ITelegramService _telegramService;
     private readonly IPublishEndpoint _publishEndpoint;
 
-    public BearerCommand(IUserService userService, ITelegramService telegramService, IPublishEndpoint publishEndpoint)
+    public BearerCommand(IUserService userService, IIdentityService identityService, ITelegramService telegramService, IPublishEndpoint publishEndpoint)
     {
         _userService = userService;
+        _identityService = identityService;
         _telegramService = telegramService;
         _publishEndpoint = publishEndpoint;
     }
@@ -40,7 +43,7 @@ public class BearerCommand : ITelegramCommand
             await _publishEndpoint.Publish(new SendTelegramMessage(processedMessage.ChatId, "User not found"));
             return;
         }
-        var token = _userService.GenerateJwtToken(user!);
+        var token = _identityService.GenerateJwtToken(user!);
         await _publishEndpoint.Publish(new SendTelegramMessage(processedMessage.ChatId, $"Your bearer token: <code>{token}</code>"));
     }
 }
