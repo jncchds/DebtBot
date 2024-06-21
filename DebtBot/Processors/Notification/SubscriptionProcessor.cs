@@ -40,7 +40,7 @@ public class SubscriptionProcessor : INotificationProcessorBase
             telegramMessage = new SendTelegramMessage(
                 user.TelegramId.Value,
                 text,
-                [new() { new("Accept", $"/Subscribe Accept {user.Id}"), new("Decline", $"/Subscribe Decline {user.Id}") }]
+                [new() { new("Accept", $"/Subscribe Accept {subscriber.Id}"), new("Decline", $"/Subscribe Decline {subscriber.Id}") }]
                 );
         }
 

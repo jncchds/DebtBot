@@ -10,25 +10,25 @@ namespace DebtBot.Controllers;
 [ApiController]
 public class UserContactsController : DebtBotControllerBase
 {
-    private readonly IUserContactService _userContactService;
+    private readonly IUserService _userService;
 
-    public UserContactsController(IUserContactService userContactService)
+    public UserContactsController(IUserService userService)
     {
-        _userContactService = userContactService;
+        _userService = userService;
     }
 
     [Authorize(IdentityData.AdminUserPolicyName)]
     [HttpGet()]
     public IActionResult Get()
     {
-        return Ok(_userContactService.Get());
+        return Ok(_userService.GetContacts());
     }
 
     [Authorize(IdentityData.AdminUserPolicyName)]
     [HttpGet("{id}")]
     public IActionResult Get(Guid id)
     {
-        var contactLinks = _userContactService.Get(id);
+        var contactLinks = _userService.GetContacts(id);
         if (contactLinks?.Any() ?? false)
         {
             return Ok(contactLinks);
@@ -41,7 +41,7 @@ public class UserContactsController : DebtBotControllerBase
     [HttpGet("Own")]
     public IActionResult GetOwn()
     {
-        var contactLinks = _userContactService.Get(UserId!.Value);
+        var contactLinks = _userService.GetContacts(UserId!.Value);
         if (contactLinks?.Any() ?? false)
         {
             return Ok(contactLinks);
@@ -52,54 +52,18 @@ public class UserContactsController : DebtBotControllerBase
 
     [Authorize(IdentityData.AdminUserPolicyName)]
     [HttpPost("{id}")]
-    public IActionResult Post(Guid id, UserModel contact)
+    public IActionResult Post(Guid id, Guid contactUserId, string displayName)
     {
-        _userContactService.AddContact(id, contact);
+        _userService.AddContact(id, contactUserId, displayName);
 
         return Ok();
     }
 
     [Authorize]
     [HttpPost]
-    public IActionResult Post(UserModel contact)
+    public IActionResult Post(Guid contactUserId, string displayName)
     {
-        _userContactService.AddContact(UserId!.Value, contact);
-
-        return Ok();
-    }
-
-    [Authorize]
-    [HttpPost("subscription/request")]
-    public IActionResult RequestSubscription(Guid contactId)
-    {
-        _userContactService.RequestSubscription(UserId!.Value, contactId);
-
-        return Ok();
-    }
-
-    [Authorize(IdentityData.AdminUserPolicyName)]
-    [HttpPost("subscription/add")]
-    public IActionResult AddSubscription(Guid userId, Guid contactId)
-    {
-        _userContactService.RequestSubscription(userId, contactId, true);
-
-        return Ok();
-    }
-
-    [Authorize]
-    [HttpPost("subscription/confirm")]
-    public IActionResult ConfirmSubscription(Guid contactId)
-    {
-        _userContactService.ConfirmSubscription(UserId!.Value, contactId);
-
-        return Ok();
-    }
-
-    [Authorize]
-    [HttpPost("subscription/decline")]
-    public IActionResult DeclineSubscription(Guid contactId)
-    {
-        _userContactService.DeclineSubscription(UserId!.Value, contactId);
+        _userService.AddContact(UserId!.Value, contactUserId, displayName);
 
         return Ok();
     }

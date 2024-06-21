@@ -307,4 +307,42 @@ public class UserRepository : IUserRepository
 
         return true;
     }
+
+    public IEnumerable<UserModel> GetContacts()
+    {
+        var contactLinks = _debtContext
+            .UserContactsLinks
+            .Include(t => t.ContactUser)
+            .ProjectTo<UserModel>(_mapper.ConfigurationProvider)
+            .ToList();
+
+        return contactLinks;
+    }
+
+    public IEnumerable<UserModel> GetContacts(Guid id)
+    {
+        var contacts = _debtContext.Users
+            .Include(t => t.UserContacts)
+            .ThenInclude(t => t.ContactUser)
+            .Where(t => t.Id == id)
+            .SelectMany(t => t.UserContacts)
+            .ProjectTo<UserModel>(_mapper.ConfigurationProvider)
+            .ToList();
+
+        return contacts;
+    }
+
+    public void AddContact(Guid id, Guid contactId, string DisplayName)
+    {
+        var link = new UserContactLink()
+        {
+            UserId = id,
+            ContactUserId = contactId,
+            DisplayName = DisplayName
+        };
+
+        _debtContext.UserContactsLinks.Add(link);
+
+        _debtContext.SaveChanges();
+    }
 }

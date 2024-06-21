@@ -13,13 +13,13 @@ public class SubscribeCommand : ITelegramCallbackQuery, ITelegramCommand
 {
     private readonly IUserService _userService;
     private readonly IPublishEndpoint _publishEndpoint;
-    private readonly IUserContactService _userContactService;
+    private readonly ISubscriptionService _subscriptionService;
 
-    public SubscribeCommand(IUserService userService, IPublishEndpoint publishEndpoint, IUserContactService userContactService)
+    public SubscribeCommand(IUserService userService, IPublishEndpoint publishEndpoint, ISubscriptionService subscriptionService)
     {
         _userService = userService;
         _publishEndpoint = publishEndpoint;
-        _userContactService = userContactService;
+        _subscriptionService = subscriptionService;
     }
 
     public string CommandName => "/Subscribe";
@@ -31,23 +31,23 @@ public class SubscribeCommand : ITelegramCallbackQuery, ITelegramCommand
         {
             return "Invalid command";
         }
-        Guid userId;
-        if (!Guid.TryParse(parts[2], out userId))
+        Guid subscriberId;
+        if (!Guid.TryParse(parts[2], out subscriberId))
         {
             return "Invalid user ID";
         }
-        Guid? fromUserId = _userService.FindUser(new UserSearchModel { TelegramId = query.From.Id })?.Id;
-        if (fromUserId == null)
+        Guid? subscribeTargetUserId = _userService.FindUser(new UserSearchModel { TelegramId = query.From.Id })?.Id;
+        if (subscribeTargetUserId == null)
         {
             return "User not found";
         }
         if (parts[1] == "Accept")
         {
-            _userContactService.ConfirmSubscription(fromUserId.Value, userId);
+            _subscriptionService.ConfirmSubscription(subscriberId, subscribeTargetUserId.Value);
         }
         if (parts[1] == "Decline")
         {
-            _userContactService.DeclineSubscription(fromUserId.Value, userId);
+            _subscriptionService.RemoveSubscription(subscriberId, subscribeTargetUserId.Value);
         }
 
         return null;
@@ -78,6 +78,8 @@ public class SubscribeCommand : ITelegramCallbackQuery, ITelegramCommand
         }
         
         var fromUserId = _userService.FindUser(new UserSearchModel { TelegramId = processedMessage.FromId })?.Id;
+
+        _subscriptionService.RequestSubscription(fromUserId!.Value, userId.Value);
 
         await _publishEndpoint.Publish(new SendSubscriptionNotification { SubscriberId = fromUserId!.Value, UserId = userId.Value });
     }

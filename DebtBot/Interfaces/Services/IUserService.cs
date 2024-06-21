@@ -19,4 +19,7 @@ public interface IUserService
     UserModel? FindUser(UserSearchModel model, Guid? userId = null);
     void SetBotActiveState(Guid userId, bool stateToSet);
     UserModel FindOrAddUser(UserSearchModel model, UserModel? owner = null);
+    IEnumerable<UserModel> GetContacts();
+    IEnumerable<UserModel> GetContacts(Guid id);
+    void AddContact(Guid id, Guid contactId, string displayName);
 }

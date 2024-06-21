@@ -31,10 +31,11 @@ builder.Configuration
 // Add repositories to the container.
 builder.Services.AddScoped<IBillRepository, BillRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
 
 // Add services to the container.
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IUserContactService, UserContactService>();
+builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 builder.Services.AddScoped<ITelegramService, TelegramService>();
 builder.Services.AddScoped<IParserService, ParserService>();
 builder.Services.AddScoped<IBillService, BillService>();
@@ -42,6 +43,7 @@ builder.Services.AddScoped<IDebtService, DebtService>();
 builder.Services.AddScoped<IBudgetService, BudgetService>();
 builder.Services.AddScoped<IExcelService, ExcelService>();
 builder.Services.AddScoped<IIdentityService, IdentityService>();
+builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 
 // telegram
 builder.Services.AddScoped<UpdateHandler>();

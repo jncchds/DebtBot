@@ -4,10 +4,13 @@ using DebtBot.Models.User;
 namespace DebtBot.Repositories;
 public interface IUserRepository
 {
+    void AddContact(Guid id, Guid contactId, string DisplayName);
     UserModel AddUser(UserCreationModel user);
     UserModel CreateAdmin();
     bool DeleteUser(Guid id);
     UserModel? FindUser(UserSearchModel model, Guid? userId = null);
+    IEnumerable<UserModel> GetContacts();
+    IEnumerable<UserModel> GetContacts(Guid id);
     UserModel? GetFirstAdmin();
     UserModel? GetUserById(Guid id);
     UserDisplayModel? GetUserDisplayModelById(Guid id);

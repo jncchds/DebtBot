@@ -1,8 +1,12 @@
 ﻿using AutoMapper;
+using DebtBot.DB.Entities;
+using DebtBot.DB;
 using DebtBot.Interfaces.Services;
+using DebtBot.Messages;
 using DebtBot.Models.Enums;
 using DebtBot.Models.User;
 using DebtBot.Repositories;
+using MassTransit;
 
 namespace DebtBot.Services;
 
@@ -10,13 +14,14 @@ public class UserService : IUserService
 {
     private readonly IUserRepository _userRepository;
     private readonly IMapper _mapper;
-    private readonly IUserContactService _userContactService;
 
-    public UserService(IUserRepository userRepository, IMapper mapper, IUserContactService userContactService)
+    private readonly IPublishEndpoint _publishEndpoint;
+
+    public UserService(IUserRepository userRepository, IMapper mapper, IPublishEndpoint publishEndpoint)
     {
         _userRepository = userRepository;
         _mapper = mapper;
-        _userContactService = userContactService;
+        _publishEndpoint = publishEndpoint;
     }
 
     public IEnumerable<UserModel> GetUsers()
@@ -116,14 +121,35 @@ public class UserService : IUserService
 
         var userCreationModel = _mapper.Map<UserCreationModel>(model);
 
-        user = _userRepository.AddUser(userCreationModel);
+        user = AddUser(userCreationModel);
 
         if (owner is not null)
         {
-            _userContactService.AddContact(owner.Id, user);
-            _userContactService.AddContact(user.Id, owner);
+            _publishEndpoint.Publish(new EnsureContact(
+                owner.Id,
+                user.Id,
+                user.DisplayName));
+            _publishEndpoint.Publish(new EnsureContact(
+                user.Id,
+                owner.Id,
+                owner.DisplayName));
         }
 
-        return user; 
+        return user;
+    }
+
+    public IEnumerable<UserModel> GetContacts()
+    {
+        return _userRepository.GetContacts();
+    }
+
+    public IEnumerable<UserModel> GetContacts(Guid id)
+    {
+        return _userRepository.GetContacts(id);
+    }
+
+    public void AddContact(Guid id, Guid contactId, string displayName)
+    {
+        _userRepository.AddContact(id, contactId, displayName);
     }
 }
