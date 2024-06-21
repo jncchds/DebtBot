@@ -1,11 +1,9 @@
 ﻿using AutoMapper;
-using DebtBot.DB.Entities;
-using DebtBot.DB;
+using DebtBot.Interfaces.Repositories;
 using DebtBot.Interfaces.Services;
 using DebtBot.Messages;
 using DebtBot.Models.Enums;
 using DebtBot.Models.User;
-using DebtBot.Repositories;
 using MassTransit;
 
 namespace DebtBot.Services;

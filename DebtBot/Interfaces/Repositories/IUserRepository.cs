@@ -1,7 +1,7 @@
 ﻿using DebtBot.Models.Enums;
 using DebtBot.Models.User;
 
-namespace DebtBot.Repositories;
+namespace DebtBot.Interfaces.Repositories;
 public interface IUserRepository
 {
     void AddContact(Guid id, Guid contactId, string DisplayName);

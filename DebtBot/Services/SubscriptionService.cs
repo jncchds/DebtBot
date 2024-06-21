@@ -1,6 +1,5 @@
-﻿using AutoMapper;
+﻿using DebtBot.Interfaces.Repositories;
 using DebtBot.Interfaces.Services;
-using DebtBot.Repositories;
 
 namespace DebtBot.Services;
 

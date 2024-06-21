@@ -1,4 +1,4 @@
-﻿namespace DebtBot.Repositories;
+﻿namespace DebtBot.Interfaces.Repositories;
 public interface ISubscriptionRepository
 {
     void Add(Guid userId, Guid contactId, bool subscriptionStatus = false);

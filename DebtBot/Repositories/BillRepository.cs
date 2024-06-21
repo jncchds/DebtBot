@@ -3,6 +3,7 @@ using AutoMapper.QueryableExtensions;
 using DebtBot.DB;
 using DebtBot.DB.Entities;
 using DebtBot.Extensions;
+using DebtBot.Interfaces.Repositories;
 using DebtBot.Models;
 using DebtBot.Models.Bill;
 using DebtBot.Models.BillLine;

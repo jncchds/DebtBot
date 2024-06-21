@@ -1,5 +1,6 @@
 ﻿using DebtBot.DB;
 using DebtBot.DB.Entities;
+using DebtBot.Interfaces.Repositories;
 
 namespace DebtBot.Repositories;
 

@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using DebtBot.DB;
+using DebtBot.Interfaces.Repositories;
 using DebtBot.Interfaces.Services;
 using DebtBot.Messages;
 using DebtBot.Models;
@@ -7,7 +8,6 @@ using DebtBot.Models.Bill;
 using DebtBot.Models.BillLine;
 using DebtBot.Models.Enums;
 using DebtBot.Models.User;
-using DebtBot.Repositories;
 using MassTransit;
 using Microsoft.IdentityModel.Tokens;
 

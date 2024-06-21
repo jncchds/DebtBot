@@ -4,7 +4,7 @@ using DebtBot.Models.BillLine;
 using DebtBot.Models.Enums;
 using DebtBot.Models.User;
 
-namespace DebtBot.Repositories;
+namespace DebtBot.Interfaces.Repositories;
 public interface IBillRepository
 {
     Guid Add(BillCreationModel billModel, Guid creatorId);
