@@ -38,12 +38,10 @@ public class ExchangeDebtCommand : ITelegramCommand
             return;
         }
 
-        var billId = _billService.Add(parsedExchange.Result!.forwardBill!, new UserSearchModel() { TelegramId = processedMessage.FromId });
+        var forwardBillId = _billService.Add(parsedExchange.Result!.forwardBill!, new UserSearchModel() { TelegramId = processedMessage.FromId });
 
-        await _publishEndpoint.Publish(new SendBillNotification() { BillId = billId, ChatId = processedMessage.ChatId });
+        var backwardBillId = _billService.Add(parsedExchange.Result!.backwardBill!, new UserSearchModel() { TelegramId = processedMessage.FromId });
 
-        billId = _billService.Add(parsedExchange.Result!.backwardBill!, new UserSearchModel() { TelegramId = processedMessage.FromId });
-
-        await _publishEndpoint.Publish(new SendBillNotification() { BillId = billId, ChatId = processedMessage.ChatId });
+        await _publishEndpoint.Publish(new SendExchangeNotification() { ForwardBillId = forwardBillId, BackwardBillId = backwardBillId, ChatId = processedMessage.ChatId });
     }
 }
