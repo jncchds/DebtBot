@@ -2,6 +2,7 @@
 using DebtBot.Models;
 using DebtBot.Models.Bill;
 using DebtBot.Models.Enums;
+using DebtBot.Models.Exchange;
 using DebtBot.Models.User;
 using DebtBot.Telegram;
 using System.Text;
@@ -79,6 +80,7 @@ public class TelegramService : ITelegramService
         entities.Sort((a, b) => a.Offset.CompareTo(b.Offset));
 
         var sb = new StringBuilder(message.Length);
+        bool commandFound = false;
 
         foreach (var entity in entities)
         {
@@ -93,7 +95,16 @@ public class TelegramService : ITelegramService
             {
                 case MessageEntityType.BotCommand:
                     // Ignoring bot command
-                    processedMessage.BotCommand = entityText;
+                    if (commandFound)
+                    {
+                        sb.Append(entityText);
+                        break;
+                    }
+                    else
+                    {
+                        processedMessage.BotCommand = entityText;
+                        commandFound = true;
+                    }
                     break;
                 case MessageEntityType.TextMention:
                 case MessageEntityType.Mention:
@@ -368,6 +379,185 @@ public class TelegramService : ITelegramService
 
         if (!returnModel.Errors.Any())
             returnModel.Result = payments.Select(t => t!).ToList();
+
+        return returnModel;
+    }
+
+    public ValidationModel<(BillParserModel forwardBill, BillParserModel backwardBill)> ParseExchange(string parsedText, List<UserSearchModel> userSearchModels)
+    {
+        decimal decimalValue;
+
+        var returnModel = new ValidationModel<(BillParserModel forwardBill, BillParserModel backwardBill)>();
+        var forwardBill = new BillParserModel();
+        var backwardBill = new BillParserModel();
+
+        if (string.IsNullOrWhiteSpace(parsedText))
+        {
+            returnModel.Errors.Add("Message is empty");
+            return returnModel;
+        }
+
+        var sections = parsedText.Split("\n\n", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+
+        if (sections.Length < 2)
+        {
+            returnModel.Errors.Add("Values part missing");
+            return returnModel;
+        }
+
+        forwardBill.Description = sections[0];
+        backwardBill.Description = sections[0];
+
+        var exchangeLines = sections[1].Split("\n", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+
+        if (exchangeLines.Length < 2)
+        {
+            returnModel.Errors.Add("Exchange must contain two parties");
+            return returnModel;
+        }
+
+        var forwardLineParseResult = parseExchangeLine(exchangeLines[0], userSearchModels, "First");
+
+        if (!forwardLineParseResult.IsValid)
+        {
+            returnModel.Errors.AddRange(forwardLineParseResult.Errors);
+            return returnModel;
+        }
+
+        var backwardLineParseResult = parseExchangeLine(exchangeLines[1], userSearchModels, "Second");
+
+        if (!backwardLineParseResult.IsValid)
+        {
+            returnModel.Errors.AddRange(backwardLineParseResult.Errors);
+            return returnModel;
+        }
+
+        var forwardLine = forwardLineParseResult.Result!;
+        var backwardLine = backwardLineParseResult.Result!;
+
+        if (forwardLine.AmountType != ExchangeAmountType.Absolute && backwardLine.AmountType != ExchangeAmountType.Absolute)
+        {
+            returnModel.Errors.Add("At least one exchange line must be absolute");
+            return returnModel;
+        }
+
+        convertAmountToAbsolute(forwardLine, backwardLine);
+        convertAmountToAbsolute(backwardLine, forwardLine);
+
+        fillExchangeBill(forwardBill, forwardLine, backwardLine);
+        fillExchangeBill(backwardBill, backwardLine, forwardLine);
+
+        returnModel.Result = (forwardBill, backwardBill);
+
+        return returnModel;
+    }
+
+    private void convertAmountToAbsolute(ExchangeLineParserModel forwardLine, ExchangeLineParserModel backwardLine)
+    {
+
+        if (forwardLine.AmountType != ExchangeAmountType.Absolute)
+        {
+            if (forwardLine.AmountType == ExchangeAmountType.Multiply)
+            {
+                forwardLine.Value = backwardLine.Value * forwardLine.Value;
+            }
+            else
+            {
+                forwardLine.Value = backwardLine.Value / forwardLine.Value;
+            }
+            forwardLine.AmountType = ExchangeAmountType.Absolute;
+        }
+    }
+
+    private void fillExchangeBill(BillParserModel forwardBill, ExchangeLineParserModel forwardLine, ExchangeLineParserModel backwardLine)
+    {
+        forwardBill.CurrencyCode = backwardLine.CurrencyCode; // UAH
+        forwardBill.PaymentCurrencyCode = forwardLine.CurrencyCode; // PLN
+
+        forwardBill.TotalWithTips = backwardLine.Value;
+        forwardBill.Date = DateTime.UtcNow;
+
+        forwardBill.Description += $"\nExchange {forwardLine.Value / backwardLine.Value:0.##} {forwardLine.CurrencyCode}/{backwardLine.CurrencyCode}";
+
+        forwardBill.Lines = new List<BillLineParserModel>
+        {
+            new BillLineParserModel
+            {
+                ItemDescription = "Exchange",
+                Subtotal = backwardLine.Value,
+                Participants = new List<BillLineParticipantParserModel>
+                {
+                    new BillLineParticipantParserModel
+                    {
+                        Part = 1,
+                        User = backwardLine.User
+                    }
+                }
+            }
+        };
+
+        forwardBill.Payments = new List<BillPaymentParserModel>
+        {
+            new BillPaymentParserModel
+            {
+                Amount = forwardLine.Value,
+                User = forwardLine.User
+            }
+        };
+    }
+
+    private ValidationModel<ExchangeLineParserModel> parseExchangeLine(string line, List<UserSearchModel> userSearchModels, string lineName)
+    {
+        decimal decimalValue;
+        char? operation = null;
+        var returnModel = new ValidationModel<ExchangeLineParserModel>();
+        var exchangeLine = new ExchangeLineParserModel();
+
+        var lineParts = line.Split(" ", 3, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        if (lineParts.Length < 3)
+        {
+            returnModel.Errors.Add($"{lineName} exchange line must contain amount, currency and participant");
+            return returnModel;
+        }
+
+        if (lineParts[0].StartsWith('*') || lineParts[0].StartsWith('/'))
+        {
+            operation = lineParts[0][0];
+            lineParts[0] = lineParts[0][1..];
+        }
+
+        if (!decimal.TryParse(lineParts[0], out decimalValue))
+        {
+            returnModel.Errors.Add($"Failed to parse {lineName.ToLower()} exchange line amount");
+            return returnModel;
+        }
+
+        if (decimalValue == 0.0m)
+        {
+            returnModel.Errors.Add($"{lineName} exchange line amount must be non-zero");
+            return returnModel;
+        }
+
+        exchangeLine.Value = decimalValue;
+
+        exchangeLine.AmountType = operation switch
+        {
+            '*' => ExchangeAmountType.Multiply,
+            '/' => ExchangeAmountType.Divide,
+            _ => ExchangeAmountType.Absolute
+        };
+
+        if (lineParts[1].Length != 3)
+        {
+            returnModel.Errors.Add($"{lineName} exchange line currency code must be 3 characters long");
+            return returnModel;
+        }
+
+        exchangeLine.CurrencyCode = lineParts[1].ToUpper();
+
+        exchangeLine.User = findMentionedUser(lineParts[2], userSearchModels);
+
+        returnModel.Result = exchangeLine;
 
         return returnModel;
     }
