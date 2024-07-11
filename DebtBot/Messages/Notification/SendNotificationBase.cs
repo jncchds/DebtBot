@@ -6,6 +6,7 @@ namespace DebtBot.Messages.Notification;
 [JsonDerivedType(typeof(SendBillProcessedNotification), (int)NotificationType.BillProcessed )]
 [JsonDerivedType(typeof(SendBillNotification), (int)NotificationType.Bill )]
 [JsonDerivedType(typeof(SendSubscriptionNotification), (int)NotificationType.Subscription )]
+[JsonDerivedType(typeof(SendExchangeNotification), (int)NotificationType.Exchange )]
 public class SendNotificationBase
 {
     public virtual NotificationType NotificationType { get; }
