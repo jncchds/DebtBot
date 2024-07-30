@@ -6,21 +6,18 @@ using DebtBot.Messages.Notification;
 using DebtBot.Models;
 using DebtBot.Telegram.Commands;
 using MassTransit;
-using MassTransit.Transports;
 using Microsoft.EntityFrameworkCore;
-using Polly;
 using System.Text;
-using Telegram.Bot;
 
-namespace DebtBot.Processors.Notification;
+namespace DebtBot.Consumers.Notification;
 
-public class BillProcessedNotificationProcessor : INotificationProcessorBase
+public class BillProcessedConsumer : IConsumer<BillProcessed>
 {
     private readonly DebtContext _debtContext;
     private readonly IMapper _mapper;
     private readonly IPublishEndpoint _publishEndpoint;
 
-    public BillProcessedNotificationProcessor(DebtContext debtContext,
+    public BillProcessedConsumer(DebtContext debtContext,
         IMapper mapper,
         IPublishEndpoint publishEndpoint)
     {
@@ -29,13 +26,11 @@ public class BillProcessedNotificationProcessor : INotificationProcessorBase
         _publishEndpoint = publishEndpoint;
     }
 
-    public NotificationType NotificationType => NotificationType.BillProcessed;
-
-    public Task Process(SendNotificationBase message)
+    public async Task Consume(ConsumeContext<BillProcessed> context)
     {
-        var billMessage = (SendBillProcessedNotification)message;
+        var billMessage = context.Message;
 
-        var bill = _debtContext
+        var bill = await _debtContext
             .Bills
             .Include(q => q.BillParticipants)
             .ThenInclude(p => p.User)
@@ -46,7 +41,7 @@ public class BillProcessedNotificationProcessor : INotificationProcessorBase
             .ThenInclude(lr => lr.CreditorUser)
         .Include(b => b.LedgerRecords)
             .ThenInclude(lr => lr.DebtorUser)
-            .FirstOrDefault(q => q.Id == billMessage.BillId);
+            .FirstOrDefaultAsync(q => q.Id == billMessage.BillId, context.CancellationToken);
 
         if (bill is null)
         {
@@ -66,8 +61,6 @@ public class BillProcessedNotificationProcessor : INotificationProcessorBase
                 SendNotification(bill, participant, subscription.Subscriber);
             }
         }
-
-        return Task.CompletedTask;
     }
 
     private void AppendDebt(StringBuilder sb, string userDisplayName, string otheruserDisplayName, decimal amount, string currencyCode)
@@ -114,7 +107,7 @@ public class BillProcessedNotificationProcessor : INotificationProcessorBase
             AppendDebt(sb, participant.User.DisplayName, lr.CreditorUser.DisplayName, -lr.Amount, lr.CurrencyCode);
         }
 
-        var telegramMessage = new SendTelegramMessage(
+        var telegramMessage = new TelegramMessageRequested(
             user.TelegramId!.Value,
             sb.ToString(),
             InlineKeyboard:

@@ -129,9 +129,9 @@ public class BillService : IBillService
         return billId;
     }
 
-    public bool Finalize(Guid id, bool forceSponsor = false)
+    public async Task<bool> FinalizeAsync(Guid id, CancellationToken cancellationToken, bool forceSponsor = false)
     {
-        var bill = _billRepository.Get(id);
+        var bill = await _billRepository.GetAsync(id, cancellationToken);
         if (bill == null)
         {
             return false;
@@ -142,14 +142,14 @@ public class BillService : IBillService
             return false;
         }
 
-        var ret = _billRepository.SetBillStatus(id, ProcessingState.Ready);
+        var success = await _billRepository.SetBillStatusAsync(id, ProcessingState.Ready, cancellationToken);
 
-        if (ret)
+        if (success)
         {
-            _publishEndpoint.Publish(new BillFinalized(id, forceSponsor));
+            await _publishEndpoint.Publish(new BillFinalized(id, forceSponsor), cancellationToken);
         }
 
-        return ret;
+        return success;
     }
 
     public bool HasAccess(Guid userId, BillModel? bill)
@@ -177,9 +177,9 @@ public class BillService : IBillService
         return false;
     }
 
-    public BillModel? Get(Guid id)
+    public async Task<BillModel?> GetAsync(Guid id, CancellationToken cancellationToken)
     {
-        return _billRepository.Get(id);
+        return await _billRepository.GetAsync(id, cancellationToken);
     }
 
     public List<BillModel> Get()

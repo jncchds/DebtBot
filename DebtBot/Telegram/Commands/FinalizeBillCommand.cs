@@ -24,8 +24,7 @@ public class FinalizeBillCommand : ITelegramCommand, ITelegramCallbackQuery
     }
 
     public async Task<string?> ExecuteAsync(
-        CallbackQuery query, 
-        ITelegramBotClient botClient, 
+        CallbackQuery query,
         CancellationToken cancellationToken)
     {
         var guidString = query.Data!.Split(" ").Skip(1).FirstOrDefault();
@@ -35,7 +34,7 @@ public class FinalizeBillCommand : ITelegramCommand, ITelegramCallbackQuery
             return "bill guid not detected";
         }
 
-        await FinalizeAsync(billId, query.Message!.Chat.Id, botClient, cancellationToken);
+        await FinalizeAsync(billId, query.Message!.Chat.Id, query.Message!.MessageId, cancellationToken);
 
         return null;
     }
@@ -56,30 +55,31 @@ public class FinalizeBillCommand : ITelegramCommand, ITelegramCallbackQuery
         {
             if (!Guid.TryParse(trimmed, out billId))
             {
-                await _publishEndpoint.Publish(new SendTelegramMessage(
+                await _publishEndpoint.Publish(new TelegramMessageRequested(
                     processedMessage.ChatId, 
                     "Bill id not detected"));
                 return;
             }
         }
         
-        await FinalizeAsync(billId, processedMessage.ChatId, botClient, cancellationToken);
+        await FinalizeAsync(billId, processedMessage.ChatId, null, cancellationToken);
     }
 
     private async Task FinalizeAsync(
-        Guid billId, 
-        long chatId, 
-        ITelegramBotClient botClient,
+        Guid billId,
+        long chatId,
+        int? messageId,
         CancellationToken cancellationToken)
     {
-        var ok = _billService.Finalize(billId);
-        if (ok)
+        var ok = await _billService.FinalizeAsync(billId, cancellationToken);
+        if (!ok)
         {
-            await _publishEndpoint.Publish(new SendBillNotification() { BillId = billId, ChatId = chatId });
+            await _publishEndpoint.Publish(new TelegramMessageRequested(chatId, "There was an error finalizing the bill"));
+            
         }
-        else
+        if (ok && messageId != null) 
         {
-            await _publishEndpoint.Publish(new SendTelegramMessage(chatId, "There was an error finalizing the bill"));
+            await _publishEndpoint.Publish(new BillNotificationRequested() { BillId = billId, ChatId = chatId, MessageId = messageId.Value });
         }
     }
 

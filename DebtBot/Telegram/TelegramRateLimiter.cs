@@ -1,15 +1,14 @@
-﻿using Polly;
-using System.Threading.RateLimiting;
+﻿using System.Threading.RateLimiting;
 
-namespace DebtBot.Processors;
+namespace DebtBot.Telegram;
 
-public class RateLimittingProcessor
+public class TelegramRateLimiter
 {
-    private readonly RateLimiter _limitter;
+    private readonly RateLimiter _limiter;
 
-    public RateLimittingProcessor()
+    public TelegramRateLimiter()
     {
-        _limitter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions
+        _limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions
         {
             AutoReplenishment = true,
             PermitLimit = 30,
@@ -22,7 +21,7 @@ public class RateLimittingProcessor
 
     public async Task ProcessAsync(Func<Task> action)
     {
-        var lease = await _limitter.AcquireAsync();
+        var lease = await _limiter.AcquireAsync();
         if (lease.IsAcquired)
         {
             await action();

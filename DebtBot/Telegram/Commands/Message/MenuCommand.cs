@@ -2,8 +2,6 @@
 using DebtBot.Messages;
 using MassTransit;
 using Telegram.Bot;
-using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Types.ReplyMarkups;
 
 namespace DebtBot.Telegram.Commands.Message;
 
@@ -24,7 +22,7 @@ public class MenuCommand : ITelegramCommand
         ITelegramBotClient botClient,
         CancellationToken cancellationToken)
     {
-        var message = new SendTelegramMessage(
+        var message = new TelegramMessageRequested(
             processedMessage.ChatId,
             $"<b>MENU</b>",
             InlineKeyboard:

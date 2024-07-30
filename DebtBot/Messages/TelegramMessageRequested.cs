@@ -1,9 +1,8 @@
 ﻿using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Types.ReplyMarkups;
 
 namespace DebtBot.Messages;
 
-public record SendTelegramMessage
+public record TelegramMessageRequested
 (
     long ChatId,
     string Text,

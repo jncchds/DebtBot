@@ -2,7 +2,6 @@
 using DebtBot.Interfaces.Telegram;
 using DebtBot.Messages;
 using MassTransit;
-using Telegram.Bot;
 using Telegram.Bot.Types;
 
 namespace DebtBot.Telegram.Commands.CallbackQueries;
@@ -23,7 +22,6 @@ public class FinalizeExchangeCommand : ITelegramCallbackQuery
 
     public async Task<string?> ExecuteAsync(
         CallbackQuery query,
-        ITelegramBotClient botClient,
         CancellationToken cancellationToken)
     {
         var guidStrings = query.Data!.Split(" ")[1];
@@ -37,8 +35,8 @@ public class FinalizeExchangeCommand : ITelegramCallbackQuery
         Guid forwardBillId = new Guid(byteArray[..16]);
         Guid backwardBillId = new Guid(byteArray[16..]);
 
-        await FinalizeAsync(forwardBillId, query.Message!.Chat.Id, botClient, cancellationToken);
-        await FinalizeAsync(backwardBillId, query.Message!.Chat.Id, botClient, cancellationToken);
+        await FinalizeAsync(forwardBillId, query.Message!.Chat.Id, cancellationToken);
+        await FinalizeAsync(backwardBillId, query.Message!.Chat.Id, cancellationToken);
 
         return null;
     }
@@ -46,13 +44,12 @@ public class FinalizeExchangeCommand : ITelegramCallbackQuery
     private async Task FinalizeAsync(
         Guid billId,
         long chatId,
-        ITelegramBotClient botClient,
         CancellationToken cancellationToken)
     {
-        var ok = _billService.Finalize(billId);
+        var ok = await _billService.FinalizeAsync(billId, cancellationToken);
         if (!ok)
         {
-            await _publishEndpoint.Publish(new SendTelegramMessage(chatId, "There was an error finalizing the bill"));
+            await _publishEndpoint.Publish(new TelegramMessageRequested(chatId, "There was an error finalizing the bill"));
         }
     }
 

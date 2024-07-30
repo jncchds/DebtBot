@@ -24,7 +24,7 @@ public class SubscribeCommand : ITelegramCallbackQuery, ITelegramCommand
 
     public string CommandName => "/Subscribe";
 
-    public async Task<string?> ExecuteAsync(CallbackQuery query, ITelegramBotClient botClient, CancellationToken cancellationToken)
+    public async Task<string?> ExecuteAsync(CallbackQuery query, CancellationToken cancellationToken)
     {
         string[]? parts = query?.Data?.Split(' ');
         if (parts == null || parts.Length < 3)
@@ -65,13 +65,13 @@ public class SubscribeCommand : ITelegramCallbackQuery, ITelegramCommand
             var searchUser = processedMessage.UserSearchModels.FirstOrDefault();
             if (searchUser == null)
             {
-                await _publishEndpoint.Publish(new SendTelegramMessage(processedMessage.ChatId, "User not found"));
+                await _publishEndpoint.Publish(new TelegramMessageRequested(processedMessage.ChatId, "User not found"));
                 return;
             }
             var user = _userService.FindUser(searchUser);
             if (user == null)
             {
-                await _publishEndpoint.Publish(new SendTelegramMessage(processedMessage.ChatId, "User not found"));
+                await _publishEndpoint.Publish(new TelegramMessageRequested(processedMessage.ChatId, "User not found"));
                 return;
             }
             userId = user.Id;
@@ -79,6 +79,6 @@ public class SubscribeCommand : ITelegramCallbackQuery, ITelegramCommand
         
         var fromUserId = _userService.FindUser(new UserSearchModel { TelegramId = processedMessage.FromId })?.Id;
 
-        await _publishEndpoint.Publish(new SendSubscriptionNotification { SubscriberId = fromUserId!.Value, UserId = userId.Value });
+        await _publishEndpoint.Publish(new SubscriptionRequested { SubscriberId = fromUserId!.Value, UserId = userId.Value });
     }
 }

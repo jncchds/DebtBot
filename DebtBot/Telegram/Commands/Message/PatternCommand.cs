@@ -1,10 +1,7 @@
-﻿using DebtBot.DB.Entities;
-using DebtBot.Interfaces.Telegram;
+﻿using DebtBot.Interfaces.Telegram;
 using DebtBot.Messages;
 using MassTransit;
-using Polly.Caching;
 using Telegram.Bot;
-using static MassTransit.Util.ChartTable;
 
 namespace DebtBot.Telegram.Commands.Message;
 
@@ -25,7 +22,7 @@ public class PatternCommand : ITelegramCommand
         ITelegramBotClient botClient,
         CancellationToken cancellationToken)
     {
-        var message = new SendTelegramMessage(
+        var message = new TelegramMessageRequested(
             processedMessage.ChatId,
             @"<pre><code class=""raw"">
 Bill Description(multiple rows, no empty lines)

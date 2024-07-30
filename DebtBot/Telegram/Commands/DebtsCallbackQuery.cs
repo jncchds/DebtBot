@@ -8,7 +8,6 @@ using Microsoft.Extensions.Options;
 using System.Text;
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.ReplyMarkups;
 
 namespace DebtBot.Telegram.Commands;
 
@@ -36,7 +35,6 @@ public class DebtsCallbackQuery : ITelegramCallbackQuery, ITelegramCommand
 
     public async Task<string?> ExecuteAsync(
         CallbackQuery query,
-        ITelegramBotClient botClient,
         CancellationToken cancellationToken)
     {
         int pageNumber = 0;
@@ -49,18 +47,18 @@ public class DebtsCallbackQuery : ITelegramCallbackQuery, ITelegramCommand
             messageId = query.Message!.MessageId;
         }
 
-        await ShowDebts(query.From.Id, query.Message!.Chat.Id, botClient, pageNumber, countPerPage, messageId, cancellationToken);
+        await ShowDebts(query.From.Id, query.Message!.Chat.Id, pageNumber, countPerPage, messageId, cancellationToken);
 
         return null;
     }
 
     public async Task ExecuteAsync(ProcessedMessage processedMessage, ITelegramBotClient botClient, CancellationToken cancellationToken)
     {
-        await ShowDebts(processedMessage.FromId, processedMessage.ChatId, botClient, 0, _telegramConfig.CountPerPage, null, cancellationToken);
+        await ShowDebts(processedMessage.FromId, processedMessage.ChatId, 0, _telegramConfig.CountPerPage, null, cancellationToken);
     }
 
-    private async Task ShowDebts(long telegramId, long chatId, ITelegramBotClient botClient,
-        int pageNumber, int? countPerPage, int? messageId, CancellationToken cancellationToken)
+    private async Task ShowDebts(long telegramId, long chatId, int pageNumber,
+        int? countPerPage, int? messageId, CancellationToken cancellationToken)
     {
         var user = _telegramService.GetUserByTelegramId(telegramId);
 
@@ -83,7 +81,7 @@ public class DebtsCallbackQuery : ITelegramCallbackQuery, ITelegramCommand
         }
 
         await _publishEndpoint.Publish(
-            new SendTelegramMessage(
+            new TelegramMessageRequested(
                 chatId, 
                 sb.ToString(), 
                 InlineKeyboard: [buttons, debts.ToInlineKeyboardButtons(CommandString)],

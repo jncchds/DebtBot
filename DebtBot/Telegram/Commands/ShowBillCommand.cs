@@ -19,7 +19,7 @@ public class ShowBillCommand : ITelegramCommand, ITelegramCallbackQuery
         _publishEndpoint = publishEndpoint;
     }
 
-    public async Task<string?> ExecuteAsync(CallbackQuery query, ITelegramBotClient botClient, CancellationToken cancellationToken)
+    public async Task<string?> ExecuteAsync(CallbackQuery query, CancellationToken cancellationToken)
     {
         var guidString = query.Data!.Split(" ").Skip(1).FirstOrDefault();
         if (!Guid.TryParse(guidString, out var billId))
@@ -27,7 +27,7 @@ public class ShowBillCommand : ITelegramCommand, ITelegramCallbackQuery
             return "bill guid not detected";
         }
 
-        await _publishEndpoint.Publish(new SendBillNotification() { BillId = billId, ChatId = query.Message!.Chat.Id });
+        await _publishEndpoint.Publish(new BillNotificationRequested() { BillId = billId, ChatId = query.Message!.Chat.Id });
 
         return null;
     }
@@ -42,11 +42,11 @@ public class ShowBillCommand : ITelegramCommand, ITelegramCallbackQuery
 
         if (billId is null)
         {
-            await _publishEndpoint.Publish(new SendTelegramMessage(processedMessage.ChatId, "Failed to parse bill id"));
+            await _publishEndpoint.Publish(new TelegramMessageRequested(processedMessage.ChatId, "Failed to parse bill id"));
             return;
         }
 
-        await _publishEndpoint.Publish(new SendBillNotification() { BillId = billId.Value, ChatId = processedMessage.ChatId });
+        await _publishEndpoint.Publish(new BillNotificationRequested() { BillId = billId.Value, ChatId = processedMessage.ChatId });
     }
 
     public static string FormatCallbackData(Guid billId)

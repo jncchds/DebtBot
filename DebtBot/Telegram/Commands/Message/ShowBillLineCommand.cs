@@ -1,10 +1,9 @@
-﻿using System.Text;
-using DebtBot.Interfaces.Services;
+﻿using DebtBot.Interfaces.Services;
 using DebtBot.Interfaces.Telegram;
 using DebtBot.Messages;
 using MassTransit;
+using System.Text;
 using Telegram.Bot;
-using Telegram.Bot.Types.Enums;
 
 namespace DebtBot.Telegram.Commands.Message;
 
@@ -29,7 +28,7 @@ public class ShowBillLineCommand : ITelegramCommand
         var billLineId = Guid.TryParse(processedMessage.ProcessedText, out var result) ? result : (Guid?)null;
         if (billLineId is null)
         {
-            await _publishEndpoint.Publish(new SendTelegramMessage(processedMessage.ChatId, "Failed to parse bill line id"));
+            await _publishEndpoint.Publish(new TelegramMessageRequested(processedMessage.ChatId, "Failed to parse bill line id"));
             return;
         }
 
@@ -37,16 +36,16 @@ public class ShowBillLineCommand : ITelegramCommand
 
         if (billLine is null)
         {
-            await _publishEndpoint.Publish(new SendTelegramMessage(processedMessage.ChatId, "Invalid bill line id"));
+            await _publishEndpoint.Publish(new TelegramMessageRequested(processedMessage.ChatId, "Invalid bill line id"));
             return;
         }
 
-        var bill = _billService.Get(billLine.BillId);
+        var bill = await _billService.GetAsync(billLine.BillId, cancellationToken);
 
         StringBuilder sb = new StringBuilder();
         sb.AppendLine($"<span class=\"tg-spoiler\">BillLine {billLine.Id}</span>");
         billLine.AppendToStringBuilder(sb, bill!.CurrencyCode);
 
-        await _publishEndpoint.Publish(new SendTelegramMessage(processedMessage.ChatId, sb.ToString()));
+        await _publishEndpoint.Publish(new TelegramMessageRequested(processedMessage.ChatId, sb.ToString()));
     }
 }

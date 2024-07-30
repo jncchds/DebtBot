@@ -1,13 +1,12 @@
-﻿using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Types.ReplyMarkups;
+﻿using DebtBot.Messages;
 using Telegram.Bot;
-using DebtBot.Messages;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace DebtBot.Extensions;
 
 public static class TelegramBotExtensions
 {
-    public static async Task SendOrUpdateTelegramMessage(this ITelegramBotClient botClient, SendTelegramMessage message, CancellationToken cancellationToken)
+    public static async Task SendOrUpdateTelegramMessage(this ITelegramBotClient botClient, TelegramMessageRequested message, CancellationToken cancellationToken)
     {
         var inlineButtons = message.InlineKeyboard?.Select(
             row => row.Select(

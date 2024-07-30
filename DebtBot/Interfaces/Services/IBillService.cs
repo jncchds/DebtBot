@@ -7,12 +7,12 @@ namespace DebtBot.Interfaces.Services;
 
 public interface IBillService
 {
-    BillModel? Get(Guid id);
+    Task<BillModel?> GetAsync(Guid id, CancellationToken cancellationToken);
     List<BillModel> Get();
     PagingResult<BillListModel> GetForUser(Guid userId, Guid? filterByUserId, string? filterByCurrencyCode, int pageNumber = 0, int? countPerPage = null);
     Guid Add(BillCreationModel billModel, Guid creatorId);
     Guid Add(BillParserModel parsedBill, UserSearchModel creator);
-    bool Finalize(Guid id, bool forceSponsor = false);
+    Task<bool> FinalizeAsync(Guid id, CancellationToken cancelationToken, bool forceSponsor = false);
     List<BillModel> GetCreatedByUser(Guid userId);
     bool HasAccess(Guid userId, BillModel? bill);
 

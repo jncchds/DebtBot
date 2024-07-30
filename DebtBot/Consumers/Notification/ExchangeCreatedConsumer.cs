@@ -4,33 +4,32 @@ using DebtBot.Messages.Notification;
 using DebtBot.Telegram.Commands.CallbackQueries;
 using MassTransit;
 
-namespace DebtBot.Processors.Notification;
+namespace DebtBot.Consumers.Notification;
 
-public class SendExchangeNotificationConsumer : INotificationProcessorBase
+public class ExchangeCreatedConsumer : IConsumer<ExchangeCreated>
 {
     private readonly IBillService _billService;
     private readonly IPublishEndpoint _publishEndpoint;
 
-    public SendExchangeNotificationConsumer(IBillService billService, IPublishEndpoint publishEndpoint)
+    public ExchangeCreatedConsumer(IBillService billService, IPublishEndpoint publishEndpoint)
     {
         _billService = billService;
         _publishEndpoint = publishEndpoint;
     }
 
-    public NotificationType NotificationType => NotificationType.Exchange;
-
-    public async Task Process(SendNotificationBase message)
+    public async Task Consume(ConsumeContext<ExchangeCreated> context)
     {
-        var exchangeData = (SendExchangeNotification)message;
+        var exchangeData = context.Message;
 
         var markup = new List<InlineButtonRecord>();
 
         markup.Add(new("Finalize", FinalizeExchangeCommand.FormatCallbackData(exchangeData.ForwardBillId, exchangeData.BackwardBillId)));
 
-        await _publishEndpoint.Publish(new SendTelegramMessage(
+        await _publishEndpoint.Publish(new TelegramMessageRequested(
             exchangeData.ChatId,
             "<b>Exchange created</b>",
-            InlineKeyboard: [markup]));
+            InlineKeyboard: [markup]),
+            context.CancellationToken);
 
         return;
     }

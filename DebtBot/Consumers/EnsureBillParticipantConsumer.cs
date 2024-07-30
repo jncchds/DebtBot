@@ -4,16 +4,16 @@ using DebtBot.Messages;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 
-namespace DebtBot.Processors;
+namespace DebtBot.Consumers;
 
-public class BillParticipantProcessor : IConsumer<EnsureBillParticipant>
+public class EnsureBillParticipantConsumer : IConsumer<EnsureBillParticipant>
 {
     private readonly DebtContext _debtContext;
-    private readonly ILogger<BillParticipantProcessor> _logger;
+    private readonly ILogger<EnsureBillParticipantConsumer> _logger;
 
-    public BillParticipantProcessor(
+    public EnsureBillParticipantConsumer(
         DebtContext debtContext, 
-        ILogger<BillParticipantProcessor> logger)
+        ILogger<EnsureBillParticipantConsumer> logger)
     {
         _debtContext = debtContext;
         _logger = logger;
