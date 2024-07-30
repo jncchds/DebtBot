@@ -26,13 +26,13 @@ public class BillRepository : IBillRepository
         _mapper = mapper;
     }
 
-    public BillModel? Get(Guid id)
+    public async Task<BillModel?> GetAsync(Guid id, CancellationToken cancellationToken)
     {
-        var bill = _debtContext
+        var bill = await _debtContext
             .Bills
             .Where(q => q.Id == id)
             .ProjectTo<BillModel>(_mapper.ConfigurationProvider)
-            .FirstOrDefault();
+            .FirstOrDefaultAsync(cancellationToken);
 
         return bill;
     }
@@ -276,16 +276,16 @@ public class BillRepository : IBillRepository
         _debtContext.SaveChanges();
     }
 
-    public bool SetBillStatus(Guid billId, ProcessingState status)
+    public async Task<bool> SetBillStatusAsync(Guid billId, ProcessingState status, CancellationToken cancellationToken)
     {
-        var bill = _debtContext.Bills.FirstOrDefault(q => q.Id == billId);
+        var bill = await _debtContext.Bills.FirstOrDefaultAsync(q => q.Id == billId, cancellationToken);
         if (bill == null)
         {
             return false;
         }
 
         bill.Status = status;
-        _debtContext.SaveChanges();
+        await _debtContext.SaveChangesAsync();
 
         return true;
     }

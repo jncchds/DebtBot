@@ -6,8 +6,6 @@ using DebtBot.Interfaces;
 using DebtBot.Interfaces.Services;
 using DebtBot.Interfaces.Telegram;
 using DebtBot.Models.Enums;
-using DebtBot.Processors;
-using DebtBot.Processors.Notification;
 using DebtBot.Repositories;
 using DebtBot.Services;
 using DebtBot.Telegram;
@@ -48,12 +46,12 @@ builder.Services.AddScoped<UpdateHandler>();
 builder.Services.AddScoped<ReceiverService>();
 builder.Services.AddHostedService<PollingService>();
 
-builder.Services.AddSingleton<RateLimittingProcessor>();
+builder.Services.AddSingleton<TelegramRateLimiter>();
 
 builder.Services.Scan(q => q
     .FromCallingAssembly()
     .AddClasses(c =>
-        c.AssignableToAny([typeof(ITelegramCommand), typeof(ITelegramCallbackQuery), typeof(INotificationProcessorBase)]))
+        c.AssignableToAny([typeof(ITelegramCommand), typeof(ITelegramCallbackQuery)]))
     .AsSelfWithInterfaces()
     .WithScopedLifetime());
 

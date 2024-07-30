@@ -30,7 +30,7 @@ public class StartCommand : ITelegramCommand
     {
 	    var userModel = _userService.FindUser(new UserSearchModel { TelegramId = processedMessage.FromId });
 
-		await _publishEndpoint.Publish(new SendTelegramMessage(
+		await _publishEndpoint.Publish(new TelegramMessageRequested(
 			processedMessage.ChatId,
 			$"Hello, {userModel!.DisplayName}!",
 			ReplyKeyboard: TelegramBotExtensions.DefaultReplyKeyboard

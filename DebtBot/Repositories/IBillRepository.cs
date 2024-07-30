@@ -12,9 +12,9 @@ public interface IBillRepository
     void AddLines(Guid billId, List<BillLineParserModel> parsedLines, UserModel creator);
     void AddPayments(Guid billId, List<BillPaymentParserModel> payments, UserModel creator);
     List<BillModel> Get();
-    BillModel? Get(Guid id);
+    Task<BillModel?> GetAsync(Guid id, CancellationToken cancellationToken);
     List<BillModel> GetCreatedByUser(Guid userId);
     PagingResult<BillListModel> GetForUser(Guid userId, Guid? filterByUserId, string? filterByCurrencyCode, int pageNumber = 0, int? countPerPage = null);
     BillLineModel? GetLine(Guid id);
-    bool SetBillStatus(Guid billId, ProcessingState status);
+    Task<bool> SetBillStatusAsync(Guid billId, ProcessingState status, CancellationToken cancellationToken);
 }

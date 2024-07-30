@@ -52,7 +52,7 @@ public class AddLinesCommand : ITelegramCommand
 
             if (!Guid.TryParse(guidString, out billId))
             {
-                await _publishEndpoint.Publish(new SendTelegramMessage(
+                await _publishEndpoint.Publish(new TelegramMessageRequested(
                     processedMessage.ChatId, 
                     "Bill id not detected"));
                 return;
@@ -63,14 +63,14 @@ public class AddLinesCommand : ITelegramCommand
 
         if (!lines.IsValid)
         {
-            await _publishEndpoint.Publish(new SendTelegramMessage(
+            await _publishEndpoint.Publish(new TelegramMessageRequested(
                 processedMessage.ChatId,
                 string.Join("\n", lines.Errors)));
             return;
         }
 
         _billService.AddLines(billId, lines.Result!, new UserSearchModel { TelegramId = processedMessage.FromId });
-        await _publishEndpoint.Publish(new SendTelegramMessage(
+        await _publishEndpoint.Publish(new TelegramMessageRequested(
             processedMessage.ChatId, 
             $"Lines added to bill with id ```{billId}```", 
             ParseMode: ParseMode.MarkdownV2));

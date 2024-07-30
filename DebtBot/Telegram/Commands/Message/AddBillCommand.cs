@@ -6,7 +6,6 @@ using DebtBot.Models.User;
 using DebtBot.Services;
 using MassTransit;
 using Telegram.Bot;
-using static MassTransit.Util.ChartTable;
 
 namespace DebtBot.Telegram.Commands.Message;
 
@@ -37,7 +36,7 @@ public class AddBillCommand : ITelegramCommand
 
         if (!parsedBill.IsValid)
         {
-            await _publishEndpoint.Publish(new SendTelegramMessage(
+            await _publishEndpoint.Publish(new TelegramMessageRequested(
                 processedMessage.ChatId,
                 string.Join("\n", parsedBill.Errors)));
             return;
@@ -45,6 +44,6 @@ public class AddBillCommand : ITelegramCommand
 
         var billId = _billService.Add(parsedBill.Result!, new UserSearchModel() { TelegramId = processedMessage.FromId });
 
-        await _publishEndpoint.Publish(new SendBillNotification() { BillId = billId, ChatId = processedMessage.ChatId });
+        await _publishEndpoint.Publish(new BillNotificationRequested() { BillId = billId, ChatId = processedMessage.ChatId });
     }
 }

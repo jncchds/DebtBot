@@ -101,7 +101,7 @@ public class UpdateHandler : IUpdateHandler
         
         if (callback != null)
         {
-            string? ret = await callback.ExecuteAsync(callbackQuery, _botClient, cancellationToken);
+            string? ret = await callback.ExecuteAsync(callbackQuery, cancellationToken);
             await _botClient.AnswerCallbackQueryAsync(callbackQuery.Id, ret, cancellationToken: cancellationToken);
         }
         else
@@ -114,7 +114,7 @@ public class UpdateHandler : IUpdateHandler
     {
         if (message.Chat.Type == ChatType.Channel)
         {
-            await _publishEndpoint.Publish(new SendTelegramMessage(message.Chat.Id, $"Hello! Currently channels are not supported"));
+            await _publishEndpoint.Publish(new TelegramMessageRequested(message.Chat.Id, $"Hello! Currently channels are not supported"));
             return;
         }
 

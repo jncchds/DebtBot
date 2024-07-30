@@ -3,14 +3,14 @@ using DebtBot.DB.Entities;
 using DebtBot.Messages;
 using MassTransit;
 
-namespace DebtBot.Processors;
+namespace DebtBot.Consumers;
 
-public class ContactProcessor : IConsumer<EnsureContact>
+public class EnsureContactConsumer : IConsumer<EnsureContact>
 {
     private DebtContext _debtContext;
-    private ILogger<ContactProcessor> _logger;
+    private ILogger<EnsureContactConsumer> _logger;
 
-    public ContactProcessor(DebtContext debtContext, ILogger<ContactProcessor> logger)
+    public EnsureContactConsumer(DebtContext debtContext, ILogger<EnsureContactConsumer> logger)
     {
         _debtContext = debtContext;
         _logger = logger;

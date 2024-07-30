@@ -40,6 +40,6 @@ Ratio2_2 User2_2...
 
 ...</code>";
 
-        await _publishEndpoint.Publish(new SendTelegramMessage(processedMessage.ChatId, message));
+        await _publishEndpoint.Publish(new TelegramMessageRequested(processedMessage.ChatId, message));
     }
 }

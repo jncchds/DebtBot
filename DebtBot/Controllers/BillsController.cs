@@ -30,9 +30,9 @@ public class BillsController : DebtBotControllerBase
     }
 
     [HttpGet("{id}")]
-	public IActionResult Get(Guid id)
+	public async Task<IActionResult> GetAsync(Guid id, CancellationToken cancellationToken)
 	{
-		var bill = _billService.Get(id);
+		var bill = await _billService.GetAsync(id, cancellationToken);
 
 		if (!IsAdmin && !_billService.HasAccess(UserId!.Value, bill))
 		{
@@ -108,7 +108,7 @@ public class BillsController : DebtBotControllerBase
     /// <returns></returns>
     [HttpPost("text")]
 	[RawTextRequest]
-    public IActionResult PostText([FromQuery] bool createDrafted)
+    public async Task<IActionResult> PostTextAsync([FromQuery] bool createDrafted, CancellationToken cancellationToken)
     {
         try
         {
@@ -122,7 +122,7 @@ public class BillsController : DebtBotControllerBase
             
             if(!createDrafted)
             {
-				_billService.Finalize(billGuid);
+				await _billService.FinalizeAsync(billGuid, cancellationToken);
             }
             return Ok(billGuid);
         }
@@ -132,10 +132,10 @@ public class BillsController : DebtBotControllerBase
         }
     }
 
-	[HttpPost("{id}/Finalize")]
-	public IActionResult Finalize(Guid id)
-	{
-		var result = _billService.Finalize(id);
+    [HttpPost("{id}/Finalize")]
+    public async Task<IActionResult> FinalizeAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await _billService.FinalizeAsync(id, cancellationToken);
         if (!result)
         {
             return BadRequest();
@@ -145,7 +145,7 @@ public class BillsController : DebtBotControllerBase
 
     [Authorize(IdentityData.AdminUserPolicyName)]
     [HttpPost("import/{creatorTelegramUserName}")]
-    public IActionResult ImportFile(IFormFile file, string creatorTelegramUserName)
+    public async Task<IActionResult> ImportFileAsync(IFormFile file, string creatorTelegramUserName, CancellationToken cancellationToken)
     {
         try
         {
@@ -167,7 +167,7 @@ public class BillsController : DebtBotControllerBase
                 try
                 {
                     var guid = _billService.Add(bill, new UserSearchModel { Id = creator.Id });
-                    if (!_billService.Finalize(guid, true))
+                    if (!await _billService.FinalizeAsync(guid, cancellationToken, true))
                         Console.WriteLine($"Failed to finalize bill {guid}");
                 }
                 catch (Exception ex)

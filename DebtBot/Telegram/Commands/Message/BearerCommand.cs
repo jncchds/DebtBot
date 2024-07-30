@@ -40,10 +40,10 @@ public class BearerCommand : ITelegramCommand
 
         if (user == null)
         {
-            await _publishEndpoint.Publish(new SendTelegramMessage(processedMessage.ChatId, "User not found"));
+            await _publishEndpoint.Publish(new TelegramMessageRequested(processedMessage.ChatId, "User not found"));
             return;
         }
         var token = _identityService.GenerateJwtToken(user!);
-        await _publishEndpoint.Publish(new SendTelegramMessage(processedMessage.ChatId, $"Your bearer token: <code>{token}</code>"));
+        await _publishEndpoint.Publish(new TelegramMessageRequested(processedMessage.ChatId, $"Your bearer token: <code>{token}</code>"));
     }
 }

@@ -30,7 +30,7 @@ public class StopCommand : ITelegramCommand
     {
 	    var userModel = _userService.FindUser(new UserSearchModel { TelegramId = processedMessage.FromId });
 
-		await _publishEndpoint.Publish(new SendTelegramMessage(
+		await _publishEndpoint.Publish(new TelegramMessageRequested(
 			processedMessage.ChatId,
 			$"Stopped, {userModel!.DisplayName}!",
 			ReplyKeyboard: TelegramBotExtensions.DefaultReplyKeyboard

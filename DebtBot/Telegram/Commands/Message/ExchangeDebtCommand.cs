@@ -32,7 +32,7 @@ public class ExchangeDebtCommand : ITelegramCommand
 
         if (!parsedExchange.IsValid)
         {
-            await _publishEndpoint.Publish(new SendTelegramMessage(
+            await _publishEndpoint.Publish(new TelegramMessageRequested(
                 processedMessage.ChatId,
                 string.Join("\n", parsedExchange.Errors)));
             return;
@@ -42,6 +42,6 @@ public class ExchangeDebtCommand : ITelegramCommand
 
         var backwardBillId = _billService.Add(parsedExchange.Result!.backwardBill!, new UserSearchModel() { TelegramId = processedMessage.FromId });
 
-        await _publishEndpoint.Publish(new SendExchangeNotification() { ForwardBillId = forwardBillId, BackwardBillId = backwardBillId, ChatId = processedMessage.ChatId });
+        await _publishEndpoint.Publish(new ExchangeCreated() { ForwardBillId = forwardBillId, BackwardBillId = backwardBillId, ChatId = processedMessage.ChatId });
     }
 }

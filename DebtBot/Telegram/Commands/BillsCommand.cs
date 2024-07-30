@@ -38,7 +38,6 @@ public class BillsCommand : ITelegramCommand, ITelegramCallbackQuery
 
     public async Task<string?> ExecuteAsync(
         CallbackQuery query,
-        ITelegramBotClient botClient,
         CancellationToken cancellationToken)
     {
         int pageNumber = 0;
@@ -71,7 +70,14 @@ public class BillsCommand : ITelegramCommand, ITelegramCallbackQuery
         var telegramId = query.From.Id;
         var chatId = query.Message!.Chat.Id;
 
-        var ret = await ShowBills(telegramId, filterByUserId, filterByCurrencyCode, chatId, botClient, pageNumber, countPerPage, openInNew ? null : messageId, cancellationToken);
+        var ret = await ShowBills(telegramId,
+                                  filterByUserId,
+                                  filterByCurrencyCode,
+                                  chatId,
+                                  pageNumber,
+                                  countPerPage,
+                                  openInNew ? null : messageId,
+                                  cancellationToken);
 
         return ret;
     }
@@ -83,7 +89,6 @@ public class BillsCommand : ITelegramCommand, ITelegramCallbackQuery
             null,
             null,
             processedMessage.ChatId,
-            botClient,
             0,
             _telegramConfig.CountPerPage,
             null,
@@ -91,19 +96,18 @@ public class BillsCommand : ITelegramCommand, ITelegramCallbackQuery
 
         if (!string.IsNullOrWhiteSpace(ret))
         {
-            await _publishEndpoint.Publish(new SendTelegramMessage(processedMessage.ChatId, ret));
+            await _publishEndpoint.Publish(new TelegramMessageRequested(processedMessage.ChatId, ret));
         }
     }
 
     private async Task<string?> ShowBills(
-        long telegramId, 
-        Guid? filterByUserId, 
+        long telegramId,
+        Guid? filterByUserId,
         string? filterByCurrencyCode,
-        long chatId, 
-        ITelegramBotClient botClient,
-        int pageNumber, 
-        int? countPerPage, 
-        int? messageId, 
+        long chatId,
+        int pageNumber,
+        int? countPerPage,
+        int? messageId,
         CancellationToken cancellationToken)
     {
         var userId = _telegramService.GetUserByTelegramId(telegramId);
@@ -153,7 +157,7 @@ public class BillsCommand : ITelegramCommand, ITelegramCallbackQuery
         });
 
         await _publishEndpoint.Publish(
-            new SendTelegramMessage(
+            new TelegramMessageRequested(
                 chatId, 
                 sb.ToString(),
                 [buttons, billsPage.ToInlineKeyboardButtons(CommandString, FormatCallbackParameters(filterByUserId, filterByCurrencyCode))],

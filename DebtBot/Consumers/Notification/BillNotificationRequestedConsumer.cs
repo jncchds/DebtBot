@@ -4,32 +4,29 @@ using DebtBot.Messages.Notification;
 using DebtBot.Models.Enums;
 using DebtBot.Telegram.Commands;
 using MassTransit;
-using Polly;
 
-namespace DebtBot.Processors.Notification;
+namespace DebtBot.Consumers.Notification;
 
-public class BillProcessor : INotificationProcessorBase
+public class BillNotificationRequestedConsumer : IConsumer<BillNotificationRequested>
 {
     private readonly IBillService _billService;
     private readonly IPublishEndpoint _publishEndpoint;
 
-    public BillProcessor(IBillService billService, IPublishEndpoint publishEndpoint)
+    public BillNotificationRequestedConsumer(IBillService billService, IPublishEndpoint publishEndpoint)
     {
         _billService = billService;
         _publishEndpoint = publishEndpoint;
     }
 
-    public NotificationType NotificationType => NotificationType.Bill;
-
-    public async Task Process(SendNotificationBase message)
+    public async Task Consume(ConsumeContext<BillNotificationRequested> context)
     {
-        var showBillMessage = (SendBillNotification)message;
+        var showBillMessage = context.Message;
 
-        var bill = _billService.Get(showBillMessage.BillId);
+        var bill = await _billService.GetAsync(showBillMessage.BillId, context.CancellationToken);
 
         if (bill is null)
         {
-            await _publishEndpoint.Publish(new SendTelegramMessage(
+            await _publishEndpoint.Publish(new TelegramMessageRequested(
                 showBillMessage.ChatId,
                 "Invalid bill id"));
             return;
@@ -41,9 +38,10 @@ public class BillProcessor : INotificationProcessorBase
             markup.Add(new("Finalize", FinalizeBillCommand.FormatCallbackData(showBillMessage.BillId)));
         }
 
-        await _publishEndpoint.Publish(new SendTelegramMessage(
+        await _publishEndpoint.Publish(new TelegramMessageRequested(
             showBillMessage.ChatId,
             bill!.ToString(),
+            MessageId: showBillMessage.MessageId,
             InlineKeyboard: [markup]));
 
         return;
