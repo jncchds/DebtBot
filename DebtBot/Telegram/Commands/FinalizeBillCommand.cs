@@ -79,7 +79,7 @@ public class FinalizeBillCommand : ITelegramCommand, ITelegramCallbackQuery
         }
         if (ok && messageId != null) 
         {
-            await _publishEndpoint.Publish(new BillNotificationRequested() { BillId = billId, ChatId = chatId, MessageId = messageId.Value });
+            await _publishEndpoint.Publish(new BillNotificationRequested() { BillId = billId, ChatId = chatId, MessageId = messageId });
         }
     }
 
