@@ -152,6 +152,11 @@ public class BillService : IBillService
         return success;
     }
 
+    public async Task CancelAsync(Guid id, CancellationToken cancellationToken)
+    {
+        await _publishEndpoint.Publish(new BillCanceled(id), cancellationToken);
+    }
+
     public bool HasAccess(Guid userId, BillModel? bill)
     {
         if (bill is null)

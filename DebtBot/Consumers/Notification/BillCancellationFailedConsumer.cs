@@ -2,6 +2,7 @@
 using DebtBot.DB.Entities;
 using DebtBot.Messages;
 using DebtBot.Messages.Notification;
+using DebtBot.Models.Enums;
 using DebtBot.Telegram.Commands;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
@@ -9,19 +10,19 @@ using System.Text;
 
 namespace DebtBot.Consumers.Notification;
 
-public class BillProcessFailedConsumer : IConsumer<BillProcessFailed>
+public class BillCancellationFailedConsumer : IConsumer<BillCancellationFailed>
 {
     private readonly DebtContext _debtContext;
     private readonly IPublishEndpoint _publishEndpoint;
 
-    public BillProcessFailedConsumer(DebtContext debtContext,
+    public BillCancellationFailedConsumer(DebtContext debtContext,
         IPublishEndpoint publishEndpoint)
     {
         _debtContext = debtContext;
         _publishEndpoint = publishEndpoint;
     }
 
-    public async Task Consume(ConsumeContext<BillProcessFailed> context)
+    public async Task Consume(ConsumeContext<BillCancellationFailed> context)
     {
         var billMessage = context.Message;
 
@@ -45,22 +46,27 @@ public class BillProcessFailedConsumer : IConsumer<BillProcessFailed>
 
         var sb = new StringBuilder();
 
-        sb.AppendLine("Bill failed to be processed and was reverted to Draft state");
+        sb.AppendLine("Bill cancellation failed");
         sb.AppendLine($"{bill.Description}");
         sb.AppendLine();
+
+        var replyKeyboard = new List<InlineButtonRecord>()
+        {
+            new("Show bill", ShowBillCommand.FormatCallbackData(bill.Id)),
+            //new("Cancel bill", CancelBillCommand.FormatCallbackData(bill.Id)),
+        };
+
+        replyKeyboard.Add(new("Cancel bill", CancelBillCommand.FormatCallbackData(bill.Id)));
+
+        if (bill.Status == ProcessingState.Draft)
+        {
+            replyKeyboard.Add(new("Finalize bill", FinalizeBillCommand.FormatCallbackData(bill.Id)));
+        }
 
         var telegramMessage = new TelegramMessageRequested(
             user.TelegramId!.Value,
             sb.ToString(),
-            InlineKeyboard:
-                [
-                    new()
-                    {
-                        new("Show bill", ShowBillCommand.FormatCallbackData(bill.Id)),
-                        new("Cancel bill", CancelBillCommand.FormatCallbackData(bill.Id)),
-                        new("Finalize bill", FinalizeBillCommand.FormatCallbackData(bill.Id))
-                    }
-                ]
+            InlineKeyboard: [ replyKeyboard ]
             );
 
         _publishEndpoint.Publish(telegramMessage);

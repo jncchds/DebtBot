@@ -1,6 +1,3 @@
 ﻿namespace DebtBot.Messages.Notification;
 
-public class BillProcessFailed
-{
-    public Guid BillId { get; set; }
-}
+public record BillProcessFailed(Guid BillId);

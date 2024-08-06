@@ -32,16 +32,12 @@ public class BillFinalizedConsumer : IConsumer<BillFinalized>
 
         try
         {
-
             bill = await _debtContext
                 .Bills
                 .Include(t => t.Lines)
                 .ThenInclude(t => t.Participants)
                 .Include(t => t.Payments)
                 .FirstAsync(t => t.Id == billId, context.CancellationToken);
-
-            bill.Status = ProcessingState.Processing;
-            await _debtContext.SaveChangesAsync();
 
             decimal spentBillTotalNoTips = bill.Lines.Sum(t => t.Subtotal);
             decimal paidPaymentTotalWithTips = bill.Payments.Sum(t => t.Amount);
@@ -146,7 +142,7 @@ public class BillFinalizedConsumer : IConsumer<BillFinalized>
                 bill.Status = ProcessingState.Draft;
                 await _debtContext.SaveChangesAsync();
             }
-            await _publishEndpoint.Publish(new BillProcessFailed() { BillId = bill.Id });
+            await _publishEndpoint.Publish(new BillProcessFailed(billId));
         }
     }
 }

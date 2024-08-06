@@ -4,6 +4,7 @@ using DebtBot.DB.Entities;
 using DebtBot.Messages;
 using DebtBot.Messages.Notification;
 using DebtBot.Models;
+using DebtBot.Models.Enums;
 using DebtBot.Telegram.Commands;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
@@ -51,14 +52,14 @@ public class BillProcessedConsumer : IConsumer<BillProcessed>
         // send message to send notification
         foreach (var participant in bill.BillParticipants)
         {
-            SendNotification(bill, participant, participant.User);
+            sendNotification(bill, participant, participant.User);
 
             foreach(var subscription in participant.User.Subscriptions)
             {
                 if (!subscription.IsConfirmed)
                     continue;
 
-                SendNotification(bill, participant, subscription.Subscriber);
+                sendNotification(bill, participant, subscription.Subscriber);
             }
         }
     }
@@ -75,7 +76,19 @@ public class BillProcessedConsumer : IConsumer<BillProcessed>
         }
     }
 
-    public void SendNotification(Bill bill, BillParticipant participant, User user)
+    private void sendNotification(Bill bill, BillParticipant participant, User user)
+    {
+        if (bill.Status == ProcessingState.Processed)
+        {
+            sendProcessedNotification(bill, participant, user);
+        }
+        else
+        {
+            sendCanceledNotification(bill, participant, user);
+        }
+    }
+
+    private void sendProcessedNotification(Bill bill, BillParticipant participant, User user)
     {
         if (!user.TelegramBotEnabled)
             return;
@@ -105,6 +118,43 @@ public class BillProcessedConsumer : IConsumer<BillProcessed>
         foreach (var lr in bill.LedgerRecords.Where(r => r.DebtorUserId == participant.UserId))
         {
             AppendDebt(sb, participant.User.DisplayName, lr.CreditorUser.DisplayName, -lr.Amount, lr.CurrencyCode);
+        }
+
+        var telegramMessage = new TelegramMessageRequested(
+            user.TelegramId!.Value,
+            sb.ToString(),
+            InlineKeyboard:
+                [
+                    new()
+                    {
+                        new("Show bill", ShowBillCommand.FormatCallbackData(bill.Id))
+                    }
+                ]
+            );
+
+        _publishEndpoint.Publish(telegramMessage);
+    }
+
+    private void sendCanceledNotification(Bill bill, BillParticipant participant, User user)
+    {
+        if (!user.TelegramBotEnabled)
+            return;
+
+        var sb = new StringBuilder();
+
+        //sb.AppendLine($"Bill {participant.User.DisplayName} participated in was cancelled");
+        sb.AppendLine($"{participant.User.DisplayName} participated in <b>Cancelled</b> Bill");
+        sb.AppendLine($"{bill.Description}");
+        sb.AppendLine();
+
+        foreach (var lr in bill.LedgerRecords.Where(r => r.CreditorUserId == participant.UserId))
+        {
+            AppendDebt(sb, participant.User.DisplayName, lr.DebtorUser.DisplayName, -lr.Amount, lr.CurrencyCode);
+        }
+        sb.AppendLine();
+        foreach (var lr in bill.LedgerRecords.Where(r => r.DebtorUserId == participant.UserId))
+        {
+            AppendDebt(sb, participant.User.DisplayName, lr.CreditorUser.DisplayName, lr.Amount, lr.CurrencyCode);
         }
 
         var telegramMessage = new TelegramMessageRequested(

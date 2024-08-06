@@ -13,6 +13,7 @@ public class LedgerRecord
     [Column(TypeName = "decimal(10, 4)")]
     public decimal Amount { get; set; }
     public string CurrencyCode { get; set; }
+    public bool IsCanceled { get; set; }
 
     [DeleteBehavior(DeleteBehavior.Restrict)]
     [ForeignKey(nameof(CreditorUserId))]
