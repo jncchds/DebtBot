@@ -62,7 +62,7 @@ public class BillModel
                 line.AppendToStringBuilder(sb, CurrencyCode, tipAdjustment);
             });
         }
-        if ((Spendings ?? []).Count != 0)
+        if ((Spendings ?? []).Count != 0 && Status != ProcessingState.Cancelled)
         {
             sb.AppendLine();
             sb.AppendLine("<b>Spendings:</b>");

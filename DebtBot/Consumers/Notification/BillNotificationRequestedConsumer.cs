@@ -33,6 +33,13 @@ public class BillNotificationRequestedConsumer : IConsumer<BillNotificationReque
         }
 
         var markup = new List<InlineButtonRecord>();
+
+
+        if (bill!.Status != ProcessingState.Cancelled && bill!.Status != ProcessingState.Ready)
+        {
+            markup.Add(new("Cancel", CancelBillCommand.FormatCallbackData(showBillMessage.BillId)));
+        }
+
         if (bill!.Status == ProcessingState.Draft)
         {
             markup.Add(new("Finalize", FinalizeBillCommand.FormatCallbackData(showBillMessage.BillId)));

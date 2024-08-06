@@ -13,6 +13,7 @@ public interface IBillService
     Guid Add(BillCreationModel billModel, Guid creatorId);
     Guid Add(BillParserModel parsedBill, UserSearchModel creator);
     Task<bool> FinalizeAsync(Guid id, CancellationToken cancelationToken, bool forceSponsor = false);
+    Task CancelAsync(Guid id, CancellationToken cancelationToken);
     List<BillModel> GetCreatedByUser(Guid userId);
     bool HasAccess(Guid userId, BillModel? bill);
 
