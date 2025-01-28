@@ -37,13 +37,13 @@ public class BillRepository : IBillRepository
         return bill;
     }
 
-    public List<BillModel> Get()
+    public PagingResult<BillModel> Get(int pageNumber = 0, int? countPerPage = null)
     {
         var bills = _debtContext
             .Bills
             .OrderByDescending(q => q.Date)
             .ProjectTo<BillModel>(_mapper.ConfigurationProvider)
-            .ToList();
+            .ToPagingResult<BillModel>(pageNumber, countPerPage);
         return bills;
     }
 
@@ -78,7 +78,7 @@ public class BillRepository : IBillRepository
         return bills;
     }
 
-    public List<BillModel> GetCreatedByUser(Guid userId)
+    public PagingResult<BillModel> GetCreatedByUser(Guid userId, int pageNumber = 0, int? countPerPage = null)
     {
 
         var bills = _debtContext
@@ -86,7 +86,7 @@ public class BillRepository : IBillRepository
             .OrderByDescending(q => q.Date)
             .Where(q => q.CreatorId == userId)
             .ProjectTo<BillModel>(_mapper.ConfigurationProvider)
-            .ToList();
+            .ToPagingResult<BillModel>(pageNumber, countPerPage);
 
         return bills;
     }

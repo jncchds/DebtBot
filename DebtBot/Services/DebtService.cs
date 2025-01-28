@@ -20,12 +20,12 @@ public class DebtService : IDebtService
         this._mapper = mapper;
     }
 
-    public List<DebtModel> GetAll()
+    public PagingResult<DebtModel> GetAll(int pageNumber = 0, int? countPerPage = null)
     {
         return _debtContext
             .Debts
             .ProjectTo<DebtModel>(_mapper.ConfigurationProvider)
-            .ToList();
+            .ToPagingResult(pageNumber, countPerPage);
     }
 
     public PagingResult<DebtModel> GetForUser(Guid userId, int pageNumber = 0, int? countPerPage = null)
