@@ -187,9 +187,9 @@ public class BillService : IBillService
         return await _billRepository.GetAsync(id, cancellationToken);
     }
 
-    public List<BillModel> Get()
+    public PagingResult<BillModel> Get(int pageNumber = 0, int? countPerPage = null)
     {
-        return _billRepository.Get();
+        return _billRepository.Get(pageNumber, countPerPage);
     }
 
     public PagingResult<BillListModel> GetForUser(Guid userId, Guid? filterByUserId, string? filterByCurrencyCode, int pageNumber = 0, int? countPerPage = null)
@@ -202,9 +202,9 @@ public class BillService : IBillService
         return _billRepository.Add(billModel, creatorId);
     }
 
-    public List<BillModel> GetCreatedByUser(Guid userId)
+    public PagingResult<BillModel> GetCreatedByUser(Guid userId, int pageNumber = 0, int? countPerPage = null)
     {
-        return _billRepository.GetCreatedByUser(userId);
+        return _billRepository.GetCreatedByUser(userId, pageNumber, countPerPage);
     }
 
     public BillLineModel? GetLine(Guid id)

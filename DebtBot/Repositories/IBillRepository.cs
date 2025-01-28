@@ -11,9 +11,9 @@ public interface IBillRepository
     Guid Add(BillParserModel parsedBill, UserModel creator);
     void AddLines(Guid billId, List<BillLineParserModel> parsedLines, UserModel creator);
     void AddPayments(Guid billId, List<BillPaymentParserModel> payments, UserModel creator);
-    List<BillModel> Get();
+    PagingResult<BillModel> Get(int pageNumber = 0, int? countPerPage = null);
     Task<BillModel?> GetAsync(Guid id, CancellationToken cancellationToken);
-    List<BillModel> GetCreatedByUser(Guid userId);
+    PagingResult<BillModel> GetCreatedByUser(Guid userId, int pageNumber = 0, int? countPerPage = null);
     PagingResult<BillListModel> GetForUser(Guid userId, Guid? filterByUserId, string? filterByCurrencyCode, int pageNumber = 0, int? countPerPage = null);
     BillLineModel? GetLine(Guid id);
     Task<bool> SetBillStatusAsync(Guid billId, ProcessingState status, CancellationToken cancellationToken);

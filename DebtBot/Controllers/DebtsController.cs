@@ -18,25 +18,25 @@ public class DebtsController : DebtBotControllerBase
 
     [Authorize(IdentityData.AdminUserPolicyName)]
     [HttpGet()]
-    public IActionResult Get()
+    public IActionResult Get(int pageNumber = 0, int? countPerPage = null)
     {
-        return Ok(_debtService.GetAll());
+        return Ok(_debtService.GetAll(pageNumber, countPerPage));
     }
 
     [Authorize(IdentityData.AdminUserPolicyName)]
     [HttpGet("{id}")]
-    public IActionResult Get(Guid id)
+    public IActionResult Get(Guid id, int pageNumber = 0, int? countPerPage = null)
     {
-        var debts = _debtService.GetForUser(id).Items;
+        var debts = _debtService.GetForUser(id, pageNumber, countPerPage);
         
         return Ok(debts);
     }
 
     [Authorize]
     [HttpGet("Own")]
-    public IActionResult GetOwn()
+    public IActionResult GetOwn(int pageNumber = 0, int? countPerPage = null)
     {
-        var debts = _debtService.GetForUser(UserId!.Value).Items;
+        var debts = _debtService.GetForUser(UserId!.Value, pageNumber, countPerPage).Items;
         
         return Ok(debts);
     }
