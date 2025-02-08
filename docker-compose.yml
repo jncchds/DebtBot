@@ -19,6 +19,13 @@ services:
       - db
       - rabbit
 
+  debtbot-ui:
+    image: jncchds/debtbot-ui:latest
+    ports:
+      - '8081:80'
+    depends_on:
+      - debtbot
+
   db:
     image: postgres:14.1-alpine
     restart: always
