@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DebtBot.Models", "DebtBot.M
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DebtBot.Models.Enums", "DebtBot.Models.Enums\DebtBot.Models.Enums.csproj", "{7E8C71B6-FE79-4909-A92A-98F8C8C13AD2}"
 EndProject
+Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "debt-bot-ui", "debt-bot-ui\debt-bot-ui.esproj", "{503A3C15-8E46-4255-B01B-84D9FD510A70}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,12 @@ Global
 		{7E8C71B6-FE79-4909-A92A-98F8C8C13AD2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7E8C71B6-FE79-4909-A92A-98F8C8C13AD2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7E8C71B6-FE79-4909-A92A-98F8C8C13AD2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{503A3C15-8E46-4255-B01B-84D9FD510A70}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{503A3C15-8E46-4255-B01B-84D9FD510A70}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{503A3C15-8E46-4255-B01B-84D9FD510A70}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{503A3C15-8E46-4255-B01B-84D9FD510A70}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{503A3C15-8E46-4255-B01B-84D9FD510A70}.Release|Any CPU.Build.0 = Release|Any CPU
+		{503A3C15-8E46-4255-B01B-84D9FD510A70}.Release|Any CPU.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

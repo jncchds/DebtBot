@@ -5,7 +5,7 @@
     <DockerTargetOS>Linux</DockerTargetOS>
     <ProjectGuid>97d2adab-b650-4a2f-9ddf-91b4189cf443</ProjectGuid>
     <DockerLaunchAction>LaunchBrowser</DockerLaunchAction>
-    <DockerServiceUrl>{Scheme}://localhost:{ServicePort}/swagger</DockerServiceUrl>
+    <DockerServiceUrl>https://debtbot-ui.local</DockerServiceUrl>
     <DockerServiceName>debtbot</DockerServiceName>
   </PropertyGroup>
   <ItemGroup>

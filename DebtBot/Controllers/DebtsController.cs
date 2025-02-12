@@ -1,5 +1,7 @@
 ﻿using DebtBot.Identity;
 using DebtBot.Interfaces.Services;
+using DebtBot.Models;
+using DebtBot.Models.Debt;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -34,7 +36,7 @@ public class DebtsController : DebtBotControllerBase
 
     [Authorize]
     [HttpGet("Own")]
-    public IActionResult GetOwn(int pageNumber = 0, int? countPerPage = null)
+    public ActionResult<PagingResult<DebtModel>> GetOwn(int pageNumber = 0, int? countPerPage = null)
     {
         var debts = _debtService.GetForUser(UserId!.Value, pageNumber, countPerPage).Items;
         

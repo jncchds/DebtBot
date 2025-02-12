@@ -30,14 +30,14 @@ public class BillsController : DebtBotControllerBase
     }
 
     [HttpGet("{id}")]
-	public async Task<IActionResult> GetAsync(Guid id, CancellationToken cancellationToken)
+	public async Task<ActionResult<BillModel?>> GetAsync(Guid id, CancellationToken cancellationToken)
 	{
 		var bill = await _billService.GetAsync(id, cancellationToken);
 
 		if (!IsAdmin && !_billService.HasAccess(UserId!.Value, bill))
 		{
-			return NotFound();
-		}
+            return NotFound();
+        }
 
 		return Ok(bill);
     }

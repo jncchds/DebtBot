@@ -18,6 +18,7 @@ using Microsoft.OpenApi.Models;
 using System.Reflection;
 using System.Text;
 using Telegram.Bot;
+using Telegram.Bot.Extensions.LoginWidget;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,6 +26,18 @@ builder.Configuration
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
     .AddEnvironmentVariables("DebtBot_");
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: "MyAllowSpecificOrigins",
+                      policy =>
+                      {
+                          policy.WithOrigins("https://debtbot.local",
+                                              "https://debtbot-ui.local")
+                          .AllowAnyHeader()
+                          .AllowAnyMethod();
+                      });
+});
 
 // Add repositories to the container.
 builder.Services.AddScoped<IBillRepository, BillRepository>();
@@ -61,6 +74,8 @@ builder.Services.AddHttpClient("telegram_bot_client")
                     TelegramBotClientOptions options = new(builder.Configuration[$"{DebtBotConfiguration.SectionName}:Telegram:BotToken"]!);
                     return new TelegramBotClient(options, httpClient);
                 });
+
+builder.Services.AddSingleton(new LoginWidget(builder.Configuration[$"{DebtBotConfiguration.SectionName}:Telegram:BotToken"]!));
 
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
@@ -167,6 +182,8 @@ builder.Services.AddAuthorization(options =>
 });
 
 var app = builder.Build();
+
+app.UseCors("MyAllowSpecificOrigins");
 
 var debtBotConfig = app.Services.GetRequiredService<IOptions<DebtBotConfiguration>>().Value;
 
