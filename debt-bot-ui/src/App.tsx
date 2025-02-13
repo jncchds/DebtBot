@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppBar, Toolbar, Typography, Button, Container, CssBaseline } from '@mui/material';
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Link } from "react-router";
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { LoginButton, TelegramAuthData } from '@telegram-auth/react';
 import HomePage from "./pages/HomePage"; // Import the home page
@@ -37,7 +37,10 @@ const App: React.FC = () => {
                         </Button>
                         <Button color="inherit" component={Link} to="/debts">
                             Debts
-                        </Button>
+                    </Button>
+                    <Button color="inherit" component={Link} onClick={debtBotApi.cheatAuth} to="#">
+                        Cheat
+                    </Button>
                         <LoginButton
                             botUsername="CHDSTestBot"
                             onAuthCallback={authCallback}
@@ -48,12 +51,10 @@ const App: React.FC = () => {
                         />
                     </Toolbar>
                 </AppBar>
-                <Container>
                     <Routes>
                         <Route path="/" element={<HomePage />} />
                         <Route path="/debts" element={<DebtsPage />} />
                     </Routes>
-                </Container>
             </Router>
         </ThemeProvider>
     );

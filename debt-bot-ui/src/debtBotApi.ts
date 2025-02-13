@@ -29,17 +29,22 @@ apiClient.interceptors.request.use((config) => {
 
 // Define API request functions
 export const debtBotApi = {
+    cheatAuth: async () => {
+        const resp: AxiosResponse<string> = await apiClient.get(
+            "/api/v1/Identity"
+        );
+
+        if (resp.status === 200) {
+            localStorage.setItem("token", resp.data); // Store the token
+        }
+    },
+
     // Authenticate user with Telegram
     authenticateUser: async (telegramAuthData: TelegramAuthData) => {
         try {
-            const data = {
-                hash: telegramAuthData.hash,
-                authDate: telegramAuthData.auth_date,
-                telegramId: telegramAuthData.id,
-            };
-            const resp: AxiosResponse<string> = await apiClient.get(
-                "/api/v1/Identity/token",
-                { params: data }
+            const resp: AxiosResponse<string> = await apiClient.post(
+                "/api/v1/Identity/Telegram",
+                telegramAuthData
             );
 
             if (resp.status === 200) {
@@ -59,7 +64,7 @@ export const debtBotApi = {
             return response.data;
         } catch (error) {
             console.error("Error fetching debts:", error);
-            throw error;
+            return null;
         }
     },
 };

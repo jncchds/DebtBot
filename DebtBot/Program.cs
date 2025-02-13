@@ -33,7 +33,8 @@ builder.Services.AddCors(options =>
                       policy =>
                       {
                           policy.WithOrigins("https://debtbot.local",
-                                              "https://debtbot-ui.local")
+                                              "https://debtbot-ui.local",
+                                              "http://debtbot-ui.local:5173")
                           .AllowAnyHeader()
                           .AllowAnyMethod();
                       });

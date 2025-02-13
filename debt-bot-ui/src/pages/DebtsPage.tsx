@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     Container,
     Typography,
@@ -10,6 +10,7 @@ import {
     CircularProgress,
     TableContainer,
     Paper,
+    TablePagination,
 } from "@mui/material";
 import debtBotApi from "../debtBotApi";
 import { Debt } from "../types/Debt";
@@ -17,22 +18,30 @@ import { PagingResult } from "../types/PagingResult"
 
 const DebtsPage: React.FC = () => {
     const [debts, setDebts] = useState<PagingResult<Debt> | null>(null);
-    const [loading, setLoading] = useState<boolean>(true);
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
 
     useEffect(() => {
         const fetchDebts = async () => {
             try {
-                const response = await debtBotApi.getDebts(0, 10);
+                const response = await debtBotApi.getDebts(page, rowsPerPage);
                 setDebts(response || null);
             } catch (error) {
                 console.error("Error fetching debts:", error);
-            } finally {
-                setLoading(false);
             }
         };
 
         fetchDebts();
-    }, []);
+    }, [page, rowsPerPage]);
+
+    const handleChangePage = (event: unknown, newPage: number) => {
+        setPage(newPage);
+    };
+
+    const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0);
+    };
 
     return (
         <Container>
@@ -40,7 +49,7 @@ const DebtsPage: React.FC = () => {
                 Your Debts
             </Typography>
 
-            {loading || debts == null || !debts.items ? (
+            {((debts == null) || (!debts.items)) ? (
                 <CircularProgress />
             ) : (
                 <TableContainer component={Paper}>
@@ -64,6 +73,15 @@ const DebtsPage: React.FC = () => {
                             ))}
                         </TableBody>
                     </Table>
+                    <TablePagination
+                        rowsPerPageOptions={[5, 10, 25]}
+                        component="div"
+                        count={debts.totalCount}
+                        rowsPerPage={rowsPerPage}
+                        page={page}
+                        onPageChange={handleChangePage}
+                        onRowsPerPageChange={handleChangeRowsPerPage}
+                    />
                 </TableContainer>
             )}
         </Container>

@@ -38,7 +38,7 @@ public class DebtsController : DebtBotControllerBase
     [HttpGet("Own")]
     public ActionResult<PagingResult<DebtModel>> GetOwn(int pageNumber = 0, int? countPerPage = null)
     {
-        var debts = _debtService.GetForUser(UserId!.Value, pageNumber, countPerPage).Items;
+        var debts = _debtService.GetForUser(UserId!.Value, pageNumber, countPerPage);
         
         return Ok(debts);
     }

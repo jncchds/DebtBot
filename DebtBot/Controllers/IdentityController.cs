@@ -1,12 +1,13 @@
 ﻿using DebtBot.Identity;
 using DebtBot.Interfaces;
 using DebtBot.Interfaces.Services;
+using DebtBot.Models;
 using DebtBot.Models.User;
 using DebtBot.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using Telegram.Bot;
+using System.Globalization;
 using Telegram.Bot.Extensions.LoginWidget;
 
 namespace DebtBot.Controllers;
@@ -45,22 +46,28 @@ public class IdentityController : ControllerBase
         return GenerateUserJwt(userModel);
     }
 
-    [HttpGet("token")]
-    public IActionResult GetToken(long telegramId, string hash, long authDate)
+    [HttpPost("Telegram")]
+    public IActionResult PostTelegramAuth(TelegramAuthData authData)
     {
-        var auth = _loginWidget.CheckAuthorization(new Dictionary<string, string>()
+        var sortedDict = new SortedDictionary<string, string>
         {
-            ["id"] = telegramId.ToString(),
-            ["hash"] = hash,
-            ["auth_date"] = authDate.ToString() 
-        });
+            { "id", authData.Id.ToString(CultureInfo.InvariantCulture) },
+            { "first_name", authData.FirstName },
+            { "last_name", authData.LastName },
+            { "username", authData.Username },
+            { "photo_url", authData.PhotoUrl },
+            { "auth_date", authData.AuthDate.ToString(CultureInfo.InvariantCulture) },
+            { "hash", authData.Hash }
+        };
+
+        var auth = _loginWidget.CheckAuthorization(sortedDict);
 
         if (!auth.HasFlag(Authorization.Valid))
         {
             return Unauthorized();
         }
 
-        var user = _telegramService.GetUserByTelegramId(telegramId);
+        var user = _telegramService.GetUserByTelegramId(authData.Id);
         if (user is null)
         {
             return Unauthorized();
