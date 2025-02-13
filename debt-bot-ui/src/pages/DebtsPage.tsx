@@ -11,21 +11,27 @@ import {
     TableContainer,
     Paper,
     TablePagination,
+    MenuItem,
+    Select,
+    FormControl,
+    InputLabel,
 } from "@mui/material";
 import debtBotApi from "../debtBotApi";
 import { Debt } from "../types/Debt";
-import { PagingResult } from "../types/PagingResult"
+import { PagingResult } from "../types/PagingResult";
 
 const DebtsPage: React.FC = () => {
     const [debts, setDebts] = useState<PagingResult<Debt> | null>(null);
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [selectedCreditor, setSelectedCreditor] = useState<string>("");
 
     useEffect(() => {
         const fetchDebts = async () => {
             try {
                 const response = await debtBotApi.getDebts(page, rowsPerPage);
                 setDebts(response || null);
+                setSelectedCreditor(response?.items[0]?.creditorUser.displayName || "");
             } catch (error) {
                 console.error("Error fetching debts:", error);
             }
@@ -43,11 +49,51 @@ const DebtsPage: React.FC = () => {
         setPage(0);
     };
 
+    const handleCreditorChange = (event: React.ChangeEvent<{ value: unknown }>) => {
+        setSelectedCreditor(event.target.value as string);
+        setPage(0);
+    };
+
+    const groupedDebts = debts?.items.reduce((acc, debt) => {
+        const creditor = debt.creditorUser.displayName || "Unknown";
+        if (!acc[creditor]) {
+            acc[creditor] = [];
+        }
+        acc[creditor].push(debt);
+        return acc;
+    }, {} as Record<string, Debt[]>);
+
+    const creditors = Object.keys(groupedDebts || {});
+
+    const filteredDebts = selectedCreditor
+        ? groupedDebts?.[selectedCreditor] || []
+        : debts?.items || [];
+
     return (
         <Container>
             <Typography variant="h4" gutterBottom>
-                Your Debts
+                Debts to {selectedCreditor || "N/A" }
             </Typography>
+
+            {((creditors?.length ?? 0) > 1) ?
+                <FormControl fullWidth margin="normal">
+                    <InputLabel id="creditor-select-label">Select Creditor</InputLabel>
+                    <Select
+                        labelId="creditor-select-label"
+                        value={selectedCreditor}
+                        onChange={handleCreditorChange}
+                    >
+                        {/*<MenuItem value="">*/}
+                        {/*    <em>All</em>*/}
+                        {/*</MenuItem>*/}
+                        {creditors.map((creditor) => (
+                            <MenuItem key={creditor} value={creditor}>
+                                {creditor}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                </FormControl> : <></>
+            }
 
             {((debts == null) || (!debts.items)) ? (
                 <CircularProgress />
@@ -56,16 +102,14 @@ const DebtsPage: React.FC = () => {
                     <Table>
                         <TableHead>
                             <TableRow>
-                                <TableCell>Creditor</TableCell>
                                 <TableCell>Debtor</TableCell>
                                 <TableCell>Amount</TableCell>
                                 <TableCell>Currency</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {debts.items.map((debt, index) => (
+                            {filteredDebts.map((debt, index) => (
                                 <TableRow key={index}>
-                                    <TableCell>{debt.creditorUser.displayName || "Unknown"}</TableCell>
                                     <TableCell>{debt.debtorUser.displayName || "Unknown"}</TableCell>
                                     <TableCell>${debt.amount.toFixed(2)}</TableCell>
                                     <TableCell>{debt.currencyCode || "N/A"}</TableCell>
@@ -76,7 +120,7 @@ const DebtsPage: React.FC = () => {
                     <TablePagination
                         rowsPerPageOptions={[5, 10, 25]}
                         component="div"
-                        count={debts.totalCount}
+                        count={filteredDebts.length}
                         rowsPerPage={rowsPerPage}
                         page={page}
                         onPageChange={handleChangePage}
