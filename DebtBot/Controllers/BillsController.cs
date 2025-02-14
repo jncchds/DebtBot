@@ -42,17 +42,24 @@ public class BillsController : DebtBotControllerBase
 		return Ok(bill);
     }
 
-    [HttpGet("Own")]
-    public IActionResult GetOwn(int pageNumber = 0, int? countPerPage = null)
+    [HttpGet()]
+    public IActionResult Get(string? debtorId = null, string? currencyCode = null,  int pageNumber = 0, int? countPerPage = null)
     {
-        var bills = _billService.GetCreatedByUser(UserId!.Value, pageNumber, countPerPage);
+        Guid? debtor;
+        Guid debtorVal;
+        if (!string.IsNullOrEmpty(debtorId) && Guid.TryParse(debtorId, out debtorVal))
+            debtor = debtorVal;
+        else
+            debtor = null;
+
+        var bills = _billService.GetForUser(UserId!.Value, debtor, currencyCode, pageNumber, countPerPage);
 
         return Ok(bills);
     }
 
     [Authorize(IdentityData.AdminUserPolicyName)]
-    [HttpGet]
-	public IActionResult Get(int pageNumber = 0, int? countPerPage = null)
+    [HttpGet("All")]
+	public IActionResult GetAll(int pageNumber = 0, int? countPerPage = null)
 	{
 		return Ok(_billService.Get(pageNumber, countPerPage));
 	}
