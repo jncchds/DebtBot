@@ -19,6 +19,10 @@ public interface IBillService
 
     BillLineModel? GetLine(Guid id);
     void AddLines(Guid billId, List<BillLineParserModel> parsedLines, UserSearchModel creatorSearchModel);
+    void AddLines(Guid billId, List<BillLineCreationModel> lines, Guid creatorId);
 
     void AddPayments(Guid billId, List<BillPaymentParserModel> payments, UserSearchModel creatorSearchModel);
+    void AddPayments(Guid billId, List<BillPaymentCreationModel> payments, Guid creatorId);
+
+    ExchangeResultModel AddExchange(ExchangeCreationModel exchangeModel, Guid creatorId);
 }

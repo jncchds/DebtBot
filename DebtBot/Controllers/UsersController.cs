@@ -79,13 +79,4 @@ public class UsersController : DebtBotControllerBase
 
         return Ok();
     }
-
-    [HttpGet("own")]
-    public ActionResult Own()
-    {
-        var user = _userService.GetUserDisplayModelById(UserId!.Value);
-        if (user == null)
-            return NotFound();
-        return Ok(user);
-    }
 }

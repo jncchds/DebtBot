@@ -36,10 +36,10 @@ public class BillCancellationFailedConsumer : IConsumer<BillCancellationFailed>
             throw new Exception("Bill not found");
         }
 
-        sendNotification(bill, bill.Creator);
+        await sendNotification(bill, bill.Creator);
     }
 
-    private void sendNotification(Bill bill, User user)
+    private async Task sendNotification(Bill bill, User user)
     {
         if (!user.TelegramBotEnabled)
             return;
@@ -69,6 +69,6 @@ public class BillCancellationFailedConsumer : IConsumer<BillCancellationFailed>
             InlineKeyboard: [ replyKeyboard ]
             );
 
-        _publishEndpoint.Publish(telegramMessage);
+        await _publishEndpoint.Publish(telegramMessage);
     }
 }

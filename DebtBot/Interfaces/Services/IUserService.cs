@@ -10,6 +10,7 @@ public interface IUserService
     UserModel? GetUserById(Guid id);
     UserDisplayModel? GetUserDisplayModelById(Guid id);
     IEnumerable<UserModel> GetUsers();
+    IEnumerable<UserDisplayModel> SearchUsers(string query);
     void UpdateUser(Guid id, UserCreationModel user);
     bool SetRole(Guid id, UserRole role);
     UserModel? GetFirstAdmin();

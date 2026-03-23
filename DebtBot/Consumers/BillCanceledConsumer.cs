@@ -12,9 +12,9 @@ public class BillCanceledConsumer : IConsumer<BillCanceled>
 {
     private readonly DebtContext _debtContext;
     private readonly IPublishEndpoint _publishEndpoint;
-    private readonly ILogger<BillFinalizedConsumer> _logger;
+    private readonly ILogger<BillCanceledConsumer> _logger;
 
-    public BillCanceledConsumer(DebtContext debtContext, IPublishEndpoint publishEndpoint, ILogger<BillFinalizedConsumer> logger)
+    public BillCanceledConsumer(DebtContext debtContext, IPublishEndpoint publishEndpoint, ILogger<BillCanceledConsumer> logger)
     {
         _debtContext = debtContext;
         _publishEndpoint = publishEndpoint;

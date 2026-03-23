@@ -94,6 +94,14 @@ builder.Services.AddMassTransit(configurator =>
     });
 });
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("ViteDev", policy =>
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod());
+});
+
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -181,9 +189,19 @@ CreateDefaultUser(app.Services);
     app.UseSwaggerUI();
 }
 
+if (app.Environment.IsDevelopment())
+{
+    app.UseCors("ViteDev");
+}
+
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.MapFallbackToFile("index.html");
 
 app.Run();
 
