@@ -12,6 +12,7 @@ public interface IUserRepository
     UserModel? GetUserById(Guid id);
     UserDisplayModel? GetUserDisplayModelById(Guid id);
     IEnumerable<UserModel> GetUsers();
+    IEnumerable<UserDisplayModel> SearchUsers(string query);
     void MergeUsers(Guid oldUserId, Guid newUserId);
     bool SetBotActiveState(Guid userId, bool stateToSet);
     bool SetRole(Guid id, UserRole role);

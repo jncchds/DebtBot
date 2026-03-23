@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DebtBot.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/v1/[controller]")]
 public class DebtsController : DebtBotControllerBase

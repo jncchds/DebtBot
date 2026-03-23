@@ -93,7 +93,7 @@ public class UserRepository : IUserRepository
     public bool DeleteUser(Guid id)
     {
         var user = _debtContext.Users.FirstOrDefault(u => u.Id == id);
-        if (user != null)
+        if (user is null)
         {
             return false;
         }
@@ -306,5 +306,19 @@ public class UserRepository : IUserRepository
         _debtContext.SaveChanges();
 
         return true;
+    }
+
+    public IEnumerable<UserDisplayModel> SearchUsers(string query)
+    {
+        var pattern = $"%{query}%";
+        return _debtContext.Users
+            .Where(u =>
+                EF.Functions.ILike(u.DisplayName ?? "", pattern) ||
+                EF.Functions.ILike(u.TelegramUserName ?? "", pattern) ||
+                EF.Functions.ILike(u.Email ?? "", pattern) ||
+                EF.Functions.ILike(u.Phone ?? "", pattern))
+            .OrderBy(u => u.DisplayName)
+            .ProjectTo<UserDisplayModel>(_mapper.ConfigurationProvider)
+            .ToList();
     }
 }

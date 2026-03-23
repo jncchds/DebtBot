@@ -2,7 +2,9 @@
 using DebtBot.Extensions;
 using DebtBot.Identity;
 using DebtBot.Interfaces.Services;
+using DebtBot.Models;
 using DebtBot.Models.Bill;
+using DebtBot.Models.BillLine;
 using DebtBot.Models.User;
 using DebtBot.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -112,7 +114,7 @@ public class BillsController : DebtBotControllerBase
     {
         try
         {
-            var message = Request.Body.ReadToEndAsync().Result;
+            var message = await Request.Body.ReadToEndAsync();
             var bill = _parserService.ParseBill(UserId!.Value, message);
             if (!bill.IsValid)
             {
@@ -141,6 +143,40 @@ public class BillsController : DebtBotControllerBase
             return BadRequest();
         }
         return Ok();
+    }
+
+    [HttpPost("{id}/Cancel")]
+    public async Task<IActionResult> CancelAsync(Guid id, CancellationToken cancellationToken)
+    {
+        await _billService.CancelAsync(id, cancellationToken);
+        return Ok();
+    }
+
+    [HttpPost("{id}/lines")]
+    public async Task<IActionResult> AddLinesAsync(Guid id, [FromBody] List<BillLineCreationModel> lines, CancellationToken cancellationToken)
+    {
+        var bill = await _billService.GetAsync(id, cancellationToken);
+        if (!IsAdmin && !_billService.HasAccess(UserId!.Value, bill))
+            return NotFound();
+        _billService.AddLines(id, lines, UserId!.Value);
+        return Ok();
+    }
+
+    [HttpPost("{id}/payments")]
+    public async Task<IActionResult> AddPaymentsAsync(Guid id, [FromBody] List<BillPaymentCreationModel> payments, CancellationToken cancellationToken)
+    {
+        var bill = await _billService.GetAsync(id, cancellationToken);
+        if (!IsAdmin && !_billService.HasAccess(UserId!.Value, bill))
+            return NotFound();
+        _billService.AddPayments(id, payments, UserId!.Value);
+        return Ok();
+    }
+
+    [HttpPost("exchange")]
+    public IActionResult Exchange([FromBody] ExchangeCreationModel exchangeModel)
+    {
+        var result = _billService.AddExchange(exchangeModel, UserId!.Value);
+        return Ok(result);
     }
 
     [Authorize(IdentityData.AdminUserPolicyName)]

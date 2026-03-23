@@ -52,14 +52,14 @@ public class BillProcessedConsumer : IConsumer<BillProcessed>
         // send message to send notification
         foreach (var participant in bill.BillParticipants)
         {
-            sendNotification(bill, participant, participant.User);
+            await sendNotification(bill, participant, participant.User);
 
             foreach(var subscription in participant.User.Subscriptions)
             {
                 if (!subscription.IsConfirmed)
                     continue;
 
-                sendNotification(bill, participant, subscription.Subscriber);
+                await sendNotification(bill, participant, subscription.Subscriber);
             }
         }
     }
@@ -76,19 +76,19 @@ public class BillProcessedConsumer : IConsumer<BillProcessed>
         }
     }
 
-    private void sendNotification(Bill bill, BillParticipant participant, User user)
+    private async Task sendNotification(Bill bill, BillParticipant participant, User user)
     {
         if (bill.Status == ProcessingState.Processed)
         {
-            sendProcessedNotification(bill, participant, user);
+            await sendProcessedNotification(bill, participant, user);
         }
         else
         {
-            sendCanceledNotification(bill, participant, user);
+            await sendCanceledNotification(bill, participant, user);
         }
     }
 
-    private void sendProcessedNotification(Bill bill, BillParticipant participant, User user)
+    private async Task sendProcessedNotification(Bill bill, BillParticipant participant, User user)
     {
         if (!user.TelegramBotEnabled)
             return;
@@ -132,10 +132,10 @@ public class BillProcessedConsumer : IConsumer<BillProcessed>
                 ]
             );
 
-        _publishEndpoint.Publish(telegramMessage);
+        await _publishEndpoint.Publish(telegramMessage);
     }
 
-    private void sendCanceledNotification(Bill bill, BillParticipant participant, User user)
+    private async Task sendCanceledNotification(Bill bill, BillParticipant participant, User user)
     {
         if (!user.TelegramBotEnabled)
             return;
@@ -169,6 +169,6 @@ public class BillProcessedConsumer : IConsumer<BillProcessed>
                 ]
             );
 
-        _publishEndpoint.Publish(telegramMessage);
+        await _publishEndpoint.Publish(telegramMessage);
     }
 }

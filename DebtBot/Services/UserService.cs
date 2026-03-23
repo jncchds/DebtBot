@@ -24,6 +24,11 @@ public class UserService : IUserService
         return _userRepository.GetUsers();
     }
 
+    public IEnumerable<UserDisplayModel> SearchUsers(string query)
+    {
+        return _userRepository.SearchUsers(query);
+    }
+
     public UserModel? GetUserById(Guid id)
     {
         return _userRepository.GetUserById(id);

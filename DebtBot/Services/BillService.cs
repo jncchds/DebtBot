@@ -5,6 +5,7 @@ using DebtBot.Messages;
 using DebtBot.Models;
 using DebtBot.Models.Bill;
 using DebtBot.Models.BillLine;
+using DebtBot.Models.BillLineParticipant;
 using DebtBot.Models.Enums;
 using DebtBot.Models.User;
 using DebtBot.Repositories;
@@ -58,6 +59,109 @@ public class BillService : IBillService
         }
 
         _billRepository.AddPayments(billId, payments, creator);
+    }
+
+    public void AddLines(Guid billId, List<BillLineCreationModel> lines, Guid creatorId)
+    {
+        var creator = _userService.GetUserById(creatorId)
+            ?? throw new Exception("creator not found");
+
+        var parserLines = lines.Select(l => new BillLineParserModel
+        {
+            ItemDescription = l.ItemDescription,
+            Subtotal = l.Subtotal,
+            Participants = l.Participants.Select(p => new BillLineParticipantParserModel
+            {
+                Part = p.Part,
+                User = new UserSearchModel { Id = p.UserId }
+            }).ToList()
+        }).ToList();
+
+        var creatorSearch = new UserSearchModel { Id = creatorId };
+        fillLineParticipantUserIds(parserLines, creator);
+        _billRepository.AddLines(billId, parserLines, creator);
+    }
+
+    public void AddPayments(Guid billId, List<BillPaymentCreationModel> payments, Guid creatorId)
+    {
+        var creator = _userService.GetUserById(creatorId)
+            ?? throw new Exception("creator not found");
+
+        var parserPayments = payments.Select(p => new BillPaymentParserModel
+        {
+            Amount = p.Amount,
+            User = new UserSearchModel { Id = p.UserId }
+        }).ToList();
+
+        fillPaymentUserIds(parserPayments, creator);
+        _billRepository.AddPayments(billId, parserPayments, creator);
+    }
+
+    public ExchangeResultModel AddExchange(ExchangeCreationModel exchangeModel, Guid creatorId)
+    {
+        var creatorSearch = new UserSearchModel { Id = creatorId };
+
+        var fromUser = new UserSearchModel { Id = exchangeModel.FromUserId };
+        var toUser = new UserSearchModel { Id = exchangeModel.ToUserId };
+
+        var forwardBill = new BillParserModel
+        {
+            Description = $"{exchangeModel.Description}\nExchange {exchangeModel.FromAmount / exchangeModel.ToAmount:0.##} {exchangeModel.FromCurrencyCode}/{exchangeModel.ToCurrencyCode}",
+            CurrencyCode = exchangeModel.ToCurrencyCode,
+            PaymentCurrencyCode = exchangeModel.FromCurrencyCode,
+            TotalWithTips = exchangeModel.ToAmount,
+            Date = DateTime.UtcNow,
+            Lines = new List<BillLineParserModel>
+            {
+                new BillLineParserModel
+                {
+                    ItemDescription = "Exchange",
+                    Subtotal = exchangeModel.ToAmount,
+                    Participants = new List<BillLineParticipantParserModel>
+                    {
+                        new BillLineParticipantParserModel { Part = 1, User = toUser }
+                    }
+                }
+            },
+            Payments = new List<BillPaymentParserModel>
+            {
+                new BillPaymentParserModel { Amount = exchangeModel.FromAmount, User = fromUser }
+            }
+        };
+
+        var backwardBill = new BillParserModel
+        {
+            Description = $"{exchangeModel.Description}\nExchange {exchangeModel.ToAmount / exchangeModel.FromAmount:0.##} {exchangeModel.ToCurrencyCode}/{exchangeModel.FromCurrencyCode}",
+            CurrencyCode = exchangeModel.FromCurrencyCode,
+            PaymentCurrencyCode = exchangeModel.ToCurrencyCode,
+            TotalWithTips = exchangeModel.FromAmount,
+            Date = DateTime.UtcNow,
+            Lines = new List<BillLineParserModel>
+            {
+                new BillLineParserModel
+                {
+                    ItemDescription = "Exchange",
+                    Subtotal = exchangeModel.FromAmount,
+                    Participants = new List<BillLineParticipantParserModel>
+                    {
+                        new BillLineParticipantParserModel { Part = 1, User = fromUser }
+                    }
+                }
+            },
+            Payments = new List<BillPaymentParserModel>
+            {
+                new BillPaymentParserModel { Amount = exchangeModel.ToAmount, User = toUser }
+            }
+        };
+
+        var forwardBillId = Add(forwardBill, creatorSearch);
+        var backwardBillId = Add(backwardBill, creatorSearch);
+
+        return new ExchangeResultModel
+        {
+            ForwardBillId = forwardBillId,
+            BackwardBillId = backwardBillId
+        };
     }
 
     private void fillLineParticipantUserIds(List<BillLineParserModel> parsedLines, UserModel creator)
