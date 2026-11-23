@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DebtBot login mockup</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+  .wrap { display: flex; min-height: 100vh; align-items: center; justify-content: center; padding: 0 1rem; }
+  form { width: 100%; max-width: 24rem; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+  .head { display: flex; flex-direction: column; align-items: center; gap: .5rem; text-align: center; }
+  .logo { font-size: 2.5rem; line-height: 1; }
+  h1 { margin: 0; font-size: 1.5rem; font-weight: 600; }
+  .head p { margin: 0; font-size: .875rem; }
+  .or { display: flex; align-items: center; gap: .75rem; font-size: .75rem; }
+  .or span { height: 1px; flex: 1; background: var(--border); }
+  .error { border-radius: 6px; border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent); background: color-mix(in srgb, var(--danger) 10%, transparent); color: var(--danger); padding: .5rem .75rem; font-size: .875rem; }
+  .tg { display: flex; justify-content: center; min-height: 40px; }
+  /* Facsimile of Telegram's own widget iframe (its colours are Telegram's, not ours). */
+  .tg-btn { display: inline-flex; align-items: center; gap: .6rem; background: #54a9eb; color: #fff; border-radius: 20px; padding: 0 1.3rem; height: 40px; font: 500 16px/1 system-ui, sans-serif; }
+  .tg-btn svg { width: 22px; height: 22px; }
+  .hint { margin: 0; text-align: center; font-size: .75rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <form class="card">
+    <div class="head">
+      <div class="logo">💸</div>
+      <h1>DebtBot</h1>
+      <p class="muted">Sign in to see your debts and bills</p>
+    </div>
+    <label><span class="label">Login</span><input class="input" value="anna.p"></label>
+    <label><span class="label">Password</span><input class="input" id="pw" type="password" value="secret12"></label>
+    <div id="error" class="error" role="alert" hidden>Sign-in failed. Check your login and password, or try again later.</div>
+    <button class="btn btn-primary" type="button" style="width:100%">Sign in</button>
+    <div id="tg">
+      <div class="or" style="margin-bottom:1rem"><span></span>or<span></span></div>
+      <div class="tg"><div class="tg-btn"><svg viewBox="0 0 24 24" fill="#fff"><path d="M21.9 4.3 18.7 19.4c-.2 1-.9 1.3-1.8.8l-4.9-3.6-2.4 2.3c-.3.3-.5.5-1 .5l.3-5 9.2-8.3c.4-.4-.1-.6-.6-.2L6.2 13 1.3 11.5c-1-.3-1-1 .2-1.5L20.6 2.6c.9-.3 1.6.2 1.3 1.7z"/></svg>Log in with Telegram</div></div>
+    </div>
+    <p class="hint muted" id="hint">No password yet? Sign in with Telegram, then set one in your profile.</p>
+  </form>
+</div>
+<script>
+  const p = new URLSearchParams(location.search)
+  if (p.get('theme') === 'dark') document.documentElement.classList.add('dark')
+  const s = p.get('state') ?? 'widget'
+  if (s === 'nowidget') {
+    document.querySelector('#tg').remove()
+    document.querySelector('#hint').textContent = 'No password yet? Ask an admin to set one for you.'
+  }
+  if (s === 'error') { document.querySelector('#error').hidden = false; document.querySelector('#pw').classList.add('focus') }
+</script>
+</body>
+</html>
