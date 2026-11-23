@@ -1,0 +1,13 @@
+# Line endings: LF in the repository and in every checkout, on every OS.
+# Git detects binary files (images, fonts) by itself and leaves them alone.
+* text=auto eol=lf
+
+# Windows batch files need CRLF to run.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
