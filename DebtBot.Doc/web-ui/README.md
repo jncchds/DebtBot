@@ -2,7 +2,7 @@
 
 This folder holds the working documents for building DebtBot's extended API, its web sign-in (Telegram Login Widget plus an optional password) and its web UI.
 
-The work is split into tasks T1 to T8. A separate worker session runs each task. The orchestrator session ("DebtBot") merges each finished task into the `web-ui` branch, and that branch has one draft PR to `main`.
+The work is split into tasks T1 to T9. A separate worker session runs each task. The orchestrator session ("DebtBot orchestrator") merges each finished task into the `web-ui` branch, and that branch has one draft PR to `main`.
 
 | Path | What it is |
 |---|---|

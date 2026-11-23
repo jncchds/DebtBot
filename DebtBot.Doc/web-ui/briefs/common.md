@@ -1,6 +1,6 @@
 # Rules for every DebtBot web-ui worker session
 
-This task is one of a series (T1 to T8) of web-ui tasks. An orchestrator session runs them one at a time, and each task gets its own worker session. Read this file before your brief, and follow it for the whole task.
+This task is one of a series (T1 to T9) of web-ui tasks. An orchestrator session runs them one at a time, and each task gets its own worker session. Read this file before your brief, and follow it for the whole task.
 
 ## Read first
 - `DebtBot.Doc/web-ui/plan.md`: the agreed plan, the user's decisions and the task list.

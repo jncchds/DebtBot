@@ -19,7 +19,7 @@ Decisions already taken:
 - The UI is served by the API.
 - **Palette:** Lime on graphite (chosen 2026-11-23 from `mockups/palette/`; exact tokens in `notes/web-ui-palette.md`).
 
-Work is split into tasks T1–T8 (see "Task series" at the end), each run by its own worker session on `task/NN-*` branched from `web-ui`; the orchestrator session merges them into `web-ui`, which has one draft PR to main. How it runs: `notes/web-ui-orchestration.md`, `briefs/common.md`.
+Work is split into tasks T1–T9 (see "Task series" at the end), each run by its own worker session on `task/NN-*` branched from `web-ui`; the orchestrator session merges them into `web-ui`, which has one draft PR to main. How it runs: `notes/web-ui-orchestration.md`, `briefs/common.md`.
 
 ## Step 0: Choose the palette — DONE: Lime on graphite
 Make one small PNG per option in `$CLAUDE_JOB_DIR/tmp/palettes/`, rendered with headless Chromium or Playwright from a tiny HTML file. Each image shows the light and dark versions side by side: text on the background, a surface card reading "You owe Anna 12.50 EUR", a primary button and a pill. Send the images to the user with SendUserFile and ask which one to use.
@@ -174,9 +174,10 @@ The UI shows the enums as strings, now that the API sends them that way.
 |---|---|---|
 | T1 | Backend auth: users' login/password, refresh tokens, Telegram Login Widget, `/Bearer` fix, JSON enums, Swagger, static hosting, test project | `briefs/task-01.md` |
 | T2 | API extension (1b) plus the admin API: users list, set password, merge suggestions | `briefs/task-02.md` |
-| T3 | UI foundation: ClientApp scaffold, tokens, sidebar shell, login page, auth plumbing, Docker node stage. Mockups first | `briefs/task-03.md` |
-| T4 | UI: Debts, Bills list, Bill detail. Mockups first | `briefs/task-04.md` |
-| T5 | UI: New bill (form and paste-text modes), Exchange (draft, then accept). Mockups first | `briefs/task-05.md` |
-| T6 | UI: Contacts, Spendings, Profile. Mockups first | `briefs/task-06.md` |
-| T7 | UI: Admin (users, merge suggestions, all bills). Mockups first | `briefs/task-07.md` |
-| T8 | End-to-end check in Docker, polish, docs, PR ready for review | `briefs/task-08.md` |
+| T3 | Upgrade to .NET 11: all projects to net11.0, Docker images to 11.0, packages to their latest **free** versions (AutoMapper stays below 15, MassTransit on 8.x; Telegram.Bot to latest with the bot code adapted). Added 2026-11-23 | `briefs/task-03.md` |
+| T4 | UI foundation: ClientApp scaffold, tokens, sidebar shell, login page, auth plumbing, Docker node stage. Mockups first | `briefs/task-04.md` |
+| T5 | UI: Debts, Bills list, Bill detail. Mockups first | `briefs/task-05.md` |
+| T6 | UI: New bill (form and paste-text modes), Exchange (draft, then accept). Mockups first | `briefs/task-06.md` |
+| T7 | UI: Contacts, Spendings, Profile. Mockups first | `briefs/task-07.md` |
+| T8 | UI: Admin (users, merge suggestions, all bills). Mockups first | `briefs/task-08.md` |
+| T9 | End-to-end check in Docker, polish, docs, PR ready for review | `briefs/task-09.md` |

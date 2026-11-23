@@ -33,6 +33,7 @@ On 2026-11-23 the user set up how the DebtBot API + auth + web UI work is run.
 - There should be one user per Telegram id. Duplicates are shown to admins as suggestions on the Merge users screen.
 - An exchange is created as a draft and accepted with a separate finalize step, the same as the Telegram button.
 - An admin page is required.
+- .NET 11 upgrade (added 2026-11-23) runs as T3, right after T2; UI tasks became T4–T8 and the end-to-end check T9. Packages go to their latest free versions (AutoMapper below 15, MassTransit 8.x; fix the AutoMapper advisory if a free fix exists), Telegram.Bot to latest with bot code adapted. The SDK 11 is installed user-local in ~/.dotnet (system SDK 10 stays).
 
 **Progress**
 - Orchestrator worktree: `/mnt/git/DebtBot/.claude/worktrees/web-ui` (branch `web-ui`). Draft PR: https://github.com/jncchds/DebtBot/pull/34. Docs: `DebtBot.Doc/web-ui/`.
