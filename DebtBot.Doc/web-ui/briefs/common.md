@@ -74,6 +74,7 @@ When you're done:
    - anything left open for later tasks.
 2. Push the branch.
 3. End with a short report, and wake the orchestrator using the paragraph below.
+4. **Don't remove yourself.** Leave your worktree, your branch and your session as they are: don't remove the worktree, delete the branch, exit, stop or archive the session, or run `claude stop` on yourself. The orchestrator may send the task back to you, and it cleans all of this up after the merge.
 
 ## Waking the orchestrator
 Always do this when you finish, and also when you stop because you're blocked. The orchestrator is the session named **"DebtBot orchestrator"** (id `334ad10a`, session id `334ad10a-e54a-4cf5-bb10-dc9b00a79ca5`), with cwd `/mnt/git/DebtBot`.
