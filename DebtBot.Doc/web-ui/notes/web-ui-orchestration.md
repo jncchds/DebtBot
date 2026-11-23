@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: b85fe091-00b4-4715-be20-d611e12ba132
-  modified: 2026-11-23T17:09:21.883Z
+  modified: 2026-11-23T17:10:31.055Z
 ---
 
 On 2026-11-23 the user set up how the DebtBot API + auth + web UI work is run.
@@ -14,6 +14,7 @@ On 2026-11-23 the user set up how the DebtBot API + auth + web UI work is run.
 - Run one orchestrator session. Each task gets its own worker session, started with a clean context through `~/.claude/skills/start-code-session/start.sh`. Tasks run one after another.
 - The orchestrator is the session named "DebtBot orchestrator": id `334ad10a`, session id `334ad10a-e54a-4cf5-bb10-dc9b00a79ca5`. It took over on 2026-11-23; the first orchestrator, "DebtBot" (b85fe091), was archived.
 - Every worker reports to the orchestrator with SendMessage when it finishes or is blocked.
+- Workers never remove themselves: no removing their worktree or branch, no exiting, stopping or archiving their session. The orchestrator may send work back, and it cleans up after the merge (user, 2026-11-23; in common.md "Finishing").
 - If the orchestrator isn't running (check `claude agents --json`), the worker resumes it with `start.sh /mnt/git/DebtBot --resume <session id> "Report from …"`. This is the same pattern as ASync's workers-wake-orchestrator.
 
 **Git**
@@ -39,6 +40,7 @@ On 2026-11-23 the user set up how the DebtBot API + auth + web UI work is run.
 - 2026-11-23: T1 (auth) started as worker "DebtBot T1 auth", id 07d30c7c.
 - 2026-11-23: orchestration handed over from b85fe091 to 334ad10a.
 - 2026-11-23: T1 merged into web-ui (19ff92b). 52 tests pass. Note for T3: refresh reuse has no grace window, so the SPA must share one in-flight refresh. Orchestration was then handed to 334ad10a; the handoff is in `DebtBot.Doc/web-ui/handoff-orchestrator.md`, and T1 was told the new ids.
+- 2026-11-23: T2 (API + admin API) started as worker "DebtBot T2 api", id 35c79555.
 
 **Why:** the user wants a clean context per task, control over how each view looks, and a durable record of the work.
 **How to apply:** follow this for every task in the series. Related: [[web-ui-palette]].
