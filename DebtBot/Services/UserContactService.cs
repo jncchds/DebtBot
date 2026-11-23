@@ -91,7 +91,7 @@ public class UserContactService : IUserContactService
         }
     }
 
-    public void ConfirmSubscription(Guid userId, Guid contactId)
+    public bool ConfirmSubscription(Guid userId, Guid contactId)
     {
         var subscription = _debtContext.NotificationSubscriptions.FirstOrDefault(t => t.UserId == userId && t.SubscriberId == contactId);
         if (subscription != null)
@@ -100,9 +100,10 @@ public class UserContactService : IUserContactService
 
             _debtContext.SaveChanges();
         }
+        return subscription != null;
     }
 
-    public void DeclineSubscription(Guid userId, Guid contactId)
+    public bool DeclineSubscription(Guid userId, Guid contactId)
     {
         var subscription = _debtContext.NotificationSubscriptions.FirstOrDefault(t => t.UserId == userId && t.SubscriberId == contactId);
         if (subscription != null)
@@ -111,6 +112,7 @@ public class UserContactService : IUserContactService
 
             _debtContext.SaveChanges();
         }
+        return subscription != null;
     }
 
     public List<ContactModel> GetContacts(Guid userId)

@@ -59,17 +59,44 @@ public class UsersController : DebtBotControllerBase
         return Ok();
     }
 
+    /// <summary>
+    /// Deletes a user that has no bills, ledger records, spendings or contacts (a stray placeholder).
+    /// 409 when there is such data: merge the user into another one instead.
+    /// </summary>
     [HttpDelete("{id}")]
-    public ActionResult Delete(Guid id)
+    public IActionResult Delete(Guid id)
     {
-        _userService.DeleteUser(id);
+        if (id == UserId)
+        {
+            return ErrorResult(StatusCodes.Status400BadRequest, "You can't delete the account you're signed in with.");
+        }
 
-        return Ok();
+        return _userService.DeleteUser(id) switch
+        {
+            DeleteUserResult.Deleted => Ok(),
+            DeleteUserResult.InUse => ErrorResult(StatusCodes.Status409Conflict,
+                "This user still has bills, debts or contacts. Merge them into another user instead."),
+            _ => ErrorResult(StatusCodes.Status404NotFound, "User not found."),
+        };
     }
 
+    /// <summary>
+    /// Updates a user's display name, Telegram username, phone and email. The Telegram id can't be changed:
+    /// a different <c>telegramId</c> in the body gives 400.
+    /// </summary>
     [HttpPut("{id}")]
-    public ActionResult Put(Guid id, UserCreationModel user)
+    public IActionResult Put(Guid id, UserCreationModel user)
     {
+        var existing = _userService.GetUserById(id);
+        if (existing is null)
+        {
+            return ErrorResult(StatusCodes.Status404NotFound, "User not found.");
+        }
+        if (user.TelegramId is not null && user.TelegramId != existing.TelegramId)
+        {
+            return ErrorResult(StatusCodes.Status400BadRequest, "The Telegram id can't be changed.");
+        }
+
         _userService.UpdateUser(id, user);
 
         return Ok();

@@ -54,7 +54,7 @@ public class TelegramBotApiTests
         await _bot.SendOrUpdateTelegramMessage(message, default);
 
         var request = Assert.IsType<SendMessageRequest>(Assert.Single(_requests));
-        Assert.Equal(77, request.ChatId.Identifier);
+        Assert.Equal(77, request.ChatId?.Identifier);
         Assert.Equal("<b>Exchange</b>", request.Text);
         Assert.Equal(ParseMode.Html, request.ParseMode);
         Assert.Equal(5, request.MessageThreadId);
@@ -112,6 +112,7 @@ public class TelegramBotApiTests
     {
         var billService = Substitute.For<IBillService>();
         billService.FinalizeAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(true);
+        billService.CanTelegramUserChangeAsync(Arg.Any<Guid>(), 1001, Arg.Any<CancellationToken>()).Returns(true);
         var publish = Substitute.For<IPublishEndpoint>();
         var forward = Guid.NewGuid();
         var backward = Guid.NewGuid();
@@ -148,6 +149,7 @@ public class TelegramBotApiTests
         var publish = Substitute.For<IPublishEndpoint>();
         var forward = Guid.NewGuid();
         billService.FinalizeAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(call => call.Arg<Guid>() != forward);
+        billService.CanTelegramUserChangeAsync(Arg.Any<Guid>(), 1, Arg.Any<CancellationToken>()).Returns(true);
         var command = new FinalizeExchangeCommand(billService, publish);
 
         var result = await command.ExecuteAsync(new CallbackQuery

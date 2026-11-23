@@ -33,7 +33,7 @@ Workers write the code. You don't, except for small fixes of your own.
 2. **Start the worker** with `~/.claude/skills/start-code-session/start.sh /mnt/git/DebtBot --title "DebtBot TN <name>" --model claude-opus-5-5 --mode auto "<short prompt>"`. Keep the prompt short and point it at the brief file and common.md: an inline brief containing `git -C` was refused by the worktree guard. Then subscribe once with SendMessage(to: its name, notify_when_idle: true). The worker's report message is the real signal.
 3. **When the report arrives:**
    - Check the branch is pushed, is based on `web-ui`, and its worktree is clean.
-   - In the worker's worktree, run `dotnet build DebtBot.sln` (0 errors) and the tests in `DebtBot.Tests`. The SDK is 10 and the projects target net8, so use `DOTNET_ROLL_FORWARD=Major`, or Docker.
+   - In the worker's worktree, run `dotnet build DebtBot.sln` (0 errors) and the tests in `DebtBot.Tests`. Since T3 the projects target net11: use SDK 11 from `~/.dotnet` with `PATH=~/.dotnet:$PATH DOTNET_ROOT=~/.dotnet`.
    - From T3 on, also run `npm run build` in `DebtBot/ClientApp`.
    - If something is still open, send the task back to the worker.
    - Otherwise, from your worktree:

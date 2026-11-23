@@ -135,10 +135,22 @@ public partial class UserContactsController : DebtBotControllerBase
         return Ok();
     }
 
+    // The subscription endpoints below act for the signed-in user only; just the admin's subscription/add takes a user id.
+
+    /// <summary>Asks to get notifications about <paramref name="contactId"/>'s bills. 404 for an unknown user, 400 for yourself.</summary>
     [Authorize]
     [HttpPost("subscription/request")]
     public IActionResult RequestSubscription(Guid contactId)
     {
+        if (contactId == UserId)
+        {
+            return ErrorResult(StatusCodes.Status400BadRequest, "You can't subscribe to yourself.");
+        }
+        if (_userService.GetUserById(contactId) is null)
+        {
+            return ErrorResult(StatusCodes.Status404NotFound, "User not found.");
+        }
+
         _userContactService.RequestSubscription(UserId!.Value, contactId);
 
         return Ok();
@@ -153,20 +165,28 @@ public partial class UserContactsController : DebtBotControllerBase
         return Ok();
     }
 
+    /// <summary>Lets <paramref name="contactId"/> get notifications about your bills. 404 when they haven't asked.</summary>
     [Authorize]
     [HttpPost("subscription/confirm")]
     public IActionResult ConfirmSubscription(Guid contactId)
     {
-        _userContactService.ConfirmSubscription(UserId!.Value, contactId);
+        if (!_userContactService.ConfirmSubscription(UserId!.Value, contactId))
+        {
+            return ErrorResult(StatusCodes.Status404NotFound, "No subscription request from this user.");
+        }
 
         return Ok();
     }
 
+    /// <summary>Removes <paramref name="contactId"/>'s request or subscription to you. 404 when there is none.</summary>
     [Authorize]
     [HttpPost("subscription/decline")]
     public IActionResult DeclineSubscription(Guid contactId)
     {
-        _userContactService.DeclineSubscription(UserId!.Value, contactId);
+        if (!_userContactService.DeclineSubscription(UserId!.Value, contactId))
+        {
+            return ErrorResult(StatusCodes.Status404NotFound, "No subscription from this user.");
+        }
 
         return Ok();
     }

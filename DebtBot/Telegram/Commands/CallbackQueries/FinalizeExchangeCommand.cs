@@ -35,6 +35,12 @@ public class FinalizeExchangeCommand : ITelegramCallbackQuery
         Guid forwardBillId = new Guid(byteArray[..16]);
         Guid backwardBillId = new Guid(byteArray[16..]);
 
+        if (!await _billService.CanTelegramUserChangeAsync(forwardBillId, query.From.Id, cancellationToken)
+            || !await _billService.CanTelegramUserChangeAsync(backwardBillId, query.From.Id, cancellationToken))
+        {
+            return FinalizeBillCommand.NotAllowedText;
+        }
+
         await FinalizeAsync(forwardBillId, query.Message!.Chat.Id, cancellationToken);
         await FinalizeAsync(backwardBillId, query.Message!.Chat.Id, cancellationToken);
 

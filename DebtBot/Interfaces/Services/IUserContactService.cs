@@ -9,8 +9,10 @@ public interface IUserContactService
     IEnumerable<UserModel> Get();
     IEnumerable<UserModel> Get(Guid id);
     void RequestSubscription(Guid userId, Guid contactId, bool forceSubscribe = false);
-    void ConfirmSubscription(Guid userId, Guid contactId);
-    void DeclineSubscription(Guid userId, Guid contactId);
+    /// <summary>Confirms <paramref name="contactId"/>'s request to follow <paramref name="userId"/>'s bills; false when there is none.</summary>
+    bool ConfirmSubscription(Guid userId, Guid contactId);
+    /// <summary>Removes <paramref name="contactId"/>'s request or subscription to <paramref name="userId"/>; false when there is none.</summary>
+    bool DeclineSubscription(Guid userId, Guid contactId);
     /// <summary>The user's contacts with subscription states, ordered by name.</summary>
     List<ContactModel> GetContacts(Guid userId);
     ContactModel? GetContact(Guid userId, Guid contactUserId);

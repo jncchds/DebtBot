@@ -28,9 +28,10 @@ This task is one of a series (T1 to T9) of web-ui tasks. An orchestrator session
   - remove dangling images (`docker image prune -f`) and the build cache you created (`docker builder prune -f`);
   - delete `bin`, `obj` and `node_modules` you no longer need when the disk runs low;
   - run `dotnet build-server shutdown` after builds.
-- The installed SDK is .NET 10.0.115, with runtime 10 only. The projects target net8.0:
-  - `dotnet build` works.
-  - To run tests or the app locally, set `DOTNET_ROLL_FORWARD=Major`, or use the `mcr.microsoft.com/dotnet/sdk:8.0` container.
+- The projects target net11.0 (since T3). SDK 11 (11.0.100, runtimes 11.0.0) is installed user-local in `~/.dotnet`; the system SDK 10 in `/usr/lib/dotnet` can't build net11:
+  - put it first in each command: `PATH=~/.dotnet:$PATH DOTNET_ROOT=~/.dotnet dotnet build DebtBot.sln` (and the same for `dotnet test DebtBot.Tests/DebtBot.Tests.csproj`). Don't edit shell profiles.
+  - `dotnet ef` needs dotnet-ef 11. The global tool in `~/.dotnet/tools` stays on 10 for other projects, so install 11 into your job's tmp folder: `dotnet tool install dotnet-ef --version 11.0.0 --tool-path <tmp>/eftool`, then run `<tmp>/eftool/dotnet-ef` (with the same `PATH`/`DOTNET_ROOT`) from `DebtBot/`.
+  - No `DOTNET_ROLL_FORWARD` and no sdk:8.0 container are needed any more.
   - The real runtime check is `docker compose`. The image is built from `DebtBot/Dockerfile`, with Postgres (`db`) and RabbitMQ (`rabbit`).
 - Node is 22.22, and `google-chrome` is installed for headless screenshots.
 

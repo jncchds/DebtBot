@@ -202,6 +202,18 @@ public class BillService : IBillService
         return isAdmin || bill.Creator?.Id == userId;
     }
 
+    public async Task<bool> CanTelegramUserChangeAsync(Guid billId, long telegramUserId, CancellationToken cancellationToken)
+    {
+        var bill = await _billRepository.GetAsync(billId, cancellationToken);
+        if (bill is null)
+        {
+            return true;
+        }
+
+        var user = _userService.FindUser(new UserSearchModel { TelegramId = telegramUserId });
+        return user is not null && CanChange(user.Id, user.Role == UserRole.Admin, bill);
+    }
+
     private async Task<BillActionResult<BillModel>> getForChangeAsync(Guid billId, Guid userId, bool isAdmin, CancellationToken cancellationToken)
     {
         var bill = await _billRepository.GetAsync(billId, cancellationToken);

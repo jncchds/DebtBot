@@ -51,9 +51,9 @@ public class UserService : IUserService
         return _userRepository.SetRole(id, role);
     }
 
-    public void DeleteUser(Guid id)
+    public DeleteUserResult DeleteUser(Guid id)
     {
-        _userRepository.DeleteUser(id);
+        return _userRepository.DeleteUser(id);
     }
 
     public UserModel? GetFirstAdmin()

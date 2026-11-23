@@ -1,4 +1,5 @@
-﻿using DebtBot.Models;
+﻿using DebtBot.Interfaces.Services;
+using DebtBot.Models;
 using DebtBot.Models.Enums;
 using DebtBot.Models.Profile;
 using DebtBot.Models.User;
@@ -8,7 +9,7 @@ public interface IUserRepository
 {
     UserModel AddUser(UserCreationModel user);
     UserModel CreateAdmin();
-    bool DeleteUser(Guid id);
+    DeleteUserResult DeleteUser(Guid id);
     UserModel? FindUser(UserSearchModel model, Guid? userId = null);
     UserModel? GetFirstAdmin();
     UserModel? GetUserById(Guid id);
