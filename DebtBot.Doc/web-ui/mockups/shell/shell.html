@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DebtBot shell mockup</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+  .app { display: flex; height: 100vh; overflow: hidden; position: relative; }
+  aside { z-index: 30; display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; border-right: 1px solid var(--border); background: var(--surface); width: 15rem; }
+  aside.collapsed { width: 3rem; }
+  aside.collapsed .s-label, aside.collapsed .version-pill, aside.collapsed .ctx { display: none; }
+  .phone aside.open { position: absolute; inset: 0 auto 0 0; width: min(75vw, 15rem); box-shadow: 0 25px 50px -12px rgba(0,0,0,.45); }
+  .phone .main { margin-left: 3rem; }
+  .backdrop { position: fixed; inset: 0; z-index: 20; background: rgba(0,0,0,.4); }
+  .top { padding: .375rem .25rem .25rem; }
+  nav { flex: 1; overflow-y: auto; padding: .125rem .25rem; }
+  .bottom { border-top: 1px solid var(--border); padding: .25rem .25rem .5rem; }
+  .version-pill { flex-shrink: 0; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent); background: var(--accent-faint); padding: 0 .375rem; font-size: .65rem; line-height: 1.625; color: var(--text-muted); }
+  .divider { margin: .25rem .125rem; height: 1px; background: var(--border); }
+  .section { padding: .375rem .5rem .125rem; font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); white-space: nowrap; overflow: hidden; }
+  .entry { display: flex; width: 100%; align-items: flex-start; gap: .4rem; overflow: hidden; border-radius: 6px; padding: .35rem .5rem; font-size: .82rem; line-height: 1.4; color: var(--text); }
+  .entry.active { background: var(--accent-faint); color: var(--accent); }
+  .entry .i { flex-shrink: 0; font-size: .85rem; }
+  .entry .c { min-width: 0; flex: 1; }
+  .entry .t { display: block; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .entry .s { display: block; margin-top: 1px; font-size: .76rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pos { color: var(--success); } .neg { color: var(--danger); }
+  .badge { margin-left: auto; flex-shrink: 0; border-radius: 999px; background: var(--accent); color: var(--accent-contrast); font-size: .68rem; font-weight: 700; padding: 0 .4rem; line-height: 1.5; }
+  .main { min-width: 0; flex: 1; overflow-y: auto; padding: 1.5rem 2rem; }
+  .phone .main { padding: 1.5rem 1rem; }
+  .inner { max-width: 72rem; margin: 0 auto; }
+  h1 { font-size: 1.4rem; font-weight: 700; margin: 0; }
+  .sub { margin: .25rem 0 1.5rem; font-size: .875rem; }
+  .card p { margin: 0; }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <aside id="side">
+    <div class="top">
+      <button class="sidebar-btn"><span class="s-icon">☰</span><span class="s-label" style="font-weight:600">DebtBot</span><span class="version-pill">v1.0.0</span></button>
+    </div>
+    <nav>
+      <div id="main-nav"></div>
+      <div class="ctx" id="ctx"></div>
+    </nav>
+    <div class="bottom">
+      <button class="sidebar-btn"><span class="s-icon">🚪</span><span class="s-label">Sign out (Anna Petrova)</span></button>
+      <button class="sidebar-btn" id="theme"><span class="s-icon">☀️</span><span class="s-label">Theme: light</span></button>
+    </div>
+  </aside>
+  <div id="backdrop"></div>
+  <main class="main">
+    <div class="inner">
+      <h1 id="title"></h1>
+      <p class="sub muted" id="subtitle"></p>
+      <div class="card" style="padding:1.25rem">
+        <p style="font-weight:600;margin-bottom:.25rem">Coming soon</p>
+        <p class="muted" style="font-size:.875rem">This page is part of the next step of the web UI.</p>
+      </div>
+    </div>
+  </main>
+</div>
+<script>
+  const p = new URLSearchParams(location.search)
+  const page = p.get('page') ?? 'bills'
+  const NAV = [
+    ['debts', '💸', 'Debts', 'Balances with each person, per currency.'],
+    ['bills', '🧾', 'Bills', 'Bills you take part in.'],
+    ['new', '➕', 'New bill', 'Split a bill between contacts, or paste it as text.'],
+    ['exchange', '🔁', 'Exchange', 'Swap money between two currencies.'],
+    ['spendings', '📊', 'Spendings', 'Your share of every bill.'],
+    ['contacts', '👥', 'Contacts', 'People you split bills with.'],
+    ['profile', '👤', 'Profile', 'Your details and sign-in.'],
+    ['admin', '🛠', 'Admin', 'Users, merges and all bills.'],
+  ]
+  // [icon, title, subtitle (html), active?] ; 'S:Title' = section header ; 'D' = divider ; 'A:label' = "all" link
+  const e = (i, t, s, a) => ({ i, t, s, a })
+  const CTX = {
+    debts: ['S:Balances',
+      e('👤', 'Boris', '<span class="pos">owes you 30.00 EUR</span>'),
+      e('👤', 'Dmitry', '<span class="pos">owes you 215.00 PLN</span>'),
+      e('👤', 'Clara', '<span class="neg">you owe 12.50 USD</span>'),
+      e('👤', 'Mum', '<span class="neg">you owe 40.00 EUR</span>')],
+    bills: ['S:Drafts',
+      e('✏️', 'Dinner at Molto', '21 Nov · 84.00 EUR'),
+      'S:Recent bills',
+      e('🧾', 'Pizza night', '18 Nov · 50.00 EUR', true),
+      e('🧾', 'Taxi to the airport', '15 Nov · 30.00 EUR'),
+      e('🧾', 'Groceries Lidl', '12 Nov · 63.40 PLN'),
+      e('🔁', 'Exchange 0.2326 EUR/PLN', '10 Nov · 100.00 EUR'),
+      e('🧾', 'Cinema', '8 Nov · 24.00 EUR'),
+      'A:All bills'],
+    new: ['S:Mode',
+      e('📝', 'Form', 'Lines, people and payments', true),
+      e('📋', 'Paste text', 'The bot’s bill format'),
+      'S:Continue a draft',
+      e('✏️', 'Dinner at Molto', '21 Nov · 84.00 EUR')],
+    exchange: ['S:Waiting to accept',
+      e('⏳', 'Boris ⇄ you', '100.00 EUR → 430.00 PLN'),
+      'S:Recent exchanges',
+      e('🔁', 'You ⇄ Dmitry', '10 Nov · 50.00 EUR → 215.00 PLN'),
+      e('🔁', 'Clara ⇄ you', '2 Nov · 10.00 USD → 9.00 EUR')],
+    spendings: ['S:This month',
+      e('📊', 'Pizza night', '25.00 EUR · 50%'),
+      e('📊', 'Taxi to the airport', '10.00 EUR · 33%'),
+      e('📊', 'Groceries Lidl', '31.70 PLN · 50%'),
+      'A:All spendings'],
+    contacts: ['S:Requests',
+      e('🔔', 'Clara', 'wants your bill notifications'),
+      'S:Recently added',
+      e('👤', 'Dmitry', '@dmitry_k'),
+      e('👤', 'Mum', 'never started the bot')],
+    profile: ['S:Sections',
+      e('🪪', 'Details', 'Name, phone, email', true),
+      e('🔑', 'Login & password', 'anna.p'),
+      e('✈️', 'Telegram', '@anna_p · bot started')],
+    admin: ['S:Admin',
+      e('👥', 'Users', '42 users', true),
+      { i: '🔀', t: 'Merge users', s: '2 suggestions', badge: 2 },
+      e('🧾', 'All bills', 'read-only')],
+  }
+  const nav = document.querySelector('#main-nav')
+  const cur = NAV.find(n => n[0] === page)
+  for (const [k, icon, label] of NAV) {
+    if (k === 'admin' && p.get('admin') === '0') continue
+    nav.insertAdjacentHTML('beforeend', `<a class="sidebar-btn${k === page ? ' active' : ''}"><span class="s-icon">${icon}</span><span class="s-label">${label}</span></a>`)
+  }
+  const ctx = document.querySelector('#ctx')
+  ctx.insertAdjacentHTML('beforeend', '<div class="divider"></div>')
+  for (const x of CTX[page]) {
+    if (typeof x === 'string' && x.startsWith('S:')) ctx.insertAdjacentHTML('beforeend', `<div class="section">${x.slice(2)}</div>`)
+    else if (typeof x === 'string' && x.startsWith('A:')) ctx.insertAdjacentHTML('beforeend', `<a class="sidebar-btn"><span class="s-icon">…</span><span class="s-label">${x.slice(2)}</span></a>`)
+    else ctx.insertAdjacentHTML('beforeend', `<div class="entry${x.a ? ' active' : ''}"><span class="i">${x.i}</span><span class="c"><span class="t">${x.t}</span><span class="s">${x.s}</span></span>${x.badge ? `<span class="badge">${x.badge}</span>` : ''}</div>`)
+  }
+  document.querySelector('#title').textContent = page === 'bills' ? 'Pizza night' : cur[2]
+  document.querySelector('#subtitle').textContent = page === 'bills' ? '18 Nov 2026 · 50.00 EUR · created by you' : cur[3]
+  if (p.get('theme') === 'dark') {
+    document.documentElement.classList.add('dark')
+    document.querySelector('#theme').innerHTML = '<span class="s-icon">🌙</span><span class="s-label">Theme: dark</span>'
+  }
+  const side = document.querySelector('#side')
+  if (p.get('phone')) {
+    document.querySelector('#app').classList.add('phone')
+    if (p.get('phone') === 'open') { side.classList.add('open'); document.querySelector('#backdrop').className = 'backdrop' }
+    else side.classList.add('collapsed')
+  }
+</script>
+</body>
+</html>

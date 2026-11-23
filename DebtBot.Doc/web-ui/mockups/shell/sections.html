@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DebtBot sidebar sections</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+  body { padding: 16px; }
+  .grid { display: grid; grid-template-columns: repeat(4, 241px); gap: 16px; }
+  figure { margin: 0; }
+  figcaption { font-size: .8rem; font-weight: 600; margin-bottom: 6px; color: var(--text-muted); }
+  iframe { width: 241px; height: 560px; border: 1px solid var(--border); border-radius: 10px; display: block; }
+</style>
+</head>
+<body>
+<div class="grid" id="g"></div>
+<script>
+  const theme = new URLSearchParams(location.search).get('theme') ?? 'light'
+  if (theme === 'dark') document.documentElement.classList.add('dark')
+  const pages = [['debts', 'On 💸 Debts'], ['bills', 'On 🧾 Bills / a bill'], ['new', 'On ➕ New bill'], ['exchange', 'On 🔁 Exchange'],
+                 ['spendings', 'On 📊 Spendings'], ['contacts', 'On 👥 Contacts'], ['profile', 'On 👤 Profile'], ['admin', 'On 🛠 Admin']]
+  for (const [k, c] of pages)
+    document.querySelector('#g').insertAdjacentHTML('beforeend', `<figure><figcaption>${c}</figcaption><iframe scrolling="no" src="shell.html?page=${k}&theme=${theme}"></iframe></figure>`)
+</script>
+</body>
+</html>
