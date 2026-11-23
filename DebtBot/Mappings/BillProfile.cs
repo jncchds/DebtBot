@@ -26,7 +26,6 @@ public class BillProfile : Profile
         
 
         CreateMap<Bill, BillModel>().ReverseMap();
-        CreateMap<BillCreationModel, Bill>();
 
         CreateMap<BillPayment, BillPaymentModel>().ReverseMap();
 

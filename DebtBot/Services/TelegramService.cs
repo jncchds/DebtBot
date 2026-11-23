@@ -444,10 +444,7 @@ public class TelegramService : ITelegramService
         convertAmountToAbsolute(forwardLine, backwardLine);
         convertAmountToAbsolute(backwardLine, forwardLine);
 
-        fillExchangeBill(forwardBill, forwardLine, backwardLine);
-        fillExchangeBill(backwardBill, backwardLine, forwardLine);
-
-        returnModel.Result = (forwardBill, backwardBill);
+        returnModel.Result = ExchangeRules.BuildBills(forwardLine, backwardLine, sections[0], DateTime.UtcNow);
 
         return returnModel;
     }
@@ -467,43 +464,6 @@ public class TelegramService : ITelegramService
             }
             forwardLine.AmountType = ExchangeAmountType.Absolute;
         }
-    }
-
-    private void fillExchangeBill(BillParserModel forwardBill, ExchangeLineParserModel forwardLine, ExchangeLineParserModel backwardLine)
-    {
-        forwardBill.CurrencyCode = backwardLine.CurrencyCode; // UAH
-        forwardBill.PaymentCurrencyCode = forwardLine.CurrencyCode; // PLN
-
-        forwardBill.TotalWithTips = backwardLine.Value;
-        forwardBill.Date = DateTime.UtcNow;
-
-        forwardBill.Description += $"\nExchange {forwardLine.Value / backwardLine.Value:0.##} {forwardLine.CurrencyCode}/{backwardLine.CurrencyCode}";
-
-        forwardBill.Lines = new List<BillLineParserModel>
-        {
-            new BillLineParserModel
-            {
-                ItemDescription = "Exchange",
-                Subtotal = backwardLine.Value,
-                Participants = new List<BillLineParticipantParserModel>
-                {
-                    new BillLineParticipantParserModel
-                    {
-                        Part = 1,
-                        User = backwardLine.User
-                    }
-                }
-            }
-        };
-
-        forwardBill.Payments = new List<BillPaymentParserModel>
-        {
-            new BillPaymentParserModel
-            {
-                Amount = forwardLine.Value,
-                User = forwardLine.User
-            }
-        };
     }
 
     private ValidationModel<ExchangeLineParserModel> parseExchangeLine(string line, List<UserSearchModel> userSearchModels, string lineName)

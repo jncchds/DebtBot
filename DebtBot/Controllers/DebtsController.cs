@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DebtBot.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/v1/[controller]")]
 public class DebtsController : DebtBotControllerBase
@@ -32,11 +33,10 @@ public class DebtsController : DebtBotControllerBase
         return Ok(debts);
     }
 
-    [Authorize]
     [HttpGet("Own")]
     public IActionResult GetOwn(int pageNumber = 0, int? countPerPage = null)
     {
-        var debts = _debtService.GetForUser(UserId!.Value, pageNumber, countPerPage).Items;
+        var debts = _debtService.GetForUser(UserId!.Value, pageNumber, countPerPage);
         
         return Ok(debts);
     }
