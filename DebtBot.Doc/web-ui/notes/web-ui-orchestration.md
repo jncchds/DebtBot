@@ -34,6 +34,7 @@ On 2026-11-23 the user set up how the DebtBot API + auth + web UI work is run.
 - An exchange is created as a draft and accepted with a separate finalize step, the same as the Telegram button.
 - An admin page is required.
 - UI language (2026-11-23): English only, but every string goes through i18next like nopds, so locales can be added later. No language switch yet.
+- Every view has its own URL (user, T4 mockup round 2): Back/Forward, reload and bookmarks work; filters, paging, tabs and modes live in the URL. Every page sits above the sidebar divider; below it each page has its own abeat-style sub-section. The URL map is in `mockups/shell/README.md`.
 - .NET 11 upgrade (added 2026-11-23) runs as T3, right after T2; UI tasks became T4–T8 and the end-to-end check T9. Packages go to their latest free versions (AutoMapper below 15, MassTransit 8.x; fix the AutoMapper advisory if a free fix exists), Telegram.Bot to latest with bot code adapted. The SDK 11 is installed user-local in ~/.dotnet (system SDK 10 stays).
 
 **Progress**
@@ -49,6 +50,7 @@ On 2026-11-23 the user set up how the DebtBot API + auth + web UI work is run.
 - 2026-11-23: T4 (UI foundation) started as worker "DebtBot T4 ui foundation", id f4223192.
 - 2026-11-23: I stopped T3 while the user was still giving it work (line-ending commit; question about debts by Telegram id or username without contacts). Resumed it (same id 5c21aa68) to do that on task/03b-eol. Rule: before `claude stop`, check that the worker is idle and that its transcript has no user messages after its report.
 - 2026-11-23: T3b merged into web-ui (4eb8674): .gitattributes, LF everywhere (bat/cmd CRLF), BOMs kept. Branches cut before it merge with `-X renormalize`. T4 was told to merge web-ui into its branch that way. Contacts answer: debts for non-contacts already work in the bot and text API; contacts are always auto-created; the web form uses the contact picker. "Debts without contacts" would be a product decision for later.
+- 2026-11-23: T4 merged into web-ui (81c26ea). ClientApp: React 19, Vite 8, react-router 8, Tailwind 4, i18next; refresh is single-flight and serialized across tabs with navigator.locks (falls back without it). 154 .NET tests and 8 vitest pass; 26/26 runtime checks. Open: no code splitting (365 kB), live Telegram widget unchecked.
 
 **Why:** the user wants a clean context per task, control over how each view looks, and a durable record of the work.
 **How to apply:** follow this for every task in the series. Related: [[web-ui-palette]].

@@ -56,6 +56,8 @@ This task is one of a series (T1 to T9) of web-ui tasks. An orchestrator session
 4. Iterate until the user approves that view.
 5. Save the approved PNGs and HTML under `DebtBot.Doc/web-ui/mockups/<view>/` and commit them. Only then implement the view.
 
+**Every view has its own URL** (the user's rule, from T4). Back and Forward, reload, bookmarks and new tabs must all work. Filters, paging, tabs and modes go in the URL, never only in component state. The URL map and the sidebar sub-sections are in `mockups/shell/README.md`; follow them, and update the README if your task adds a URL.
+
 Several views can be shown in one round. Wait for the user's answers, because the user follows the session through Remote Control. After implementing, screenshot the real view at the same widths in both themes and send those too.
 
 ## Quality bar
