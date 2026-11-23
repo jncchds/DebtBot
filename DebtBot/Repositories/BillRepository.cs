@@ -47,7 +47,7 @@ public class BillRepository : IBillRepository
         return bills;
     }
 
-    public PagingResult<BillListModel> GetForUser(Guid userId, Guid? filterByUserId, string? filterByCurrencyCode, int pageNumber = 0, int? countPerPage = null)
+    public PagingResult<BillListModel> GetForUser(Guid userId, Guid? filterByUserId, string? filterByCurrencyCode, int pageNumber = 0, int? countPerPage = null, ProcessingState? status = null)
     {
         var query = _debtContext
             .Bills
@@ -63,6 +63,11 @@ public class BillRepository : IBillRepository
         if (filterByCurrencyCode != null)
         {
             query = query.Where(b => b.PaymentCurrencyCode == filterByCurrencyCode);
+        }
+
+        if (status != null)
+        {
+            query = query.Where(b => b.Status == status);
         }
 
         if (filterByUserId != null)
@@ -104,15 +109,26 @@ public class BillRepository : IBillRepository
         return billLine;
     }
 
-    public Guid Add(BillCreationModel billModel, Guid creatorId)
+    public void SetExchangePair(Guid forwardBillId, Guid backwardBillId)
     {
-        var bill = _mapper.Map<Bill>(billModel);
-
-        bill.CreatorId = creatorId;
-        _debtContext.Bills.Add(bill);
+        var bills = _debtContext.Bills.Where(b => b.Id == forwardBillId || b.Id == backwardBillId).ToList();
+        foreach (var bill in bills)
+        {
+            bill.ExchangeBillId = bill.Id == forwardBillId ? backwardBillId : forwardBillId;
+        }
         _debtContext.SaveChanges();
+    }
 
-        return bill.Id;
+    public async Task SetTotalWithTipsAsync(Guid billId, decimal totalWithTips, CancellationToken cancellationToken)
+    {
+        var bill = await _debtContext.Bills.FirstOrDefaultAsync(b => b.Id == billId, cancellationToken);
+        if (bill is null)
+        {
+            return;
+        }
+
+        bill.TotalWithTips = totalWithTips;
+        await _debtContext.SaveChangesAsync(cancellationToken);
     }
 
     private void addLines(Guid billId, List<BillLineParserModel> parsedLines, UserModel creator)

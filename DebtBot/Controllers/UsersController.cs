@@ -5,6 +5,7 @@ using DebtBot.Models.Auth;
 using DebtBot.Models.User;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace DebtBot.Controllers;
 
@@ -22,26 +23,32 @@ public class UsersController : DebtBotControllerBase
        _authService = authService;
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("{id:guid}")]
     public IActionResult Get(Guid id)
     {
         var user = _userService.GetUserById(id);
 
         if (user == null)
-            return NotFound();
+            return ErrorResult(StatusCodes.Status404NotFound, "User not found.");
 
         return Ok(user);
     }
 
+    /// <summary>
+    /// The users list, ordered by display name. <paramref name="search"/> matches display name, Telegram username
+    /// or login, ignoring case.
+    /// </summary>
     [HttpGet()]
-    public IActionResult Get()
+    public IActionResult Get(string? search = null, UserRole? role = null, int pageNumber = 0, int? countPerPage = null)
     {
-        var users = _userService.GetUsers();
+        return Ok(_userService.GetAdminUsers(search, role, pageNumber, countPerPage));
+    }
 
-        if (users?.Any() ?? false)
-            return Ok(users);
-
-        return NotFound();
+    /// <summary>Pairs of users that look like the same person, with the suggested user to keep.</summary>
+    [HttpGet("merge/suggestions")]
+    public IActionResult GetMergeSuggestions()
+    {
+        return Ok(_userService.GetMergeSuggestions());
     }
 
     [HttpPost()]
@@ -86,20 +93,30 @@ public class UsersController : DebtBotControllerBase
         return result.ToActionResult(this);
     }
 
+    /// <summary>
+    /// Merges <c>oldUserId</c> into <c>newUserId</c> and removes the old user. Takes a JSON body; the old query
+    /// parameters still work. Returns the kept user's row.
+    /// </summary>
     [HttpPost("merge")]
-    public ActionResult Merge([FromQuery] Guid oldUserId, [FromQuery] Guid newUserId)
+    public IActionResult Merge([FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] MergeUsersModel? model, [FromQuery] Guid? oldUserId = null, [FromQuery] Guid? newUserId = null)
     {
-        _userService.MergeUsers(oldUserId, newUserId);
+        var oldId = model is not null && model.OldUserId != Guid.Empty ? model.OldUserId : oldUserId ?? Guid.Empty;
+        var newId = model is not null && model.NewUserId != Guid.Empty ? model.NewUserId : newUserId ?? Guid.Empty;
 
-        return Ok();
-    }
+        if (oldId == Guid.Empty || newId == Guid.Empty)
+        {
+            return ErrorResult(StatusCodes.Status400BadRequest, "oldUserId and newUserId are required.");
+        }
+        if (oldId == UserId)
+        {
+            return ErrorResult(StatusCodes.Status400BadRequest, "You can't merge away the account you're signed in with.");
+        }
 
-    [HttpGet("own")]
-    public ActionResult Own()
-    {
-        var user = _userService.GetUserDisplayModelById(UserId!.Value);
-        if (user == null)
-            return NotFound();
-        return Ok(user);
+        return _userService.MergeUsers(oldId, newId) switch
+        {
+            MergeUsersResult.Merged => Ok(_userService.GetAdminUser(newId)),
+            MergeUsersResult.SameUser => ErrorResult(StatusCodes.Status400BadRequest, "Pick two different users."),
+            _ => ErrorResult(StatusCodes.Status404NotFound, "User not found."),
+        };
     }
 }

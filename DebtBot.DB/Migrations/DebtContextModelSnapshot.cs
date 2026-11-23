@@ -42,6 +42,9 @@ namespace DebtBot.DB.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("ExchangeBillId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("PaymentCurrencyCode")
                         .IsRequired()
                         .HasColumnType("text");

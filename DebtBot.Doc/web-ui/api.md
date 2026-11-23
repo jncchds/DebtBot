@@ -1,0 +1,257 @@
+# DebtBot REST API for the web UI
+
+This covers everything the UI tasks (T4–T8) call. Sign-in endpoints (`api/v1/auth/*`) are described in `web-sign-in.md`; their shapes are repeated briefly at the end.
+
+## Conventions
+- **Base:** `/api/v1`. Every endpoint below needs `Authorization: Bearer <accessToken>` unless marked otherwise. No token → **401**.
+- **"Self"** is always the user in the token. No endpoint takes the caller's own id from the body or query.
+- **JSON:** camelCase; enums go out and come in as **strings**. Dates are ISO 8601 UTC. Amounts are JSON numbers (decimals, e.g. `30.0000`).
+- **Errors:** `{ "message": string, "errors": string[] }` where `message` joins `errors` with `; `.
+  - **400** validation or wrong state; **403** you can see it but may not change it; **404** missing, or you may not see it.
+  - A **403 from the Admin policy** (non-admin calling an admin endpoint) and framework 401s have an empty body.
+- **Access rules:**
+  - **See a bill** (`HasAccess`): you're its creator, a payer or a line participant — or an admin.
+  - **Change a bill** (lines, payments, finalize, cancel, exchange accept): creator or admin. Someone who can't see the bill gets 404; a participant who isn't the creator gets 403.
+- **Paging:** `?pageNumber=0&countPerPage=N` (page numbers start at 0; without `countPerPage` everything comes in one page). Paged responses are a `PagingResult<T>`:
+
+```ts
+interface PagingResult<T> {
+  countPerPage: number | null; pageNumber: number; totalCount: number; lastPageNumber: number;
+  isFirstPage: boolean; isLastPage: boolean; moreThenFivePassed: boolean; moreThenFiveLeft: boolean;
+  items: T[];
+}
+```
+
+## Enums
+```ts
+type ProcessingState = "Draft" | "Ready" | "Processed" | "Cancelled"; // Ready = finalized, ledger being written
+type UserRole = "Regular" | "Admin";
+type SubscriptionState = "None" | "Pending" | "Confirmed";
+type MergeReason = "SameTelegramId" | "SameTelegramUserName";
+```
+
+## Shared shapes
+```ts
+interface UserDisplay { id: string; displayName: string; telegramId: number | null; telegramUserName: string | null }
+
+interface LedgerRecord { creditorUser: UserDisplay; debtorUser: UserDisplay; amount: number; currencyCode: string }
+
+interface BillLineParticipant { billLineId: string; user: UserDisplay; part: number; userDisplayName: string }
+interface BillLine { id: string; billId: string; itemDescription: string; subtotal: number; participants: BillLineParticipant[] }
+interface BillPayment { user: UserDisplay; amount: number }
+
+interface Spending {
+  description: string; amount: number; currencyCode: string;          // in the bill currency
+  paymentAmount: number; paymentCurrencyCode: string;                 // in the payment currency
+  portion: number;                                                    // 0..1 share of the bill
+  billId: string; date: string; isCanceled: boolean; user: UserDisplay;
+}
+
+interface Bill {                       // GET Bills/{id}, and the bill returned by lines/payments
+  id: string; creator: UserDisplay;
+  currencyCode: string; paymentCurrencyCode: string; description: string; date: string;
+  status: ProcessingState; totalWithTips: number;
+  exchangeBillId: string | null;       // set on both bills of an exchange: the id of the other bill
+  lines: BillLine[]; payments: BillPayment[]; spendings: Spending[]; ledgerRecords: LedgerRecord[];
+}
+
+interface BillListItem {               // GET Bills
+  id: string; currencyCode: string; paymentCurrencyCode: string; description: string; date: string;
+  status: ProcessingState; totalWithTips: number;
+  creator: UserDisplay; exchangeBillId: string | null;
+  ledgerRecords: LedgerRecord[];
+}
+
+interface Debt { creditorUser: UserDisplay; debtorUser: UserDisplay; amount: number; currencyCode: string }
+```
+
+`Debt` is seen from the creditor's side: `amount > 0` means `debtorUser` owes `creditorUser`; `amount < 0` means `creditorUser` owes `debtorUser` `-amount`. In `Debts/Own`, `creditorUser` is you (or a user whose notifications you subscribed to, confirmed), and `debtorUser.displayName` is the name in the creditor's contact list.
+
+## Bills (`/Bills`)
+
+| Endpoint | Access | Request | Response |
+|---|---|---|---|
+| `GET Bills` | any user | query: `withUserId?`, `currencyCode?` (payment currency, any case), `status?`, paging | `PagingResult<BillListItem>` — bills you take part in, newest first |
+| `GET Bills/Own` | any user | paging | `PagingResult<Bill>` — bills you created |
+| `GET Bills/All` | **Admin** | paging | `PagingResult<Bill>` — all bills |
+| `GET Bills/{id}` | see the bill | – | `Bill`, or 404 |
+| `POST Bills` | any user (becomes creator) | `BillCreation` | `string` (the new bill id, JSON string). Always a **draft**. |
+| `POST Bills/{id}/lines` | change, **draft only** | `BillLineCreation[]` (at least one) | `Bill` |
+| `POST Bills/{id}/payments` | change, **draft only** | `BillPaymentCreation[]` (at least one) | `Bill` |
+| `GET Bills/lines/{lineId}` | see the line's bill | – | `BillLine` |
+| `POST Bills/{id}/Finalize` | change | – | 200, empty. The ledger is written in the background (status `Ready`, then `Processed`). |
+| `POST Bills/{id}/Cancel` | change | – | 200, empty. Background; status becomes `Cancelled`, ledger and spendings are marked cancelled. For an exchange bill, its other bill is cancelled too. 400 if already cancelled. |
+| `POST Bills/text/preview` | any user | `text/plain` body, the bot's bill text format (see `POST Bills/text` in Swagger) | always 200: `{ result: BillParser, errors: string[], isValid: boolean }`. Nothing is saved. |
+| `POST Bills/text?createDrafted=bool` | any user | `text/plain` | `string` bill id; 400 with `string[]` errors (unchanged, pre-existing) |
+| `POST Bills/exchange` | any user (becomes creator) | `ExchangeCreation` | `Exchange` — two **draft** bills |
+| `POST Bills/exchange/finalize` | change, on **both** bills | `Exchange` | `Exchange`. Finalizes both. |
+| `POST Bills/import/{creatorTelegramUserName}` | **Admin** | Excel file | unchanged |
+
+```ts
+interface BillCreation {
+  currencyCode: string;            // 3 letters, stored upper case
+  paymentCurrencyCode?: string;    // defaults to currencyCode
+  description?: string;
+  date?: string;                   // defaults to now
+  totalWithTips?: number;          // > 0; defaults to the sum of line subtotals
+  lines?: BillLineCreation[];
+  payments?: BillPaymentCreation[];
+}
+interface BillLineCreation {
+  itemDescription: string;
+  subtotal: number;                // > 0, bill currency, without tips
+  participants: { userId: string; part?: number | null }[];  // ≥ 1, each user once;
+                                   // part > 0; leave it out for an equal split (counts as 1)
+}
+interface BillPaymentCreation { userId: string; amount: number }   // amount > 0, payment currency; each user once
+```
+
+- **Validation (400):** bad currency code, amounts or subtotals not above zero, a line without participants, a user twice in one line or in the payments, an unknown user id, a non-draft bill.
+- **Payments on a user who already paid** replace that user's amount (that's how the repository has always worked).
+- **Total with tips when adding lines:** if the bill's `totalWithTips` equals the sum of its current line subtotals (no tips, or an empty draft), it grows with the new lines. Otherwise it stays as it is, so a bill entered with a receipt total keeps it.
+- **Finalize (400)** needs: status `Draft`, at least one line with subtotal > 0, every line with participants, at least one payment > 0, total > 0.
+- **The user picker** for lines and payments uses contacts (`GET UserContacts/Own`) plus yourself (`GET profile`). There is no global user search.
+
+### Exchange
+```ts
+interface ExchangeCreation {
+  fromUserId: string; fromAmount: number; fromCurrencyCode: string;   // "from" hands over fromAmount
+  toUserId: string;   toAmount: number;   toCurrencyCode: string;     // "to" hands back toAmount
+  description?: string;            // defaults to "Exchange"
+  date?: string;
+}
+interface Exchange { forwardBillId: string; backwardBillId: string }
+```
+- **Rules (400):** both amounts > 0; two different users that exist; 3-letter currency codes.
+- **What it creates:** the same two bills as Telegram's `/ExchangeDebt`.
+  - **Forward:** "from" pays `fromAmount fromCurrency` for "to"'s one line "Exchange" of `toAmount toCurrency`. After finalizing, "to" owes "from" `fromAmount fromCurrency`.
+  - **Backward:** the mirror. "from" owes "to" `toAmount toCurrency`.
+  - Each description ends with a line `Exchange <rate> FROM/TO`, where the rate is `fromAmount / toAmount`.
+- **Recognising a draft exchange:** both bills have `exchangeBillId` pointing at each other. In `GET Bills?status=Draft` they come back as two items. The UI should show them as one row with an **Accept** button when `creator.id` is you (or you're an admin), and call `POST Bills/exchange/finalize { forwardBillId, backwardBillId }`. Either order works for listing; for accepting, send the pair as listed.
+- **Accept (exchange/finalize):**
+  - both bills must be drafts and each other's pair. Bills made by `/ExchangeDebt` before this change have no link and are accepted as long as neither is linked elsewhere.
+  - 404 if you can't see either bill, 403 if you aren't the creator or an admin.
+
+## Debts (`/Debts`)
+
+| Endpoint | Access | Response |
+|---|---|---|
+| `GET Debts/Own` | any user, paging | `PagingResult<Debt>` (it used to return only the items) |
+| `GET Debts` | **Admin**, paging | `PagingResult<Debt>`, all |
+| `GET Debts/{userId}` | **Admin**, paging | `PagingResult<Debt>` for that user |
+
+Debts come from a materialized view that refreshes when the ledger changes. Right after a finalize or cancel returns, it can take a moment (the background consumer) before `Debts/Own` shows the change.
+
+## Spendings (`/Spendings`)
+
+| Endpoint | Access | Response |
+|---|---|---|
+| `GET Spendings/Own` | any user, paging | `PagingResult<Spending>`, newest first. Spendings of cancelled bills are included with `isCanceled: true`. Link to `Bills/{billId}`. |
+
+## Profile (`/profile`)
+
+| Endpoint | Access | Request | Response |
+|---|---|---|---|
+| `GET profile` | any user | – | `Profile` |
+| `PUT profile` | any user | `ProfileUpdate` | `Profile`; 400 `{message, errors}` |
+
+```ts
+interface Profile {
+  id: string; displayName: string; phone: string | null; email: string | null;
+  telegramId: number | null; telegramUserName: string | null;
+  telegramBotEnabled: boolean;     // the user has started the bot
+  role: UserRole; login: string | null; hasPassword: boolean;
+}
+interface ProfileUpdate { displayName: string; phone?: string | null; email?: string | null }
+```
+- `PUT` replaces all three fields. An empty or missing phone or email clears it.
+- Limits: display name 1–100 characters, phone ≤ 32, email ≤ 254 and must contain `@`.
+- Telegram fields, login and role are never changed here. Extra fields in the body are ignored.
+- Login and password are changed with `PUT auth/password`.
+- `GET Users/own` (admin-only, old) is removed.
+
+## Contacts (`/UserContacts`)
+
+| Endpoint | Access | Request | Response |
+|---|---|---|---|
+| `GET UserContacts/Own` | any user | – | `Contact[]` ordered by name; `[]` when there are none |
+| `PUT UserContacts/Own/{contactId}` | any user, own contacts | `{ displayName: string }` (1–100 characters) | `Contact`; 404 if not your contact |
+| `DELETE UserContacts/Own/{contactId}` | any user, own contacts | – | 204; 404 if not your contact |
+| `POST UserContacts/Own/by-telegram?username=` | any user | query `username`, with or without `@`, 5–32 of `A-Z a-z 0-9 _` | `Contact`. Finds the user by Telegram username, or creates a placeholder user (as bills do for an unknown @mention). Adding an existing contact returns it unchanged. 400 for a bad username or yourself. |
+| `POST UserContacts/subscription/request?contactId=` | any user | – | 200. Asks to get notifications about `contactId`'s bills. |
+| `POST UserContacts/subscription/confirm?contactId=` | any user | – | 200. Lets `contactId` get notifications about your bills. |
+| `POST UserContacts/subscription/decline?contactId=` | any user | – | 200. Removes `contactId`'s request or subscription to you. |
+| `POST UserContacts` | any user | `UserModel` | unchanged, older add endpoint; prefer `by-telegram` |
+| `GET UserContacts`, `GET UserContacts/{id}`, `POST UserContacts/{id}`, `POST UserContacts/subscription/add` | **Admin** | | unchanged |
+
+```ts
+interface Contact {
+  id: string;                      // the contact's user id (use it as userId in bills)
+  displayName: string;             // your name for them
+  userDisplayName: string;         // their own display name
+  telegramId: number | null; telegramUserName: string | null;
+  telegramBotEnabled: boolean;     // false: a placeholder who never started the bot
+  mySubscription: SubscriptionState;    // you get notified about their bills
+  theirSubscription: SubscriptionState; // they get notified about yours; Pending = you can confirm/decline
+}
+```
+
+Removing a contact keeps bills, debts and subscriptions. A later finalized bill between you adds the contact back (`EnsureContact`).
+
+## Admin: users (`/Users`, all **Admin**)
+
+| Endpoint | Request | Response |
+|---|---|---|
+| `GET Users` | query `search?` (display name, Telegram username or login; contains, ignoring case), `role?`, paging | `PagingResult<AdminUser>` ordered by display name |
+| `GET Users/{id}` | – | `UserModel` (id, displayName, telegramId, telegramUserName, phone, email, telegramBotEnabled, role) |
+| `POST Users/{id}/password` | `{ login?, password }` | 204 / 400 / 404 / 409 (from T1; signs the user out everywhere) |
+| `POST Users/{id}/Role?role=Admin` | – | 200 / 404 (unchanged) |
+| `GET Users/merge/suggestions` | – | `MergeSuggestion[]` |
+| `POST Users/merge` | `{ oldUserId, newUserId }` (the old query parameters still work) | `AdminUser` (the kept user); 400 for missing or identical ids, or for merging away your own signed-in account; 404 for an unknown id |
+| `POST Users`, `PUT Users/{id}`, `DELETE Users/{id}` | | unchanged, older endpoints (see "Open" in the T2 report) |
+
+```ts
+interface AdminUser {
+  id: string; displayName: string; telegramId: number | null; telegramUserName: string | null;
+  phone: string | null; email: string | null; role: UserRole; telegramBotEnabled: boolean;
+  login: string | null; hasPassword: boolean;   // never the hash
+  billCount: number;                // bills the user takes part in
+  contactCount: number;             // entries in the user's own contact list
+  firstBillDate: string | null;     // earliest bill they take part in ("older")
+}
+interface MergeSuggestion { keep: AdminUser; merge: AdminUser; reasons: MergeReason[] }
+```
+
+### Merge suggestions
+- **Pairs:** users with the same `telegramId`, or the same Telegram username ignoring case and a leading `@`. A pair that matches both ways comes once, with both reasons.
+- **Groups:** in a group of three or more, every pair is listed.
+- **`keep`** is the better keeper by, in order:
+  1. a Telegram id **and** the bot enabled;
+  2. a login or password;
+  3. more bills;
+  4. older (the earlier `firstBillDate`; users without bills count as newest);
+  5. the id, so the result is stable.
+- To merge as suggested, send `oldUserId = merge.id` and `newUserId = keep.id`. The admin can also merge the other way, or any two users.
+
+### What a merge does
+It runs in one transaction. The old user's data moves to the kept user (`newUserId`):
+- **Bills created**, payments, line participations, bill participations, ledger records, spendings (budgets), contact links both ways and notification subscriptions both ways all move to the kept user.
+- **When both users have a row with the same key**, the rows are combined into the kept user's row:
+  - payments in the same bill: amounts added;
+  - the same line: parts added;
+  - spendings on the same bill: amount, payment amount and portion added;
+  - ledger records with the same counterpart in the same bill: amounts added;
+  - duplicate contacts: the kept user's link (and name) stays;
+  - duplicate subscriptions: the kept user's row stays, confirmed if either was.
+- **Rows between the two users are deleted**, since they would point a user at itself: their ledger records with each other (so their mutual debt disappears), their contact links to each other, and their subscriptions to each other.
+- **Profile:** for display name, Telegram id, Telegram username, phone and email, the kept user's value wins and the old one only fills gaps. The bot is enabled if either had it. The kept user becomes admin if either was.
+- **Web sign-in:** if the kept user has neither a login nor a password, it takes the old user's login and password hash. Otherwise the kept user's stay and the old ones are dropped. The login is released before it's reassigned, so the unique index holds.
+- **Sessions:** the old user's refresh tokens are deleted. Access tokens already issued to the old user still pass signature checks until they expire (60 min), but they point at a user id that no longer exists.
+- **The old user row is deleted.** Nothing references it afterwards.
+
+## Auth (`/auth`, from T1)
+```ts
+interface SessionUser { id: string; displayName: string; telegramUserName: string | null; isAdmin: boolean }
+interface Session { user: SessionUser; accessToken: string; accessTokenExpiresAt: string }
+```
+`GET auth/config` → `{ telegramBotUsername: string | null }` (anonymous) · `POST auth/telegram` (widget payload) → `Session` · `POST auth/login { login, password }` → `Session` · `POST auth/refresh` (cookie) → `Session` · `POST auth/logout` → 204 · `GET auth/me` → `SessionUser` · `PUT auth/password { login?, currentPassword?, newPassword? }` → 204. Errors here are `{ message }` only. Details are in `web-sign-in.md`.

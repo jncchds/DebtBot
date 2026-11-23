@@ -4,6 +4,7 @@ using DebtBot.DB.Entities;
 using DebtBot.Extensions;
 using DebtBot.Interfaces.Services;
 using DebtBot.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace DebtBot.Services;
 
@@ -22,6 +23,7 @@ public class BudgetService : IBudgetService
 	{
 		var spendings = _debtContext
 			.Spendings
+			.Include(s => s.User)
 			.OrderByDescending(s => s.Date)
 			.Where(s => s.UserId == userId)
 			.ToPagingResult(pageNumber, countPerPage);

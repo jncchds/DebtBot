@@ -16,7 +16,10 @@ public class Bill
     public string Description { get; set; }
     public DateTime Date { get; set; }
     public ProcessingState Status { get; set; }
-    
+
+    /// <summary>For the two bills of an exchange: the id of the other bill of the pair. Null for ordinary bills.</summary>
+    public Guid? ExchangeBillId { get; set; }
+
     public virtual ICollection<BillLine> Lines { get; set; }
     public virtual ICollection<BillPayment> Payments { get; set; }
     [InverseProperty(nameof(Spending.Bill))]

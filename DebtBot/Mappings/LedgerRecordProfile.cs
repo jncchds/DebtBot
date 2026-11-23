@@ -8,6 +8,6 @@ public class LedgerRecordProfile : Profile
 {
     public LedgerRecordProfile()
     {
-        CreateProjection<LedgerRecord, LedgerRecordModel>();
+        CreateMap<LedgerRecord, LedgerRecordModel>();
     }
 }

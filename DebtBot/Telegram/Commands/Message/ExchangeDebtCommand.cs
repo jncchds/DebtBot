@@ -42,6 +42,8 @@ public class ExchangeDebtCommand : ITelegramCommand
 
         var backwardBillId = _billService.Add(parsedExchange.Result!.backwardBill!, new UserSearchModel() { TelegramId = processedMessage.FromId });
 
+        _billService.SetExchangePair(forwardBillId, backwardBillId);
+
         await _publishEndpoint.Publish(new ExchangeCreated() { ForwardBillId = forwardBillId, BackwardBillId = backwardBillId, ChatId = processedMessage.ChatId });
     }
 }

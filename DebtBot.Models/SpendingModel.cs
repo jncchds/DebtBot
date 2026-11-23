@@ -10,6 +10,8 @@ public class SpendingModel
     public string PaymentCurrencyCode { get; set; }
     public decimal Portion { get; set; }
     public Guid BillId { get; set; }
+    public DateTime Date { get; set; }
+    public bool IsCanceled { get; set; }
     public UserDisplayModel User { get; set; }
 
     private string spendingString
