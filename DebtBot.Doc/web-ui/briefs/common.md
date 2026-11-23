@@ -60,7 +60,7 @@ Several views can be shown in one round. Wait for the user's answers, because th
 
 ## Quality bar
 - Every endpoint has `[Authorize]` and checks access: `IBillService.HasAccess` for reads, and creator or admin for changes. Never trust user ids from the request body for "self".
-- Keep changes focused. Don't reformat files you don't otherwise touch. The repo has CRLF and BOM files, so keep their line endings.
+- Keep changes focused. Don't reformat files you don't otherwise touch. Line endings are LF everywhere (`.gitattributes`, since T3b); `*.bat`/`*.cmd` are CRLF. Some files start with a BOM: keep it.
 - Tests: `DebtBot.Tests` (xUnit, added in T1) must pass. Add tests for new logic.
 
 ## Finishing
