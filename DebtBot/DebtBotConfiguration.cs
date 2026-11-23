@@ -37,7 +37,8 @@
         public string BotToken { get; set; }
         public int CountPerPage { get; set; }
         public string LogBotToken { get; set; }
-        public long LogChatId { get; set; }
+        // Nullable so an empty DebtBot_DebtBot__Telegram__LogChatId= (as in docker-compose.yml) binds as "not set".
+        public long? LogChatId { get; set; }
 
         public IConfigurationSection LogLevel { get; set; }
 

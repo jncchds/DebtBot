@@ -70,7 +70,9 @@ builder.Services.Scan(q => q
 builder.Services.AddHttpClient("telegram_bot_client")
                 .AddTypedClient<ITelegramBotClient>((httpClient, sp) =>
                 {
-                    TelegramBotClientOptions options = new(builder.Configuration[$"{DebtBotConfiguration.SectionName}:Telegram:BotToken"]!);
+                    // Without a real token the client still has to be constructible (consumers depend on it); its calls just fail.
+                    var botToken = builder.Configuration[$"{DebtBotConfiguration.SectionName}:Telegram:BotToken"];
+                    TelegramBotClientOptions options = new(TelegramConfiguration.IsRealBotToken(botToken) ? botToken! : "0:not-configured");
                     return new TelegramBotClient(options, httpClient);
                 });
 
@@ -81,9 +83,9 @@ builder.Services.AddLogging(logging =>
     logging.ClearProviders();
     logging.AddConsole();
     var telegramConfiguration = builder.Configuration.GetSection($"{DebtBotConfiguration.SectionName}:Telegram").Get<TelegramConfiguration>();
-    if (!string.IsNullOrWhiteSpace(telegramConfiguration!.LogBotToken) && telegramConfiguration.LogChatId != 0)
+    if (!string.IsNullOrWhiteSpace(telegramConfiguration!.LogBotToken) && telegramConfiguration.LogChatId is long logChatId and not 0)
     {
-        logging.AddProvider(new TelegramLoggerProvider(telegramConfiguration.LogBotToken, telegramConfiguration.LogChatId, telegramConfiguration.LogLevel));
+        logging.AddProvider(new TelegramLoggerProvider(telegramConfiguration.LogBotToken, logChatId, telegramConfiguration.LogLevel));
     }
 });
 
