@@ -76,9 +76,9 @@ When you're done:
 3. End with a short report, and wake the orchestrator using the paragraph below.
 
 ## Waking the orchestrator
-Always do this when you finish, and also when you stop because you're blocked. The orchestrator is the session named **"DebtBot"** (id `b85fe091`, session id `b85fe091-00b4-4715-be20-d611e12ba132`), with cwd `/mnt/git/DebtBot`.
-1. Send your report to it with SendMessage. Find its row with ListAgents by id `b85fe091` and use that exact name and ref. Or reply to the `from` address of the orchestrator's messages to you.
-2. Check that it's alive: `claude agents --json | jq '.[] | select(.id=="b85fe091")'`.
+Always do this when you finish, and also when you stop because you're blocked. The orchestrator is the session named **"DebtBot orchestrator"** (id `334ad10a`, session id `334ad10a-e54a-4cf5-bb10-dc9b00a79ca5`), with cwd `/mnt/git/DebtBot`.
+1. Send your report to it with SendMessage. Find its row with ListAgents by id `334ad10a` and use that exact name and ref. Or reply to the `from` address of the orchestrator's messages to you.
+2. Check that it's alive: `claude agents --json | jq '.[] | select(.id=="334ad10a")'`.
    - It counts as not running if it's missing, if its state isn't working, idle or blocked, or if the SendMessage failed.
-   - Only in that case, resume it with your report as its next prompt: `~/.claude/skills/start-code-session/start.sh /mnt/git/DebtBot --resume b85fe091-00b4-4715-be20-d611e12ba132 "Report from <your session name>: <your report>"`.
+   - Only in that case, resume it with your report as its next prompt: `~/.claude/skills/start-code-session/start.sh /mnt/git/DebtBot --resume 334ad10a-e54a-4cf5-bb10-dc9b00a79ca5 "Report from <your session name>: <your report>"`.
    - Never resume it while it's running, because that starts a copy.
