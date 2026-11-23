@@ -147,6 +147,13 @@ Add a small `DebtBot.Tests` project (xUnit) to the solution with:
 
 The UI shows the enums as strings, now that the API sends them that way.
 
+### Decisions made during the UI tasks
+- **T4, shell round 2:** every page sits above the sidebar divider, with a sub-section per page below it. Every view has its own URL. The URL map is in `mockups/shell/README.md`.
+- **T5, mockup round 1:**
+  - The web UI has no "following": it never shows subscribed users' debts. A web-only own-debts query is added, and the bot keeps its own.
+  - Paged lists get server-side sort by a field, plus filters for the fields that make sense.
+  - Bills, Debts, Spendings and Exchanges share one list pattern: a header card with filters and Sort by, then paged results, shown as a table when wide and as cards on phones. T5 builds it, and T6 (exchanges) and T7 (spendings) reuse it, with backend sort and filters.
+
 ## Step 3: Build and deploy
 - **`DebtBot/Dockerfile`:** add a `node:22-alpine` stage that runs `npm ci && npm run build`, writing to `DebtBot/wwwroot`. The publish stage copies that output in.
   - Unlike the vibe branch, there is no npm step inside the csproj.
