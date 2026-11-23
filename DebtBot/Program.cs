@@ -1,6 +1,8 @@
 using DebtBot;
+using DebtBot.Controllers;
 using DebtBot.Crutch;
 using DebtBot.DB;
+using DebtBot.DB.Entities;
 using DebtBot.Identity;
 using DebtBot.Interfaces;
 using DebtBot.Interfaces.Services;
@@ -11,12 +13,16 @@ using DebtBot.Services;
 using DebtBot.Telegram;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
 using System.Text;
+using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 using Telegram.Bot;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -40,6 +46,11 @@ builder.Services.AddScoped<IDebtService, DebtService>();
 builder.Services.AddScoped<IBudgetService, BudgetService>();
 builder.Services.AddScoped<IExcelService, ExcelService>();
 builder.Services.AddScoped<IIdentityService, IdentityService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
+builder.Services.AddSingleton<LoginThrottle>();
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddMemoryCache();
 
 // telegram
 builder.Services.AddScoped<UpdateHandler>();
@@ -47,6 +58,7 @@ builder.Services.AddScoped<ReceiverService>();
 builder.Services.AddHostedService<PollingService>();
 
 builder.Services.AddSingleton<TelegramRateLimiter>();
+builder.Services.AddSingleton<TelegramBotInfoProvider>();
 
 builder.Services.Scan(q => q
     .FromCallingAssembly()
@@ -94,7 +106,29 @@ builder.Services.AddMassTransit(configurator =>
     });
 });
 
-builder.Services.AddControllers();
+builder.Services
+    .AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Enums go over the API as their names ("Admin", "Finalized"), not numbers. Numbers are still accepted on input.
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
+
+// Basic brute-force protection for the sign-in endpoints, per client IP.
+// Behind a reverse proxy all clients share the proxy's IP unless forwarded headers are set up.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy(AuthController.RateLimitPolicy, httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+            }));
+});
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -111,9 +145,11 @@ builder.Services.AddSwaggerGen(c =>
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         In = ParameterLocation.Header,
-        Description = "Please insert JWT with Bearer into field",
+        Description = "Paste the access token (without the \"Bearer \" prefix)",
         Name = "Authorization",
-        Type = SecuritySchemeType.ApiKey
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
     });
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
@@ -170,6 +206,8 @@ var app = builder.Build();
 
 var debtBotConfig = app.Services.GetRequiredService<IOptions<DebtBotConfiguration>>().Value;
 
+WarnAboutInsecureConfiguration(app, debtBotConfig);
+
 ApplyDatabaseMigrations(app.Services, debtBotConfig);
 
 CreateDefaultUser(app.Services);
@@ -181,11 +219,46 @@ CreateDefaultUser(app.Services);
     app.UseSwaggerUI();
 }
 
+// The web UI is built into wwwroot (see DebtBot/Dockerfile).
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
+app.UseRateLimiter();
+
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
+// Client-side routes get index.html. Unknown /api/* and /swagger/* paths are left alone so they still return 404.
+app.MapFallbackToFile("{*path:regex(^(?!(api|swagger)(/|$)).*$):nonfile}", "index.html");
+
 app.Run();
+
+static void WarnAboutInsecureConfiguration(WebApplication app, DebtBotConfiguration config)
+{
+    var key = config.JwtConfiguration?.Key;
+    if (string.IsNullOrEmpty(key) || Encoding.UTF8.GetByteCount(key) < 32)
+    {
+        throw new Exception("DebtBot:JwtConfiguration:Key must be at least 32 bytes long. Set DebtBot_DebtBot__JwtConfiguration__Key.");
+    }
+
+    var defaultKey = new ConfigurationBuilder()
+        .SetBasePath(app.Environment.ContentRootPath)
+        .AddJsonFile("appsettings.json", optional: true)
+        .Build()[$"{DebtBotConfiguration.SectionName}:JwtConfiguration:Key"];
+    if (key == defaultKey)
+    {
+        app.Logger.LogWarning(
+            "DebtBot:JwtConfiguration:Key is still the default from appsettings.json, so anyone can sign tokens. " +
+            "Set DebtBot_DebtBot__JwtConfiguration__Key to a long random secret.");
+    }
+
+    if (config.Telegram?.IsBotConfigured != true)
+    {
+        app.Logger.LogWarning("DebtBot:Telegram:BotToken is not set: the Telegram bot is off and Telegram sign-in is unavailable.");
+    }
+}
 
 static void CreateDefaultUser(IServiceProvider services)
 {

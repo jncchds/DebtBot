@@ -17,6 +17,12 @@ public class User
     public bool TelegramBotEnabled { get; set; } = false;
     public UserRole Role { get; set; }
 
+    /// <summary>Optional web sign-in login, unique, stored lowercase.</summary>
+    [MaxLength(64)]
+    public string? Login { get; set; }
+    /// <summary>ASP.NET Core Identity password hash; null when the user has no password.</summary>
+    public string? PasswordHash { get; set; }
+
     [InverseProperty(nameof(UserContactLink.User))]
     public virtual ICollection<UserContactLink> UserContacts { get; set; }
 //    [InverseProperty(nameof(UserContactLink.ContactUser))]
@@ -31,6 +37,8 @@ public class User
     public virtual ICollection<Spending> Spendings { get; set; }
     [InverseProperty(nameof(NotificationSubscription.User))]
     public virtual ICollection<NotificationSubscription> Subscriptions { get; set; }
+    [InverseProperty(nameof(RefreshToken.User))]
+    public virtual ICollection<RefreshToken> RefreshTokens { get; set; }
 
     [Timestamp]
     public byte[] ModifiedAt { get; set; }

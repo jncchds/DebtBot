@@ -221,6 +221,42 @@ namespace DebtBot.DB.Migrations
                     b.ToTable("NotificationSubscriptions");
                 });
 
+            modelBuilder.Entity("DebtBot.DB.Entities.RefreshToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ReplacedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RefreshTokens");
+                });
+
             modelBuilder.Entity("DebtBot.DB.Entities.Spending", b =>
                 {
                     b.Property<Guid>("BillId")
@@ -276,11 +312,18 @@ namespace DebtBot.DB.Migrations
                     b.Property<string>("Email")
                         .HasColumnType("text");
 
+                    b.Property<string>("Login")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
                     b.Property<byte[]>("ModifiedAt")
                         .IsConcurrencyToken()
                         .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("bytea");
+
+                    b.Property<string>("PasswordHash")
+                        .HasColumnType("text");
 
                     b.Property<string>("Phone")
                         .HasColumnType("text");
@@ -301,6 +344,9 @@ namespace DebtBot.DB.Migrations
                         .HasColumnType("bigint");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Login")
+                        .IsUnique();
 
                     b.ToTable("Users");
                 });
@@ -468,6 +514,17 @@ namespace DebtBot.DB.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("DebtBot.DB.Entities.RefreshToken", b =>
+                {
+                    b.HasOne("DebtBot.DB.Entities.User", "User")
+                        .WithMany("RefreshTokens")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("DebtBot.DB.Entities.Spending", b =>
                 {
                     b.HasOne("DebtBot.DB.Entities.Bill", "Bill")
@@ -531,6 +588,8 @@ namespace DebtBot.DB.Migrations
                     b.Navigation("DebtorLedgerRecords");
 
                     b.Navigation("Debts");
+
+                    b.Navigation("RefreshTokens");
 
                     b.Navigation("Spendings");
 

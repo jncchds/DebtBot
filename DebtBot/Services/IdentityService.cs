@@ -19,7 +19,9 @@ public class IdentityService : IIdentityService
         _jwtConfig = debtBotConfig.Value.JwtConfiguration;
     }
 
-    public string GenerateJwtToken(UserModel userModel)
+    public string GenerateJwtToken(UserModel userModel) => GenerateAccessToken(userModel).Token;
+
+    public AccessToken GenerateAccessToken(UserModel userModel)
     {
         var claims = new List<Claim>
         {
@@ -35,14 +37,15 @@ public class IdentityService : IIdentityService
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtConfig.Key));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
+        var expiresAt = DateTime.UtcNow.AddMinutes(_jwtConfig.LifeTime > 0 ? _jwtConfig.LifeTime : 60);
         var token = new JwtSecurityToken(
             _jwtConfig.Issuer,
             _jwtConfig.Audience,
             claims,
-            expires: DateTime.Now.AddMinutes(_jwtConfig.LifeTime),
+            expires: expiresAt,
             signingCredentials: creds);
 
-        return new JwtSecurityTokenHandler().WriteToken(token);
+        return new AccessToken(new JwtSecurityTokenHandler().WriteToken(token), expiresAt);
     }
 
 }
