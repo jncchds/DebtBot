@@ -18,7 +18,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using System.Reflection;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -61,7 +61,7 @@ builder.Services.AddSingleton<TelegramRateLimiter>();
 builder.Services.AddSingleton<TelegramBotInfoProvider>();
 
 builder.Services.Scan(q => q
-    .FromCallingAssembly()
+    .FromAssemblyOf<Program>()
     .AddClasses(c =>
         c.AssignableToAny([typeof(ITelegramCommand), typeof(ITelegramCallbackQuery)]))
     .AsSelfWithInterfaces()
@@ -99,8 +99,8 @@ builder.Services.AddMassTransit(configurator =>
             "/",
             h =>
             {
-                h.Username(builder.Configuration[$"{DebtBotConfiguration.SectionName}:RabbitMq:Username"]);
-                h.Password(builder.Configuration[$"{DebtBotConfiguration.SectionName}:RabbitMq:Password"]);
+                h.Username(builder.Configuration[$"{DebtBotConfiguration.SectionName}:RabbitMq:Username"]!);
+                h.Password(builder.Configuration[$"{DebtBotConfiguration.SectionName}:RabbitMq:Password"]!);
             });
 
         cfg.ConfigureEndpoints(context);
@@ -153,19 +153,9 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "bearer",
         BearerFormat = "JWT"
     });
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
     {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            Array.Empty<string>()
-        }
+        [new OpenApiSecuritySchemeReference("Bearer", document)] = []
     });
 
     //c.OperationFilter<SecurityRequirementsOperationFilter>();

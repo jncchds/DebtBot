@@ -197,12 +197,12 @@ public class BillRepository : IBillRepository
         }
         _debtContext.SaveChanges();
 
-        if (!parsedBill.Lines.IsNullOrEmpty())
+        if (parsedBill.Lines is { Count: > 0 })
         {
             addLines(bill.Id, parsedBill.Lines, creator);
         }
 
-        if (!parsedBill.Payments.IsNullOrEmpty())
+        if (parsedBill.Payments is { Count: > 0 })
         {
             addPayments(bill.Id, parsedBill.Payments, creator);
         }

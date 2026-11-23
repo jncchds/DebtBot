@@ -33,7 +33,7 @@ public class UpdateHandler : IUpdateHandler
         _telegramService = telegramService;
         _publishEndpoint = publishEndpoint;
     }
-    public async Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
+    public async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, HandleErrorSource source, CancellationToken cancellationToken)
     {
         var ErrorMessage = exception switch
         {
@@ -102,11 +102,11 @@ public class UpdateHandler : IUpdateHandler
         if (callback != null)
         {
             string? ret = await callback.ExecuteAsync(callbackQuery, cancellationToken);
-            await _botClient.AnswerCallbackQueryAsync(callbackQuery.Id, ret, cancellationToken: cancellationToken);
+            await _botClient.AnswerCallbackQuery(callbackQuery.Id, ret, cancellationToken: cancellationToken);
         }
         else
         {
-            await _botClient.AnswerCallbackQueryAsync(callbackQuery.Id, "command not found", cancellationToken: cancellationToken);
+            await _botClient.AnswerCallbackQuery(callbackQuery.Id, "command not found", cancellationToken: cancellationToken);
         }
     }
 

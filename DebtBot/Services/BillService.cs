@@ -97,12 +97,12 @@ public class BillService : IBillService
             throw new Exception("creator not found");
         }
         
-        if (!parsedBill.Lines.IsNullOrEmpty())
+        if (parsedBill.Lines is { Count: > 0 })
         {
             fillLineParticipantUserIds(parsedBill.Lines, creator);
         }
 
-        if (!parsedBill.Payments.IsNullOrEmpty())
+        if (parsedBill.Payments is { Count: > 0 })
         {
             fillPaymentUserIds(parsedBill.Payments, creator);
         }
