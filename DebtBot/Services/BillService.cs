@@ -97,12 +97,12 @@ public class BillService : IBillService
             throw new Exception("creator not found");
         }
         
-        if (!parsedBill.Lines.IsNullOrEmpty())
+        if (parsedBill.Lines is { Count: > 0 })
         {
             fillLineParticipantUserIds(parsedBill.Lines, creator);
         }
 
-        if (!parsedBill.Payments.IsNullOrEmpty())
+        if (parsedBill.Payments is { Count: > 0 })
         {
             fillPaymentUserIds(parsedBill.Payments, creator);
         }
@@ -200,6 +200,18 @@ public class BillService : IBillService
     public bool CanChange(Guid userId, bool isAdmin, BillModel bill)
     {
         return isAdmin || bill.Creator?.Id == userId;
+    }
+
+    public async Task<bool> CanTelegramUserChangeAsync(Guid billId, long telegramUserId, CancellationToken cancellationToken)
+    {
+        var bill = await _billRepository.GetAsync(billId, cancellationToken);
+        if (bill is null)
+        {
+            return true;
+        }
+
+        var user = _userService.FindUser(new UserSearchModel { TelegramId = telegramUserId });
+        return user is not null && CanChange(user.Id, user.Role == UserRole.Admin, bill);
     }
 
     private async Task<BillActionResult<BillModel>> getForChangeAsync(Guid billId, Guid userId, bool isAdmin, CancellationToken cancellationToken)

@@ -1,4 +1,4 @@
-﻿using Microsoft.OpenApi.Models;
+﻿using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace DebtBot.Crutch;
@@ -11,12 +11,13 @@ public class RawTextRequestOperationFilter : IOperationFilter
            .SingleOrDefault((attribute) => attribute is RawTextRequestAttribute) as RawTextRequestAttribute;
         if (rawTextRequestAttribute != null)
         {
-            operation.RequestBody = new OpenApiRequestBody();
-            operation.RequestBody.Content.Add(rawTextRequestAttribute.MediaType, new OpenApiMediaType()
+            var requestBody = new OpenApiRequestBody { Content = new Dictionary<string, IOpenApiMediaType>() };
+            operation.RequestBody = requestBody;
+            requestBody.Content.Add(rawTextRequestAttribute.MediaType, new OpenApiMediaType()
             {
                 Schema = new OpenApiSchema()
                 {
-                    Type = "string"
+                    Type = JsonSchemaType.String
                 }
             });
         }

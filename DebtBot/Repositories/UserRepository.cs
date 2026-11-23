@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using DebtBot.DB;
+using DebtBot.Interfaces.Services;
 using DebtBot.DB.Entities;
 using DebtBot.Extensions;
 using DebtBot.Models;
@@ -93,17 +94,32 @@ public class UserRepository : IUserRepository
         return true;
     }
 
-    public bool DeleteUser(Guid id)
+    public DeleteUserResult DeleteUser(Guid id)
     {
         var user = _debtContext.Users.FirstOrDefault(u => u.Id == id);
-        if (user != null)
+        if (user is null)
         {
-            return false;
+            return DeleteUserResult.NotFound;
+        }
+
+        // Ledger records and spendings have Restrict FKs, and deleting a bill's creator would cascade-delete the bill
+        // for everyone in it. Users with any of this data, or in someone else's contacts, are merged into another user
+        // instead. Their own contact list goes with them.
+        var inUse = _debtContext.Bills.Any(b => b.CreatorId == id)
+            || _debtContext.BillPayments.Any(p => p.UserId == id)
+            || _debtContext.BillLineParticipants.Any(p => p.UserId == id)
+            || _debtContext.BillParticipants.Any(p => p.UserId == id)
+            || _debtContext.LedgerRecords.Any(l => l.CreditorUserId == id || l.DebtorUserId == id)
+            || _debtContext.Spendings.Any(s => s.UserId == id)
+            || _debtContext.UserContactsLinks.Any(c => c.ContactUserId == id);
+        if (inUse)
+        {
+            return DeleteUserResult.InUse;
         }
 
         _debtContext.Users.Remove(user);
         _debtContext.SaveChanges();
-        return true;
+        return DeleteUserResult.Deleted;
     }
 
     public UserModel? GetFirstAdmin()
@@ -465,6 +481,7 @@ public class UserRepository : IUserRepository
         return adminUsers(_debtContext.Users.Where(u => u.TelegramId != null || u.TelegramUserName != null)).ToList();
     }
 
+    // Text fields match exactly, ignoring case. (ILike treated "_" and "%" in usernames as wildcards.)
     public UserModel? FindUser(UserSearchModel model, Guid? userId = null)
     {
         User? user = null;
@@ -479,22 +496,23 @@ public class UserRepository : IUserRepository
         }
         if (user is null && !string.IsNullOrEmpty(model.TelegramUserName))
         {
-            user = _debtContext.Users.FirstOrDefault(u => EF.Functions.ILike(u.TelegramUserName!, model.TelegramUserName));
+            user = _debtContext.Users.FirstOrDefault(u => u.TelegramUserName!.ToLower() == model.TelegramUserName.ToLower());
         }
         if (user is null && !string.IsNullOrEmpty(model.Phone))
         {
-            user = _debtContext.Users.FirstOrDefault(u => EF.Functions.ILike(u.Phone!, model.Phone));
+            user = _debtContext.Users.FirstOrDefault(u => u.Phone!.ToLower() == model.Phone.ToLower());
         }
         if (user is null && !string.IsNullOrEmpty(model.Email))
         {
-            user = _debtContext.Users.FirstOrDefault(u => EF.Functions.ILike(u.Email!, model.Email));
+            user = _debtContext.Users.FirstOrDefault(u => u.Email!.ToLower() == model.Email.ToLower());
         }
         if (user is null && !string.IsNullOrEmpty(model.QueryString))
         {
+            var queryString = model.QueryString.ToLower();
             user = _debtContext.Users.FirstOrDefault(u => u.TelegramId.ToString() == model.QueryString);
-            user ??= _debtContext.Users.FirstOrDefault(u => EF.Functions.ILike(u.TelegramUserName ?? "", model.QueryString));
-            user ??= _debtContext.Users.FirstOrDefault(u => EF.Functions.ILike(u.Phone ?? "", model.QueryString));
-            user ??= _debtContext.Users.FirstOrDefault(u => EF.Functions.ILike(u.Email ?? "", model.QueryString));
+            user ??= _debtContext.Users.FirstOrDefault(u => (u.TelegramUserName ?? "").ToLower() == queryString);
+            user ??= _debtContext.Users.FirstOrDefault(u => (u.Phone ?? "").ToLower() == queryString);
+            user ??= _debtContext.Users.FirstOrDefault(u => (u.Email ?? "").ToLower() == queryString);
         }
 
         var searchString = model.DisplayName ?? model.QueryString;
@@ -503,7 +521,7 @@ public class UserRepository : IUserRepository
             && !string.IsNullOrEmpty(searchString))
         {
             user = _debtContext.UserContactsLinks
-                .Where(t => t.UserId == userId && EF.Functions.ILike(t.DisplayName ?? "", searchString))
+                .Where(t => t.UserId == userId && (t.DisplayName ?? "").ToLower() == searchString.ToLower())
                 .Select(t => t.ContactUser)
                 .FirstOrDefault();
         }

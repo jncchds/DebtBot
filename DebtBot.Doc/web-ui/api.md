@@ -178,9 +178,11 @@ interface ProfileUpdate { displayName: string; phone?: string | null; email?: st
 | `PUT UserContacts/Own/{contactId}` | any user, own contacts | `{ displayName: string }` (1–100 characters) | `Contact`; 404 if not your contact |
 | `DELETE UserContacts/Own/{contactId}` | any user, own contacts | – | 204; 404 if not your contact |
 | `POST UserContacts/Own/by-telegram?username=` | any user | query `username`, with or without `@`, 5–32 of `A-Z a-z 0-9 _` | `Contact`. Finds the user by Telegram username, or creates a placeholder user (as bills do for an unknown @mention). Adding an existing contact returns it unchanged. 400 for a bad username or yourself. |
-| `POST UserContacts/subscription/request?contactId=` | any user | – | 200. Asks to get notifications about `contactId`'s bills. |
-| `POST UserContacts/subscription/confirm?contactId=` | any user | – | 200. Lets `contactId` get notifications about your bills. |
-| `POST UserContacts/subscription/decline?contactId=` | any user | – | 200. Removes `contactId`'s request or subscription to you. |
+| `POST UserContacts/subscription/request?contactId=` | any user | – | 200. Asks to get notifications about `contactId`'s bills. 400 for yourself, 404 for an unknown user (since T3). |
+| `POST UserContacts/subscription/confirm?contactId=` | any user | – | 200. Lets `contactId` get notifications about your bills. 404 `{ message }` when they haven't asked (since T3). |
+| `POST UserContacts/subscription/decline?contactId=` | any user | – | 200. Removes `contactId`'s request or subscription to you. 404 `{ message }` when there is none (since T3). |
+
+The three subscription endpoints act for the signed-in user (from the token); only the admin's `subscription/add` takes a `userId`.
 | `POST UserContacts` | any user | `UserModel` | unchanged, older add endpoint; prefer `by-telegram` |
 | `GET UserContacts`, `GET UserContacts/{id}`, `POST UserContacts/{id}`, `POST UserContacts/subscription/add` | **Admin** | | unchanged |
 
@@ -208,7 +210,9 @@ Removing a contact keeps bills, debts and subscriptions. A later finalized bill 
 | `POST Users/{id}/Role?role=Admin` | – | 200 / 404 (unchanged) |
 | `GET Users/merge/suggestions` | – | `MergeSuggestion[]` |
 | `POST Users/merge` | `{ oldUserId, newUserId }` (the old query parameters still work) | `AdminUser` (the kept user); 400 for missing or identical ids, or for merging away your own signed-in account; 404 for an unknown id |
-| `POST Users`, `PUT Users/{id}`, `DELETE Users/{id}` | | unchanged, older endpoints (see "Open" in the T2 report) |
+| `PUT Users/{id}` | `UserCreationModel` (displayName, telegramUserName, phone, email; null fields stay as they are) | 200; 404 for an unknown id; **400 when `telegramId` differs from the user's** (a Telegram id is never editable, since T3) |
+| `DELETE Users/{id}` | – | 200; 404 for an unknown id; 400 for your own account; **409 `{ message }` while the user has bills (created, paid or shared), ledger records or spendings, or is in someone else's contacts**: merge them instead. Their own contact list and subscriptions are deleted with them. So only stray placeholders can be deleted (since T3). |
+| `POST Users` | | unchanged, older endpoint |
 
 ```ts
 interface AdminUser {

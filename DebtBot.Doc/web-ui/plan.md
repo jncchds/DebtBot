@@ -159,7 +159,7 @@ The UI shows the enums as strings, now that the API sends them that way.
 - **New:** `Controllers/{Auth,Profile,Spendings}Controller.cs`, `Services/AuthService.cs`, the migration, `DebtBot.Tests/`, `DebtBot/ClientApp/**`
 
 ## Verification
-- `dotnet build` and `dotnet test`. The SDK is 10.0.115 and the projects target net8. If the net8 runtime is missing, run the tests inside the `sdk:8.0` container.
+- `dotnet build` and `dotnet test`. Since T3 the projects target net11; use SDK 11 from `~/.dotnet` (`PATH=~/.dotnet:$PATH DOTNET_ROOT=~/.dotnet`, see "Machine limits" in `briefs/common.md`).
 - `docker compose up --build` to start the API, Postgres and RabbitMQ. Then:
   - Check the migration applies.
   - In Swagger, sign in with the debug token, set a password with `PUT auth/password`, sign in with `POST auth/login`, and check `refresh` and `logout`.

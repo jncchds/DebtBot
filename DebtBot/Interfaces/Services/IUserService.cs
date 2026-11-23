@@ -12,10 +12,18 @@ public enum MergeUsersResult
     NotFound
 }
 
+public enum DeleteUserResult
+{
+    Deleted,
+    NotFound,
+    /// <summary>The user still has bills, ledger records or spendings, or is in someone else's contacts; merge them into another user instead.</summary>
+    InUse
+}
+
 public interface IUserService
 {
     UserModel AddUser(UserCreationModel user);
-    void DeleteUser(Guid id);
+    DeleteUserResult DeleteUser(Guid id);
     UserModel? GetUserById(Guid id);
     UserDisplayModel? GetUserDisplayModelById(Guid id);
     IEnumerable<UserModel> GetUsers();

@@ -51,7 +51,7 @@ public class TelegramBotInfoProvider
 
             using var scope = _scopeFactory.CreateScope();
             var botClient = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
-            var me = await botClient.GetMeAsync(cancellationToken);
+            var me = await botClient.GetMe(cancellationToken);
             _botUsername = me.Username;
             return _botUsername;
         }

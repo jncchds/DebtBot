@@ -20,6 +20,11 @@ public interface IBillService
     bool HasAccess(Guid userId, BillModel? bill);
     /// <summary>Changes to a bill are for its creator or an admin.</summary>
     bool CanChange(Guid userId, bool isAdmin, BillModel bill);
+    /// <summary>
+    /// For the bot: whether this Telegram user may change the bill (its creator or an admin). An unknown bill counts
+    /// as allowed, so the command reports it the way it always has.
+    /// </summary>
+    Task<bool> CanTelegramUserChangeAsync(Guid billId, long telegramUserId, CancellationToken cancellationToken);
 
     BillLineModel? GetLine(Guid id);
     void AddLines(Guid billId, List<BillLineParserModel> parsedLines, UserSearchModel creatorSearchModel);
