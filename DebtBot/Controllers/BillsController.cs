@@ -47,23 +47,18 @@ public class BillsController : DebtBotControllerBase
     }
 
     /// <summary>
-    /// Bills I take part in (creator, payer or line participant), newest first.
+    /// Bills I take part in (creator, payer or line participant). By default newest first.
+    /// Query: <c>withUserId</c>, <c>currencyCode</c> (payment currency, any case), <c>status</c>, <c>createdByMe</c>,
+    /// <c>dateFrom</c>, <c>dateTo</c> (whole day, UTC), <c>search</c> (description contains, ignoring case),
+    /// <c>sortBy</c> (Date, Description, Total, Status), <c>sortOrder</c> (Asc, Desc), <c>pageNumber</c>, <c>countPerPage</c>.
     /// </summary>
-    /// <param name="withUserId">Only bills with a ledger record between me and this user.</param>
-    /// <param name="currencyCode">Only bills paid in this currency.</param>
-    /// <param name="status">Only bills in this status.</param>
     [HttpGet]
-    public IActionResult Get(Guid? withUserId = null, string? currencyCode = null, ProcessingState? status = null, int pageNumber = 0, int? countPerPage = null)
+    public IActionResult Get([FromQuery] BillListQuery query)
     {
-        var bills = _billService.GetForUser(
-            UserId!.Value,
-            withUserId,
-            string.IsNullOrWhiteSpace(currencyCode) ? null : currencyCode.Trim().ToUpperInvariant(),
-            pageNumber,
-            countPerPage,
-            status);
+        query.CurrencyCode = string.IsNullOrWhiteSpace(query.CurrencyCode) ? null : query.CurrencyCode.Trim().ToUpperInvariant();
+        query.WithIncludesUnfinalized = true;
 
-        return Ok(bills);
+        return Ok(_billService.GetForUser(UserId!.Value, query));
     }
 
     [HttpGet("Own")]

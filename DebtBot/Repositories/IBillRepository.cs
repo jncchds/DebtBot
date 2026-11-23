@@ -16,6 +16,7 @@ public interface IBillRepository
     Task<BillModel?> GetAsync(Guid id, CancellationToken cancellationToken);
     PagingResult<BillModel> GetCreatedByUser(Guid userId, int pageNumber = 0, int? countPerPage = null);
     PagingResult<BillListModel> GetForUser(Guid userId, Guid? filterByUserId, string? filterByCurrencyCode, int pageNumber = 0, int? countPerPage = null, ProcessingState? status = null);
+    PagingResult<BillListModel> GetForUser(Guid userId, BillListQuery filter);
     BillLineModel? GetLine(Guid id);
     Task<bool> SetBillStatusAsync(Guid billId, ProcessingState status, CancellationToken cancellationToken);
 }

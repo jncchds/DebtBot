@@ -1,5 +1,6 @@
 ﻿using DebtBot.Identity;
 using DebtBot.Interfaces.Services;
+using DebtBot.Models.Debt;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -33,11 +34,16 @@ public class DebtsController : DebtBotControllerBase
         return Ok(debts);
     }
 
+    /// <summary>
+    /// My own balances, without settled ones. By default by person, then currency.
+    /// Query: <c>withUserId</c>, <c>currencyCode</c> (any case), <c>direction</c> (All, OwedToMe, IOwe),
+    /// <c>sortBy</c> (Person, Amount, Currency), <c>sortOrder</c> (Asc, Desc), <c>pageNumber</c>, <c>countPerPage</c>.
+    /// </summary>
     [HttpGet("Own")]
-    public IActionResult GetOwn(int pageNumber = 0, int? countPerPage = null)
+    public IActionResult GetOwn([FromQuery] DebtListQuery query)
     {
-        var debts = _debtService.GetForUser(UserId!.Value, pageNumber, countPerPage);
-        
-        return Ok(debts);
+        query.CurrencyCode = string.IsNullOrWhiteSpace(query.CurrencyCode) ? null : query.CurrencyCode.Trim().ToUpperInvariant();
+
+        return Ok(_debtService.GetOwn(UserId!.Value, query));
     }
 }
