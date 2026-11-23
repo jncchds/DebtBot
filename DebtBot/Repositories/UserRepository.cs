@@ -145,6 +145,10 @@ public class UserRepository : IUserRepository
             return false;
         }
 
+        // The bulk updates below bypass the change tracker; entities tracked from before would be stale
+        // (and removing the old user would try to cascade into them).
+        _debtContext.ChangeTracker.Clear();
+
         using var transaction = _debtContext.Database.BeginTransaction();
 
         var oldUser = _debtContext.Users.FirstOrDefault(u => u.Id == oldUserId);

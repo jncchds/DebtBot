@@ -25,7 +25,8 @@ public class BillProfile : Profile
         CreateProjection<BillLineParticipantModel, BillLineParticipant>();
         
 
-        CreateMap<Bill, BillModel>().ReverseMap();
+        CreateMap<Bill, BillModel>().ReverseMap()
+            .ForMember(b => b.LedgerRecords, opt => opt.Ignore());
 
         CreateMap<BillPayment, BillPaymentModel>().ReverseMap();
 
