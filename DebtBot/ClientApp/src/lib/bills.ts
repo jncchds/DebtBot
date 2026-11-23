@@ -74,3 +74,8 @@ export function pairExchanges(items: BillListItem[]): BillRow[] {
 export function firstLine(s: string): string {
   return s.split('\n')[0].trim()
 }
+
+/** A Telegram username as "@name" (stored with or without the "@"). */
+export function handle(userName: string): string {
+  return `@${userName.replace(/^@+/, '')}`
+}

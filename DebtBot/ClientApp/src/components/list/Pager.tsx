@@ -2,7 +2,9 @@ import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import { pageWindow } from '../../lib/listState'
 
-const pg = 'inline-flex h-8 min-w-8 items-center justify-center rounded-md border border-line px-2 text-sm text-muted hover:border-accent hover:text-fg disabled:pointer-events-none disabled:opacity-45'
+const pg = 'inline-flex h-8 min-w-8 items-center justify-center rounded-md border px-2 text-sm disabled:pointer-events-none disabled:opacity-45'
+const idle = 'border-line text-muted hover:border-accent hover:text-fg'
+const current = 'border-accent bg-accent font-bold text-accent-contrast'
 
 /** "1–20 of 57" and page buttons; `compact` shows "Page 1 of 3" instead of numbers (phones). Pages are 1-based. */
 export function Pager({ page, pageSize, total, onPage, compact }: { page: number; pageSize: number; total: number; onPage: (page: number) => void; compact?: boolean }) {
@@ -14,7 +16,7 @@ export function Pager({ page, pageSize, total, onPage, compact }: { page: number
     <nav className="mt-4 flex flex-wrap items-center gap-2 text-sm" aria-label={t('list.pages')}>
       <span className="muted">{t('list.range', { from, to, total })}</span>
       <span className="flex-1" />
-      <button className={pg} disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label={t('list.previous')}>
+      <button className={clsx(pg, idle)} disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label={t('list.previous')}>
         ‹
       </button>
       {compact ? (
@@ -28,7 +30,7 @@ export function Pager({ page, pageSize, total, onPage, compact }: { page: number
           ) : (
             <button
               key={p}
-              className={clsx(pg, p === page && 'border-accent bg-accent font-bold text-accent-contrast hover:text-accent-contrast')}
+              className={clsx(pg, p === page ? current : idle)}
               aria-current={p === page ? 'page' : undefined}
               onClick={() => onPage(p)}
             >
@@ -37,7 +39,7 @@ export function Pager({ page, pageSize, total, onPage, compact }: { page: number
           ),
         )
       )}
-      <button className={pg} disabled={page >= last} onClick={() => onPage(page + 1)} aria-label={t('list.next')}>
+      <button className={clsx(pg, idle)} disabled={page >= last} onClick={() => onPage(page + 1)} aria-label={t('list.next')}>
         ›
       </button>
     </nav>

@@ -50,7 +50,7 @@ export function BillsSubNav() {
   const drafts = useBills({ status: 'Draft', countPerPage: 10 })
   const recent = useBills({ countPerPage: 15 })
   const draftRows = pairExchanges(drafts.data?.items ?? [])
-  const recentItems = (recent.data?.items ?? []).filter((b) => b.status !== 'Draft').slice(0, 5)
+  const recentRows = pairExchanges((recent.data?.items ?? []).filter((b) => b.status !== 'Draft')).slice(0, 5)
 
   return (
     <>
@@ -66,15 +66,15 @@ export function BillsSubNav() {
         />
       ))}
       <SidebarSection>{t('subnav.bills.recent')}</SidebarSection>
-      {recent.isSuccess && recentItems.length === 0 && <p className="px-2 py-1 text-[0.8rem] muted">{t('subnav.bills.none')}</p>}
-      {recentItems.map((b) => (
+      {recent.isSuccess && recentRows.length === 0 && <p className="px-2 py-1 text-[0.8rem] muted">{t('subnav.bills.none')}</p>}
+      {recentRows.map(({ bill: b, pair }) => (
         <SidebarEntry
           key={b.id}
           to={`/bills/${b.id}`}
           end={false}
           icon={b.exchangeBillId ? '🔁' : '🧾'}
           title={firstLine(b.description) || t('bill.untitled')}
-          subtitle={`${f.date(b.date)} · ${b.status === 'Cancelled' ? t('subnav.bills.cancelled') : f.money(b.totalWithTips, b.currencyCode)}`}
+          subtitle={`${f.date(b.date)} · ${b.status === 'Cancelled' ? t('subnav.bills.cancelled') : f.money(b.totalWithTips, b.currencyCode)}${pair && b.status !== 'Cancelled' ? ` ⇄ ${f.money(pair.totalWithTips, pair.currencyCode)}` : ''}`}
         />
       ))}
       <SidebarMore to="/bills" label={t('subnav.bills.all')} />

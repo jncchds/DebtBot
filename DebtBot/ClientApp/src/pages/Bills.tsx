@@ -87,7 +87,7 @@ export default function Bills() {
     canAccept(r) && (
       <button
         type="button"
-        className="btn-primary px-2.5 py-1 text-[0.8rem]"
+        className="btn-primary px-2.5 py-1 text-[0.8rem] whitespace-nowrap"
         disabled={accept.isPending}
         onClick={() => {
           setAcceptError(undefined)
@@ -110,7 +110,7 @@ export default function Bills() {
     { key: 'total', header: t('bills.total'), sort: 'total', align: 'right', cell: total },
     { key: 'balance', header: t('bills.yourBalance'), align: 'right', cell: (r) => <MyBalance records={[...r.bill.ledgerRecords, ...(r.pair?.ledgerRecords ?? [])]} meId={user?.id} /> },
     { key: 'status', header: t('bills.status'), sort: 'status', width: '7.5rem', cell: (r) => <StatusPill status={r.bill.status} /> },
-    { key: 'action', header: <span className="sr-only">{t('bills.actions')}</span>, align: 'right', width: '6.5rem', cell: acceptButton },
+    { key: 'action', header: <span className="sr-only">{t('bills.actions')}</span>, align: 'right', width: '7.5rem', cell: acceptButton },
   ]
 
   return (

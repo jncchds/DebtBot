@@ -8,6 +8,7 @@ import { ListView, type Column } from '../components/list/ListView'
 import { PageTitle } from '../components/ui'
 import { withFilter } from '../lib/listState'
 import { debtsQuery, debtsSpec, PAGE_SIZE } from '../lib/lists'
+import { handle } from '../lib/bills'
 import { toUnits } from '../lib/money'
 import { useFormat } from '../lib/useFormat'
 import { useListState } from '../lib/useListState'
@@ -49,7 +50,7 @@ export default function Debts() {
   const who = (d: Debt) => (
     <>
       <span className="font-semibold">{d.debtorUser.displayName}</span>
-      {d.debtorUser.telegramUserName && <span className="ml-1.5 text-[0.8rem] muted">@{d.debtorUser.telegramUserName}</span>}
+      {d.debtorUser.telegramUserName && <span className="ml-1.5 text-[0.8rem] muted">{handle(d.debtorUser.telegramUserName)}</span>}
     </>
   )
   const actions = (d: Debt) => (
@@ -132,7 +133,7 @@ export default function Debts() {
                   {amount(d)}
                 </div>
                 <div className="mt-0.5 flex items-baseline gap-2 text-[0.8rem]">
-                  <span className="min-w-0 flex-1 truncate muted">{d.debtorUser.telegramUserName ? `@${d.debtorUser.telegramUserName}` : ''}</span>
+                  <span className="min-w-0 flex-1 truncate muted">{d.debtorUser.telegramUserName ? handle(d.debtorUser.telegramUserName) : ''}</span>
                   {direction(d)}
                 </div>
                 <div className="mt-2">{actions(d)}</div>

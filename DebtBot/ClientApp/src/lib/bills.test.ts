@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { BillListItem, LedgerRecord, UserDisplay } from '../api/types'
-import { finalizeBlockers, myBalance, pairExchanges, peopleCount, tipsUnits } from './bills'
+import { finalizeBlockers, handle, myBalance, pairExchanges, peopleCount, tipsUnits } from './bills'
 
 const u = (id: string): UserDisplay => ({ id, displayName: id, telegramId: null, telegramUserName: null })
 const rec = (creditor: string, debtor: string, amount: number, currencyCode: string): LedgerRecord => ({ creditorUser: u(creditor), debtorUser: u(debtor), amount, currencyCode })
@@ -55,5 +55,12 @@ describe('pairExchanges', () => {
 
   it('keeps a half whose other bill is on another page', () => {
     expect(pairExchanges([item('f', 'b')]).map((r) => [r.bill.id, r.pair?.id])).toEqual([['f', undefined]])
+  })
+})
+
+describe('handle', () => {
+  it('shows one @ whether or not the name has it', () => {
+    expect(handle('@boris_iv')).toBe('@boris_iv')
+    expect(handle('boris_iv')).toBe('@boris_iv')
   })
 })

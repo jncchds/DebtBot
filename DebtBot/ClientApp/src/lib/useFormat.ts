@@ -7,9 +7,11 @@ export function useFormat() {
   const { t, i18n } = useTranslation()
   const lang = i18n.language
   return useMemo(() => {
-    const short = new Intl.DateTimeFormat(lang, { day: 'numeric', month: 'short' })
-    const shortYear = new Intl.DateTimeFormat(lang, { day: 'numeric', month: 'short', year: 'numeric' })
-    const long = new Intl.DateTimeFormat(lang, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    // English dates as in the mockups: "18 Nov 2026, 20:40" (day first, 24-hour).
+    const dateLocale = lang === 'en' ? 'en-GB' : lang
+    const short = new Intl.DateTimeFormat(dateLocale, { day: 'numeric', month: 'short' })
+    const shortYear = new Intl.DateTimeFormat(dateLocale, { day: 'numeric', month: 'short', year: 'numeric' })
+    const long = new Intl.DateTimeFormat(dateLocale, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
     return {
       /** "30.00 EUR" */
       money: (amount: number | bigint, currency: string) => t('money.amount', { amount: formatNumber(amount, currency, lang), currency }),
