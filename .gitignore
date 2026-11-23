@@ -487,3 +487,6 @@ $RECYCLE.BIN/
 /dbdata
 /rabbitdata
 docker-compose.override.yml
+
+# Claude Code worktrees
+.claude/worktrees/
