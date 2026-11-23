@@ -40,7 +40,7 @@ public class BillsController : DebtBotControllerBase
 
 		if (bill is null || (!IsAdmin && !_billService.HasAccess(UserId!.Value, bill)))
 		{
-			return NotFound();
+			return ErrorResult(StatusCodes.Status404NotFound, "Not found.");
 		}
 
 		return Ok(bill);

@@ -29,7 +29,7 @@ public class UsersController : DebtBotControllerBase
         var user = _userService.GetUserById(id);
 
         if (user == null)
-            return NotFound();
+            return ErrorResult(StatusCodes.Status404NotFound, "User not found.");
 
         return Ok(user);
     }
