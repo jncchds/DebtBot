@@ -8,6 +8,20 @@
     "users": "Users",
     "usersHint": "Search, roles, passwords"
   },
+  "bills": {
+    "all": "All bills",
+    "cancelled": "cancelled",
+    "drafts": "Drafts",
+    "none": "No bills yet",
+    "recent": "Recent bills"
+  },
+  "debts": {
+    "owesYou": "owes you {{amount}}",
+    "settled": "All settled",
+    "settledHint": "No open debts",
+    "title": "Balances",
+    "youOwe": "you owe {{amount}}"
+  },
   "newBill": {
     "form": "Form",
     "formHint": "Lines, people and payments",

@@ -1,0 +1,23 @@
+{
+  "actions": "Actions",
+  "amount": "Amount",
+  "amountAsc": "Largest debt first",
+  "amountDesc": "Largest owed first",
+  "bills": "Bills",
+  "currency": "Currency",
+  "dirOwe": "You owe",
+  "dirOwed": "Owed to you",
+  "direction": "Direction",
+  "exchange": "Exchange / settle",
+  "noMatch": "No balances match these filters.",
+  "owesYou": "owes you",
+  "person": "Person",
+  "settled": "You’re all settled",
+  "settledHint": "Nobody owes you and you owe nobody. Debts appear here once a bill is finalized.",
+  "sortAmount": "Amount",
+  "sortCurrency": "Currency",
+  "sortPerson": "Person",
+  "totalOwe": "You owe",
+  "totalOwed": "Owed to you",
+  "youOwe": "you owe"
+}

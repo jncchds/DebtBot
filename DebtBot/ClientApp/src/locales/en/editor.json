@@ -1,0 +1,21 @@
+{
+  "addLine": "Add line",
+  "addPayment": "Add payment",
+  "amount": "Amount, {{currency}}",
+  "byParts": "By parts",
+  "equally": "Equally",
+  "item": "Item",
+  "needAmount": "Enter an amount above zero, with up to 4 decimals.",
+  "needItem": "Enter what it was.",
+  "needParts": "Every part must be a number above zero.",
+  "needPayer": "Choose who paid.",
+  "needPeople": "Choose who shares it.",
+  "noPeople": "No contacts yet.",
+  "partOf": "Part for {{name}}",
+  "paymentReplaces": "Adding a payment for someone who already paid replaces their amount.",
+  "split": "Split",
+  "subtotal": "Subtotal, {{currency}}",
+  "totalGrows": "The total grows with this line.",
+  "totalStays": "The total stays {{total}}: it includes tips.",
+  "whoPaid": "Who paid"
+}

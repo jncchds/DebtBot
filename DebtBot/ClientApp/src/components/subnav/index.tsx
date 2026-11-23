@@ -1,14 +1,17 @@
 import type { ReactNode } from 'react'
 import { matchPath } from 'react-router'
+import { BillsSubNav, DebtsSubNav } from './money'
 import { AdminSubNav, NewBillSubNav, ProfileSubNav } from './static'
 
 /**
  * Page-specific sidebar sections below the divider (mockups/shell/README.md).
  * The first entry whose pattern matches the current path wins, so list specific paths first.
- * T5–T8 add their sections here: Debts (balances), Bills (drafts + recent), Exchange, Spendings, Contacts.
+ * T6–T8 add theirs here: Exchange, Spendings, Contacts, and the New bill drafts.
  */
 const SUBNAVS: { path: string; element: ReactNode }[] = [
+  { path: '/', element: <DebtsSubNav /> },
   { path: '/bills/new/*', element: <NewBillSubNav /> },
+  { path: '/bills/*', element: <BillsSubNav /> },
   { path: '/profile/*', element: <ProfileSubNav /> },
   { path: '/admin/*', element: <AdminSubNav /> },
 ]
