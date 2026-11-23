@@ -48,6 +48,7 @@ On 2026-11-23 the user set up how the DebtBot API + auth + web UI work is run.
 - 2026-11-23: T3 merged into web-ui (497db49). net11, SDK 11.0.100 in ~/.dotnet, 154 tests pass. AutoMapper 14 keeps 3 NU1903 advisories (no free fix). Open: paging race in ToPagingResult (count and page are separate queries).
 - 2026-11-23: T4 (UI foundation) started as worker "DebtBot T4 ui foundation", id f4223192.
 - 2026-11-23: I stopped T3 while the user was still giving it work (line-ending commit; question about debts by Telegram id or username without contacts). Resumed it (same id 5c21aa68) to do that on task/03b-eol. Rule: before `claude stop`, check that the worker is idle and that its transcript has no user messages after its report.
+- 2026-11-23: T3b merged into web-ui (4eb8674): .gitattributes, LF everywhere (bat/cmd CRLF), BOMs kept. Branches cut before it merge with `-X renormalize`. T4 was told to merge web-ui into its branch that way. Contacts answer: debts for non-contacts already work in the bot and text API; contacts are always auto-created; the web form uses the contact picker. "Debts without contacts" would be a product decision for later.
 
 **Why:** the user wants a clean context per task, control over how each view looks, and a durable record of the work.
 **How to apply:** follow this for every task in the series. Related: [[web-ui-palette]].
