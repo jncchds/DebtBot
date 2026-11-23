@@ -40,6 +40,12 @@ Every project builds, tests and runs on .NET 11. Packages are on their latest ve
      - If it isn't empty, find out why. Only keep a real migration if the model changed on purpose; otherwise remove the check migration with `dotnet ef migrations remove`.
    - Keep the warning count from growing. Fix new warnings that the upgrade causes, but don't take on the existing CS8618 backlog.
 5. **Compose (open from T2):** add a Postgres healthcheck in `docker-compose.yml` and make the app wait for it with `depends_on: condition: service_healthy`, so a cold `up` starts cleanly. Do RabbitMQ the same way if it's simple.
+5b. **Fix the bugs T2 found that were already there** (added at the user's request, 2026-11-23). Each fix gets a test:
+   - **Bot creator check:** the bot's `/FinalizeBill`, `/CancelBill` and the Finalize button (including the exchange finalize) only work for the bill's creator or an admin, the same rule as the API. Everyone else gets a short refusal message.
+   - **Subscription endpoints** in `UserContactsController`: "self" comes from the token, never from a user id in the request. Admin-only endpoints keep taking ids.
+   - **`DELETE Users/{id}`:** fix the inverted check in the repository. When the user still has bills, ledger records or contacts that `Restrict` foreign keys protect, return 409 with `{ message }` that points to merging instead. Don't change the FKs.
+   - **`PUT Users/{id}`** (admin) can't change the Telegram id any more; ignore that field or return 400. The product rule is that a Telegram id is never editable.
+   - **User lookup by Telegram username:** escape `_` and `%` in the `ILike` pattern (or compare lowercased values exactly), so `_` no longer acts as a wildcard.
 6. **Tests:**
    - All 120 tests pass on .NET 11 directly, without `DOTNET_ROLL_FORWARD` or the sdk:8.0 container.
    - Add tests only where the Telegram.Bot upgrade changes how the code works, such as the callback and button parsing for the exchange finalize.

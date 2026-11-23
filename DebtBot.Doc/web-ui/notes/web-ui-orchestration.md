@@ -43,6 +43,7 @@ On 2026-11-23 the user set up how the DebtBot API + auth + web UI work is run.
 - 2026-11-23: T1 merged into web-ui (19ff92b). 52 tests pass. Note for T3: refresh reuse has no grace window, so the SPA must share one in-flight refresh. Orchestration was then handed to 334ad10a; the handoff is in `DebtBot.Doc/web-ui/handoff-orchestrator.md`, and T1 was told the new ids.
 - 2026-11-23: T2 (API + admin API) started as worker "DebtBot T2 api", id 35c79555.
 - 2026-11-23: T2 merged into web-ui (09b6243). 120 tests pass in sdk:8.0. On .NET 10 roll-forward AutoMapper 12 breaks, so T3 must update it. Open: DELETE Users/{id} never works; bot finalize/cancel commands have no creator check; compose doesn't wait for Postgres.
+- 2026-11-23: T3 (.NET 11) started as worker "DebtBot T3 net11", id 5c21aa68. The user added the pre-existing bugs T2 found (bot creator check, subscription ids, DELETE Users, PUT Telegram id, ILike wildcard) to T3 (brief item 5b).
 
 **Why:** the user wants a clean context per task, control over how each view looks, and a durable record of the work.
 **How to apply:** follow this for every task in the series. Related: [[web-ui-palette]].
