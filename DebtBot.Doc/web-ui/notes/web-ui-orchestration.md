@@ -5,14 +5,14 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: b85fe091-00b4-4715-be20-d611e12ba132
-  modified: 2026-11-23T16:32:50.141Z
+  modified: 2026-11-23T16:51:12.887Z
 ---
 
 On 2026-11-23 the user set up how the DebtBot API + auth + web UI work is run.
 
 **Sessions**
 - Run one orchestrator session. Each task gets its own worker session, started with a clean context through `~/.claude/skills/start-code-session/start.sh`. Tasks run one after another.
-- The orchestrator is the session named "DebtBot": id `b85fe091`, session id `b85fe091-00b4-4715-be20-d611e12ba132`.
+- The orchestrator is the session named "DebtBot orchestrator": id `334ad10a`, session id `334ad10a-e54a-4cf5-bb10-dc9b00a79ca5`. It took over on 2026-11-23; the first orchestrator, "DebtBot" (b85fe091), was archived.
 - Every worker reports to the orchestrator with SendMessage when it finishes or is blocked.
 - If the orchestrator isn't running (check `claude agents --json`), the worker resumes it with `start.sh /mnt/git/DebtBot --resume <session id> "Report from …"`. This is the same pattern as ASync's workers-wake-orchestrator.
 
@@ -32,6 +32,12 @@ On 2026-11-23 the user set up how the DebtBot API + auth + web UI work is run.
 - There should be one user per Telegram id. Duplicates are shown to admins as suggestions on the Merge users screen.
 - An exchange is created as a draft and accepted with a separate finalize step, the same as the Telegram button.
 - An admin page is required.
+
+**Progress**
+- Orchestrator worktree: `/mnt/git/DebtBot/.claude/worktrees/web-ui` (branch `web-ui`). Draft PR: https://github.com/jncchds/DebtBot/pull/34. Docs: `DebtBot.Doc/web-ui/`.
+- Workers get a short prompt that points to the brief file. A brief pasted inline that contains `git -C` gets refused by the worktree guard.
+- 2026-11-23: T1 (auth) started as worker "DebtBot T1 auth", id 07d30c7c.
+- 2026-11-23: orchestration handed over from b85fe091 to 334ad10a. Orchestration was then handed to 334ad10a; the handoff is in `DebtBot.Doc/web-ui/handoff-orchestrator.md`, and T1 was told the new ids.
 
 **Why:** the user wants a clean context per task, control over how each view looks, and a durable record of the work.
 **How to apply:** follow this for every task in the series. Related: [[web-ui-palette]].
