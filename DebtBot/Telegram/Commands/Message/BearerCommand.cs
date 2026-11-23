@@ -2,6 +2,7 @@
 using DebtBot.Interfaces.Services;
 using DebtBot.Interfaces.Telegram;
 using DebtBot.Messages;
+using DebtBot.Models.Enums;
 using DebtBot.Models.User;
 using DebtBot.Services;
 using MassTransit;
@@ -28,14 +29,13 @@ public class BearerCommand : ITelegramCommand
 
     public async Task ExecuteAsync(ProcessedMessage processedMessage, ITelegramBotClient botClient, CancellationToken cancellationToken)
     {
-        UserModel? user;
-        if (processedMessage.UserSearchModels.Count > 0)
+        var sender = _userService.FindUser(new Models.User.UserSearchModel { TelegramId = processedMessage.FromId });
+
+        // Only admins may get a token for a mentioned user; everyone else always gets their own.
+        UserModel? user = sender;
+        if (sender?.Role == UserRole.Admin && processedMessage.UserSearchModels?.Count > 0)
         {
             user = _userService.FindUser(processedMessage.UserSearchModels.First());
-        }
-        else
-        {
-            user = _userService.FindUser(new Models.User.UserSearchModel { TelegramId = processedMessage.FromId });
         }
 
         if (user == null)

@@ -490,3 +490,6 @@ docker-compose.override.yml
 
 # Claude Code worktrees
 .claude/worktrees/
+
+# Web UI build output (built in the Dockerfile)
+DebtBot/wwwroot/

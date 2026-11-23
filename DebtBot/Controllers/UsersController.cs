@@ -1,6 +1,7 @@
 ﻿using DebtBot.Models.Enums;
 using DebtBot.Identity;
 using DebtBot.Interfaces.Services;
+using DebtBot.Models.Auth;
 using DebtBot.Models.User;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,10 +14,12 @@ namespace DebtBot.Controllers;
 public class UsersController : DebtBotControllerBase
 {
     private readonly IUserService _userService;
+    private readonly IAuthService _authService;
 
-    public UsersController(IUserService userService)
+    public UsersController(IUserService userService, IAuthService authService)
     {
        _userService = userService;
+       _authService = authService;
     }
 
     [HttpGet("{id}")]
@@ -70,6 +73,17 @@ public class UsersController : DebtBotControllerBase
     {
         var res = _userService.SetRole(id, role);
         return res? Ok(): NotFound();
+    }
+
+    /// <summary>
+    /// Sets a user's web sign-in login and password. Login may be left empty when the user already has one.
+    /// Signs the user out of all web sessions.
+    /// </summary>
+    [HttpPost("{id}/password")]
+    public async Task<IActionResult> SetPassword(Guid id, AdminSetPasswordModel model, CancellationToken cancellationToken)
+    {
+        var result = await _authService.AdminSetPasswordAsync(id, model, cancellationToken);
+        return result.ToActionResult(this);
     }
 
     [HttpPost("merge")]
