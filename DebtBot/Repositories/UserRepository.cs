@@ -103,14 +103,15 @@ public class UserRepository : IUserRepository
         }
 
         // Ledger records and spendings have Restrict FKs, and deleting a bill's creator would cascade-delete the bill
-        // for everyone in it. Users with any of this data are merged into another user instead.
+        // for everyone in it. Users with any of this data, or in someone else's contacts, are merged into another user
+        // instead. Their own contact list goes with them.
         var inUse = _debtContext.Bills.Any(b => b.CreatorId == id)
             || _debtContext.BillPayments.Any(p => p.UserId == id)
             || _debtContext.BillLineParticipants.Any(p => p.UserId == id)
             || _debtContext.BillParticipants.Any(p => p.UserId == id)
             || _debtContext.LedgerRecords.Any(l => l.CreditorUserId == id || l.DebtorUserId == id)
             || _debtContext.Spendings.Any(s => s.UserId == id)
-            || _debtContext.UserContactsLinks.Any(c => c.UserId == id || c.ContactUserId == id);
+            || _debtContext.UserContactsLinks.Any(c => c.ContactUserId == id);
         if (inUse)
         {
             return DeleteUserResult.InUse;

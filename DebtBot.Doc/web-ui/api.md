@@ -211,7 +211,7 @@ Removing a contact keeps bills, debts and subscriptions. A later finalized bill 
 | `GET Users/merge/suggestions` | – | `MergeSuggestion[]` |
 | `POST Users/merge` | `{ oldUserId, newUserId }` (the old query parameters still work) | `AdminUser` (the kept user); 400 for missing or identical ids, or for merging away your own signed-in account; 404 for an unknown id |
 | `PUT Users/{id}` | `UserCreationModel` (displayName, telegramUserName, phone, email; null fields stay as they are) | 200; 404 for an unknown id; **400 when `telegramId` differs from the user's** (a Telegram id is never editable, since T3) |
-| `DELETE Users/{id}` | – | 200; 404 for an unknown id; 400 for your own account; **409 `{ message }` while the user has bills (created, paid or shared), ledger records, spendings or contacts**: merge them instead. So only stray placeholders can be deleted (since T3). |
+| `DELETE Users/{id}` | – | 200; 404 for an unknown id; 400 for your own account; **409 `{ message }` while the user has bills (created, paid or shared), ledger records or spendings, or is in someone else's contacts**: merge them instead. Their own contact list and subscriptions are deleted with them. So only stray placeholders can be deleted (since T3). |
 | `POST Users` | | unchanged, older endpoint |
 
 ```ts

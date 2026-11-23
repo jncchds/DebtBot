@@ -60,7 +60,7 @@ public class UsersController : DebtBotControllerBase
     }
 
     /// <summary>
-    /// Deletes a user that has no bills, ledger records, spendings or contacts (a stray placeholder).
+    /// Deletes a user that has no bills, ledger records or spendings and is in nobody's contacts (a stray placeholder).
     /// 409 when there is such data: merge the user into another one instead.
     /// </summary>
     [HttpDelete("{id}")]

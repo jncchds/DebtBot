@@ -16,7 +16,7 @@ public enum DeleteUserResult
 {
     Deleted,
     NotFound,
-    /// <summary>The user still has bills, ledger records, spendings or contacts; merge them into another user instead.</summary>
+    /// <summary>The user still has bills, ledger records or spendings, or is in someone else's contacts; merge them into another user instead.</summary>
     InUse
 }
 

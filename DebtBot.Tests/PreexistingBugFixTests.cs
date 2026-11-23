@@ -101,15 +101,20 @@ public sealed class UserFixesTests : IDisposable
     }
 
     [Fact]
-    public void DeleteUser_InSomeonesContacts_IsInUse()
+    public void DeleteUser_InSomeonesContacts_IsInUse_OwnContactsGoWithThem()
     {
         var anna = _f.AddUser("Anna");
         var boris = _f.AddUser("Boris");
         _f.UserContactService.EnsureContact(anna.Id, boris.Id, "Bob");
         _f.Clear();
 
+        // Boris is in Anna's contacts: deleting him would change her list.
         Assert.Equal(DeleteUserResult.InUse, _f.UserService.DeleteUser(boris.Id));
-        Assert.Equal(DeleteUserResult.InUse, _f.UserService.DeleteUser(anna.Id));
+        // Anna's own contact list is hers and goes with her.
+        Assert.Equal(DeleteUserResult.Deleted, _f.UserService.DeleteUser(anna.Id));
+        _f.Clear();
+        Assert.Empty(_f.Db.UserContactsLinks);
+        Assert.NotNull(_f.Db.Users.Find(boris.Id));
     }
 
     [Fact]
