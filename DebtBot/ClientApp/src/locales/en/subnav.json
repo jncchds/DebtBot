@@ -1,0 +1,27 @@
+{
+  "admin": {
+    "bills": "All bills",
+    "billsHint": "read-only",
+    "merge": "Merge users",
+    "mergeHint": "Duplicate suggestions",
+    "title": "Admin",
+    "users": "Users",
+    "usersHint": "Search, roles, passwords"
+  },
+  "newBill": {
+    "form": "Form",
+    "formHint": "Lines, people and payments",
+    "mode": "Mode",
+    "paste": "Paste text",
+    "pasteHint": "The bot’s bill format"
+  },
+  "profile": {
+    "details": "Details",
+    "detailsHint": "Name, phone, email",
+    "password": "Login & password",
+    "passwordHint": "Web sign-in",
+    "telegram": "Telegram",
+    "telegramHint": "Account and bot",
+    "title": "Sections"
+  }
+}
