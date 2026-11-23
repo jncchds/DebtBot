@@ -5,6 +5,7 @@ import { parseAmount } from '../../lib/money'
 import type { Person } from '../../lib/usePeople'
 
 export interface PaymentEditorProps {
+  /** Who can have paid: the people on the bill (PeoplePicker). */
   people: Person[]
   /** The payment currency. */
   currency: string

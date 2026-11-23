@@ -6,7 +6,7 @@ import { parseAmount, parsePart } from '../../lib/money'
 import type { Person } from '../../lib/usePeople'
 
 export interface LineEditorProps {
-  /** Who can take part: yourself and your contacts (usePeople). */
+  /** Who can take part: the people on the bill (PeoplePicker). All of them are ticked to start with. */
   people: Person[]
   /** The bill currency, shown next to the subtotal. */
   currency: string
@@ -34,24 +34,27 @@ export function LineEditor({ people, currency, onSubmit, onCancel, busy, error, 
   const [item, setItem] = useState('')
   const [subtotal, setSubtotal] = useState('')
   const [mode, setMode] = useState<Mode>('equal')
-  const [chosen, setChosen] = useState<Record<string, string>>({})
+  // Unticked people and parts, so people added to the bill later start ticked with part 1.
+  const [off, setOff] = useState<Set<string>>(() => new Set())
+  const [parts, setParts] = useState<Record<string, string>>({})
+  const partOf = (pid: string) => parts[pid] ?? '1'
   const [tried, setTried] = useState(false)
 
-  const selected = people.filter((p) => p.id in chosen)
+  const selected = people.filter((p) => !off.has(p.id))
   const amount = parseAmount(subtotal)
   const problems = {
     item: !item.trim() ? t('editor.needItem') : undefined,
     subtotal: amount === null || amount <= 0 ? t('editor.needAmount') : undefined,
     people: selected.length === 0 ? t('editor.needPeople') : undefined,
-    parts: mode === 'parts' && selected.some((p) => parsePart(chosen[p.id]) === null) ? t('editor.needParts') : undefined,
+    parts: mode === 'parts' && selected.some((p) => parsePart(partOf(p.id)) === null) ? t('editor.needParts') : undefined,
   }
   const valid = !Object.values(problems).some(Boolean)
 
   const toggle = (pid: string) =>
-    setChosen((c) => {
-      const next = { ...c }
-      if (pid in next) delete next[pid]
-      else next[pid] = '1'
+    setOff((o) => {
+      const next = new Set(o)
+      if (next.has(pid)) next.delete(pid)
+      else next.add(pid)
       return next
     })
 
@@ -62,7 +65,7 @@ export function LineEditor({ people, currency, onSubmit, onCancel, busy, error, 
     onSubmit({
       itemDescription: item.trim(),
       subtotal: amount,
-      participants: selected.map((p) => (mode === 'parts' ? { userId: p.id, part: parsePart(chosen[p.id]) } : { userId: p.id })),
+      participants: selected.map((p) => (mode === 'parts' ? { userId: p.id, part: parsePart(partOf(p.id)) } : { userId: p.id })),
     })
   }
 
@@ -105,7 +108,7 @@ export function LineEditor({ people, currency, onSubmit, onCancel, busy, error, 
 
       <ul className="mt-3 divide-y divide-line rounded-md border border-line bg-surface">
         {people.map((p) => {
-          const on = p.id in chosen
+          const on = !off.has(p.id)
           return (
             <li key={p.id} className="flex items-center gap-3 px-3 py-1.5 text-sm">
               <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5">
@@ -118,14 +121,14 @@ export function LineEditor({ people, currency, onSubmit, onCancel, busy, error, 
                   inputMode="decimal"
                   aria-label={t('editor.partOf', { name: p.name })}
                   disabled={!on}
-                  value={on ? chosen[p.id] : ''}
-                  onChange={(e) => setChosen((c) => ({ ...c, [p.id]: e.target.value }))}
+                  value={on ? partOf(p.id) : ''}
+                  onChange={(e) => setParts((c) => ({ ...c, [p.id]: e.target.value }))}
                 />
               )}
             </li>
           )
         })}
-        {people.length === 0 && <li className="px-3 py-2 text-sm muted">{t('editor.noPeople')}</li>}
+        {people.length === 0 && <li className="px-3 py-2 text-sm muted">{t('editor.addPeopleFirst')}</li>}
       </ul>
       {show(problems.people ?? problems.parts)}
 

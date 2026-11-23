@@ -1,5 +1,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import clsx from 'clsx'
+import type { Person } from '../../lib/usePeople'
+import { PersonSearch } from '../people/PersonSearch'
 
 /**
  * Filter controls for the list header (ListView's `filters`). Each one shows its label and reports a new value;
@@ -158,6 +160,26 @@ export function FilterCurrency({ label, value, placeholder, suggestions, onChang
           <option key={c} value={c} />
         ))}
       </datalist>
+    </Field>
+  )
+}
+
+/** One person, picked by typing (contact lists can be long): the chosen person shows with a ✕ to clear. */
+export function FilterPerson({ label, value, people, placeholder, onChange }: { label: string; value?: string; people: Person[]; placeholder: string; onChange: (v: string | undefined) => void }) {
+  const id = useId()
+  const chosen = value ? people.find((p) => p.id === value) : undefined
+  return (
+    <Field label={label} htmlFor={id} className="flex-[1_1_11rem] md:max-w-64">
+      {value ? (
+        <div className={clsx('input flex items-center gap-2', active)}>
+          <span className="min-w-0 flex-1 truncate">{chosen?.name ?? '…'}</span>
+          <button id={id} type="button" className="rounded px-1 hover:bg-accent-faint" aria-label={`${label}: ✕`} onClick={() => onChange(undefined)}>
+            ✕
+          </button>
+        </div>
+      ) : (
+        <PersonSearch id={id} people={people} placeholder={placeholder} onPick={(p) => onChange(p.id)} />
+      )}
     </Field>
   )
 }

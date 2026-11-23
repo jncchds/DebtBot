@@ -1,6 +1,7 @@
 {
   "addLine": "Add line",
   "addPayment": "Add payment",
+  "addPeopleFirst": "Add people to the bill first.",
   "amount": "Amount, {{currency}}",
   "byParts": "By parts",
   "equally": "Equally",
@@ -10,7 +11,6 @@
   "needParts": "Every part must be a number above zero.",
   "needPayer": "Choose who paid.",
   "needPeople": "Choose who shares it.",
-  "noPeople": "No contacts yet.",
   "partOf": "Part for {{name}}",
   "paymentReplaces": "Adding a payment for someone who already paid replaces their amount.",
   "split": "Split",

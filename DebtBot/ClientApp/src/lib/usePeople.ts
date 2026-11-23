@@ -2,12 +2,25 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useContacts } from '../api/bills'
 import { useAuth } from '../auth/AuthContext'
+import { handle } from './bills'
 
 export interface Person {
   id: string
   /** Your name for them; for yourself "Anna (you)". */
   name: string
   isMe: boolean
+  /** "@name", for search and as a hint. */
+  handle?: string
+  /** Their own display name, when it differs from your name for them. */
+  ownName?: string
+}
+
+/** Whether a person matches what was typed: any word of the name, their own name or the @handle starts with it. */
+export function matchesPerson(p: Person, query: string): boolean {
+  const q = query.trim().toLowerCase().replace(/^@/, '')
+  if (!q) return true
+  const hay = [p.name, p.ownName ?? '', (p.handle ?? '').replace(/^@/, '')].join(' ').toLowerCase()
+  return hay.split(/[\s()]+/).some((w) => w.startsWith(q)) || hay.includes(q)
 }
 
 /**
@@ -19,10 +32,18 @@ export function usePeople() {
   const { user } = useAuth()
   const contacts = useContacts()
   const people = useMemo<Person[]>(() => {
-    const me: Person[] = user ? [{ id: user.id, name: t('common.youNamed', { name: user.displayName }), isMe: true }] : []
+    const me: Person[] = user
+      ? [{ id: user.id, name: t('common.youNamed', { name: user.displayName }), isMe: true, handle: user.telegramUserName ? handle(user.telegramUserName) : undefined }]
+      : []
     const others = (contacts.data ?? [])
       .filter((c) => c.id !== user?.id)
-      .map((c) => ({ id: c.id, name: c.displayName, isMe: false }))
+      .map((c) => ({
+        id: c.id,
+        name: c.displayName,
+        isMe: false,
+        handle: c.telegramUserName ? handle(c.telegramUserName) : undefined,
+        ownName: c.userDisplayName && c.userDisplayName !== c.displayName ? c.userDisplayName : undefined,
+      }))
     return [...me, ...others]
   }, [contacts.data, user, t])
   return { people, loading: contacts.isLoading, error: contacts.error }

@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useAcceptExchange, useAddLines, useAddPayments, useBill, useBillAction } from '../api/bills'
 import { ApiError } from '../api/client'
@@ -11,7 +11,8 @@ import { PaymentEditor } from '../components/bill/PaymentEditor'
 import { ErrorBox, Loading, Spinner } from '../components/ui'
 import { canCancel, canChange, finalizeBlockers, firstLine, isEqualSplit, peopleCount, tipsUnits } from '../lib/bills'
 import { useFormat } from '../lib/useFormat'
-import { usePeople, useNameOf } from '../lib/usePeople'
+import { usePeople, useNameOf, type Person } from '../lib/usePeople'
+import { PeoplePicker } from '../components/people/PeoplePicker'
 import { POLL_MS, usePollWindow } from '../lib/usePollWindow'
 
 /** What the page is waiting for after an action that finishes in the background. */
@@ -62,6 +63,7 @@ export default function Bill({ mode }: { mode?: 'add-line' | 'add-payment' }) {
   const addLines = useAddLines(id)
   const addPayments = useAddPayments(id)
   const { people } = usePeople()
+  const [search, setSearch] = useSearchParams()
 
   if (first.isLoading) return <Loading />
   if (first.error) {
@@ -79,6 +81,25 @@ export default function Bill({ mode }: { mode?: 'add-line' | 'add-payment' }) {
   const editable = mine && bill.status === 'Draft' && !isExchange && !processing
   const blockers = finalizeBlockers(bill)
   const base = `/bills/${bill.id}`
+  // People added to the bill but not on a line or payment yet live in the URL (?people=a,b), so reload keeps them.
+  const extraIds = (search.get('people') ?? '').split(',').filter(Boolean)
+  const qs = search.toString() ? `?${search}` : ''
+  const backToBill = () => navigate(`${base}${qs}`, { replace: true })
+  const onBill = billPeople(bill, user?.id)
+  const byId = new Map(people.map((p) => [p.id, p]))
+  const billPeopleList: Person[] = [...new Set([...onBill, ...extraIds])].map(
+    (pid) => byId.get(pid) ?? { id: pid, name: names.long(findUser(bill, pid) ?? { id: pid, displayName: pid }), isMe: pid === user?.id },
+  )
+  const setExtras = (ids: string[]) =>
+    setSearch(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        if (ids.length) next.set('people', ids.join(','))
+        else next.delete('people')
+        return next
+      },
+      { replace: true },
+    )
 
   const run = (kind: Waiting['action'], p: Promise<unknown>) => {
     setError(undefined)
@@ -177,6 +198,19 @@ export default function Bill({ mode }: { mode?: 'add-line' | 'add-payment' }) {
         />
       )}
 
+      {editable && (
+        <section className="card mb-4 px-4 py-3">
+          <PeoplePicker
+            people={people}
+            selected={billPeopleList}
+            locked={new Set(onBill)}
+            onAdd={(p) => setExtras([...extraIds.filter((x) => x !== p.id), p.id])}
+            onRemove={(p) => setExtras(extraIds.filter((x) => x !== p.id))}
+          />
+          <p className="mt-1.5 text-[0.8rem] muted">{t('people.onBillHint')}</p>
+        </section>
+      )}
+
       <dl className="card mb-4 grid grid-cols-2 md:grid-cols-4">
         {[
           [t('bill.total'), f.money(bill.totalWithTips, bill.currencyCode)],
@@ -196,7 +230,7 @@ export default function Bill({ mode }: { mode?: 'add-line' | 'add-payment' }) {
           <div className="flex items-center gap-2 border-b border-line px-4 py-3">
             <h2 className="flex-1 font-bold">{t('bill.lines')}</h2>
             {editable && mode !== 'add-line' && (
-              <Link to={`${base}/add-line`} className="btn-secondary px-2.5 py-1 text-[0.8rem]">
+              <Link to={`${base}/add-line${qs}`} className="btn-secondary px-2.5 py-1 text-[0.8rem]">
                 ＋ {t('editor.addLine')}
               </Link>
             )}
@@ -228,13 +262,13 @@ export default function Bill({ mode }: { mode?: 'add-line' | 'add-payment' }) {
             <div className="px-3 pb-3 md:px-4 md:pb-4">
               <LineEditor
                 title={t('editor.addLine')}
-                people={people}
+                people={billPeopleList}
                 currency={bill.currencyCode}
                 busy={addLines.isPending}
                 error={addLines.error && <div className="alert-danger">{message(addLines.error)}</div>}
                 hint={tips === 0n ? t('editor.totalGrows') : t('editor.totalStays', { total: f.money(bill.totalWithTips, bill.currencyCode) })}
-                onCancel={() => navigate(base, { replace: true })}
-                onSubmit={(line) => addLines.mutate([line], { onSuccess: () => navigate(base, { replace: true }) })}
+                onCancel={backToBill}
+                onSubmit={(line) => addLines.mutate([line], { onSuccess: backToBill })}
               />
             </div>
           )}
@@ -245,7 +279,7 @@ export default function Bill({ mode }: { mode?: 'add-line' | 'add-payment' }) {
             <div className="flex items-center gap-2 border-b border-line px-4 py-3">
               <h2 className="flex-1 font-bold">{t('bill.payments')}</h2>
               {editable && mode !== 'add-payment' && (
-                <Link to={`${base}/add-payment`} className="btn-secondary px-2.5 py-1 text-[0.8rem]">
+                <Link to={`${base}/add-payment${qs}`} className="btn-secondary px-2.5 py-1 text-[0.8rem]">
                   ＋ {t('editor.addPayment')}
                 </Link>
               )}
@@ -263,13 +297,13 @@ export default function Bill({ mode }: { mode?: 'add-line' | 'add-payment' }) {
               <div className="px-3 pb-3 md:px-4 md:pb-4">
                 <PaymentEditor
                   title={t('editor.addPayment')}
-                  people={people}
+                  people={billPeopleList}
                   currency={bill.paymentCurrencyCode}
                   busy={addPayments.isPending}
                   error={addPayments.error && <div className="alert-danger">{message(addPayments.error)}</div>}
                   hint={t('editor.paymentReplaces')}
-                  onCancel={() => navigate(base, { replace: true })}
-                  onSubmit={(p) => addPayments.mutate([p], { onSuccess: () => navigate(base, { replace: true }) })}
+                  onCancel={backToBill}
+                  onSubmit={(p) => addPayments.mutate([p], { onSuccess: backToBill })}
                 />
               </div>
             )}
@@ -363,4 +397,17 @@ function NotFoundBill() {
       </div>
     </>
   )
+}
+
+/** Everyone already on the bill (you, line participants, payers), in that order, once each. */
+function billPeople(bill: BillModel, meId: string | undefined): string[] {
+  const ids = new Set<string>()
+  if (meId) ids.add(meId)
+  bill.lines.forEach((l) => l.participants.forEach((p) => ids.add(p.user.id)))
+  bill.payments.forEach((p) => ids.add(p.user.id))
+  return [...ids]
+}
+
+function findUser(bill: BillModel, id: string) {
+  return bill.lines.flatMap((l) => l.participants.map((p) => p.user)).concat(bill.payments.map((p) => p.user)).find((u) => u.id === id)
 }

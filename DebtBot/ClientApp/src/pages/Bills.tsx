@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useAcceptExchange, useAllOwnDebts, useBills } from '../api/bills'
 import { ApiError } from '../api/client'
 import { MyBalance, StatusPill } from '../components/bill/bits'
-import { FilterChoice, FilterCurrency, FilterDate, FilterFlag, FilterSelect, FilterText } from '../components/list/filters'
+import { FilterChoice, FilterCurrency, FilterDate, FilterFlag, FilterPerson, FilterText } from '../components/list/filters'
 import { ListView, type Column } from '../components/list/ListView'
 import { PageTitle } from '../components/ui'
 import { useAuth } from '../auth/AuthContext'
@@ -34,10 +34,10 @@ export default function Bills() {
   const [acceptError, setAcceptError] = useState<string>()
   const rows = useMemo(() => pairExchanges(bills.data?.items ?? []), [bills.data])
 
-  const personOptions = people.filter((p) => !p.isMe).map((p) => ({ value: p.id, label: p.name }))
+  const others = people.filter((p) => !p.isMe)
   const currencies = [...new Set((debts.data ?? []).map((d) => d.currencyCode))].sort()
   const statusLabel = state.filters.status ? t(`bills.statusFilter.${state.filters.status}`) : undefined
-  const personLabel = state.filters.with ? (personOptions.find((o) => o.value === state.filters.with)?.label ?? '') : undefined
+  const personLabel = state.filters.with ? (others.find((p) => p.id === state.filters.with)?.name ?? '') : undefined
 
   // "Drafts with Clara in USD, created by you."
   const subtitle = [
@@ -128,7 +128,7 @@ export default function Bills() {
         filters={
           <>
             <FilterText label={t('bills.search')} placeholder={t('bills.searchHint')} value={state.filters.q} onChange={(v) => setState(withFilter(state, 'q', v))} />
-            <FilterSelect label={t('bills.person')} allLabel={t('list.everyone')} value={state.filters.with} options={personOptions} onChange={(v) => setState(withFilter(state, 'with', v))} />
+            <FilterPerson label={t('bills.person')} placeholder={t('list.everyone')} value={state.filters.with} people={others} onChange={(v) => setState(withFilter(state, 'with', v))} />
             <FilterCurrency label={t('bills.currency')} placeholder={t('list.anyCurrency')} value={state.filters.currency} suggestions={currencies} onChange={(v) => setState(withFilter(state, 'currency', v))} />
             <FilterDate label={t('bills.from')} value={state.filters.from} onChange={(v) => setState(withFilter(state, 'from', v))} />
             <FilterDate label={t('bills.to')} value={state.filters.to} onChange={(v) => setState(withFilter(state, 'to', v))} />

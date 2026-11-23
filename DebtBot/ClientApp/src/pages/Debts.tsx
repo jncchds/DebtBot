@@ -3,7 +3,7 @@ import { Link } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useAllOwnDebts, useOwnDebts } from '../api/bills'
 import type { Debt } from '../api/types'
-import { FilterChoice, FilterCurrency, FilterSelect } from '../components/list/filters'
+import { FilterChoice, FilterCurrency, FilterPerson } from '../components/list/filters'
 import { ListView, type Column } from '../components/list/ListView'
 import { PageTitle } from '../components/ui'
 import { withFilter } from '../lib/listState'
@@ -37,7 +37,7 @@ export default function Debts() {
     return {
       owed: sorted(owed),
       owe: sorted(owe),
-      people: [...people].map(([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label)),
+      people: [...people].map(([id, name]) => ({ id, name, isMe: false })).sort((a, b) => a.name.localeCompare(b.name)),
       currencies: [...new Set((all.data ?? []).map((d) => d.currencyCode))].sort(),
     }
   }, [all.data])
@@ -58,9 +58,6 @@ export default function Debts() {
       <Link className="btn-secondary px-2.5 py-1 text-[0.8rem]" to={`/bills?with=${d.debtorUser.id}&currency=${d.currencyCode}`}>
         🧾 {t('debts.bills')}
       </Link>
-      <Link className="btn-secondary px-2.5 py-1 text-[0.8rem]" to={`/exchange?with=${d.debtorUser.id}`}>
-        🔁 {t('debts.exchange')}
-      </Link>
     </span>
   )
 
@@ -69,7 +66,7 @@ export default function Debts() {
     { key: 'currency', header: t('debts.currency'), sort: 'currency', width: '6rem', cell: (d) => d.currencyCode },
     { key: 'dir', header: '', width: '7rem', cell: direction },
     { key: 'amount', header: t('debts.amount'), sort: 'amount', align: 'right', width: '9rem', cell: amount },
-    { key: 'actions', header: <span className="sr-only">{t('debts.actions')}</span>, align: 'right', width: '17rem', cell: actions },
+    { key: 'actions', header: <span className="sr-only">{t('debts.actions')}</span>, align: 'right', width: '7rem', cell: actions },
   ]
 
   return (
@@ -106,7 +103,7 @@ export default function Debts() {
             onChange={setState}
             filters={
               <>
-                <FilterSelect label={t('debts.person')} allLabel={t('list.everyone')} value={state.filters.with} options={people} onChange={(v) => setState(withFilter(state, 'with', v))} />
+                <FilterPerson label={t('debts.person')} placeholder={t('list.everyone')} value={state.filters.with} people={people} onChange={(v) => setState(withFilter(state, 'with', v))} />
                 <FilterCurrency label={t('debts.currency')} placeholder={t('list.anyCurrency')} value={state.filters.currency} suggestions={currencies} onChange={(v) => setState(withFilter(state, 'currency', v))} />
                 <FilterChoice
                   label={t('debts.direction')}
