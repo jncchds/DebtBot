@@ -21,9 +21,12 @@ services:
       - DebtBot_DebtBot__Telegram__LogBotToken=
       - DebtBot_DebtBot__Telegram__LogChatId=
       - DebtBot_DebtBot__Telegram__LogLevel__Default=
+    # Start only when Postgres and RabbitMQ accept connections, so a cold `up` doesn't fail the migrations.
     depends_on:
-      - db
-      - rabbit
+      db:
+        condition: service_healthy
+      rabbit:
+        condition: service_healthy
 
   db:
     image: postgres:14.1-alpine
@@ -32,6 +35,12 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
 
   rabbit:
     image: rabbitmq:3
@@ -40,3 +49,9 @@ services:
     environment:
       - RABBITMQ_DEFAULT_USER=debtbot
       - RABBITMQ_DEFAULT_PASS=debtbot
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 20s

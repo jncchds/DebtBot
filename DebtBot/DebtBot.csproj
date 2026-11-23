@@ -38,4 +38,8 @@
     <ProjectReference Include="..\DebtBot.Models\DebtBot.Models.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="DebtBot.Tests" />
+  </ItemGroup>
+
 </Project>
