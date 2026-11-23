@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DebtBot Bill mockup</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 1rem; }
+  .facts > div { padding: .75rem 1rem; border-left: 1px solid var(--border); }
+  .facts > div:first-child { border-left: 0; }
+  .facts .k { font-size: .72rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); }
+  .facts .v { margin-top: .2rem; font-weight: 700; }
+  .phone .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .phone .facts > div:nth-child(3) { border-left: 0; }
+  .phone .facts > div:nth-child(n+3) { border-top: 1px solid var(--border); }
+  .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+  .phone .two { grid-template-columns: 1fr; }
+  .lrow { display: flex; align-items: flex-start; gap: 1rem; padding: .75rem 1rem; border-top: 1px solid var(--border); }
+  .card-head + .lrow, .card-head + .lrow.first { border-top: 0; }
+  .lrow .grow { flex: 1; min-width: 0; }
+  .parts { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .35rem; }
+  .prow { display: flex; align-items: baseline; gap: .5rem; padding: .625rem 1rem; border-top: 1px solid var(--border); font-size: .9rem; }
+  .card-head + .prow { border-top: 0; }
+  .note { padding: .875rem 1rem; font-size: .875rem; }
+  .editor { margin: 0 1rem 1rem; padding: 1rem; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); background: var(--surface-2); }
+  .editor .grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: .75rem; }
+  .phone .editor { margin: 0 .5rem .75rem; padding: .75rem; }
+  .phone .editor .grid { grid-template-columns: 1fr; }
+  .who { margin-top: .75rem; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); }
+  .who .w { display: flex; align-items: center; gap: .6rem; padding: .45rem .75rem; border-top: 1px solid var(--border); font-size: .875rem; }
+  .who .w:first-child { border-top: 0; }
+  .box { width: 16px; height: 16px; flex-shrink: 0; border-radius: 4px; border: 1px solid var(--border); background: var(--input-bg); display: inline-flex; align-items: center; justify-content: center; font-size: 11px; }
+  .box.on { background: var(--accent); border-color: var(--accent); color: var(--accent-contrast); }
+  .part { width: 4.5rem; text-align: right; }
+  .x { border-radius: 10px; border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); background: var(--accent-faint); padding: 1rem; margin-bottom: 1rem; display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1rem; }
+  .x .grow { flex: 1 1 18rem; font-size: .9rem; }
+  .multi { white-space: pre-line; font-size: .875rem; margin: -1rem 0 1.25rem; }
+</style>
+</head>
+<body>
+<script>
+  const P = { a: 'Anna (you)', b: 'Boris', d: 'Dmitry' }
+  const chips = (xs, parts) => `<div class="parts">${xs.map(([n, p]) => `<span class="chip">${n}${parts ? ` ×${p}` : ''}</span>`).join('')}</div>`
+  const BILLS = {
+    processed: {
+      title: 'Pizza night', st: ['pill-muted', 'Finalized'], sub: '18 Nov 2026, 20:40 · created by you',
+      facts: [['Total', '50.00 EUR'], ['Paid in', 'EUR'], ['Tips', '—'], ['People', '2']],
+      lines: [['Pizza Margherita', '30.00 EUR', chips([[P.a, 1], [P.b, 1]]), 'split equally'],
+              ['Wine', '20.00 EUR', chips([[P.a, 1], [P.b, 3]], true), 'by parts']],
+      payments: [[P.a, '50.00 EUR']],
+      ledger: [['Boris owes you', '30.00 EUR', 'pos']],
+      actions: '<a class="btn btn-danger">Cancel bill</a>',
+    },
+    draft: {
+      title: 'Dinner at Molto', st: ['pill-accent', 'Draft'], sub: '21 Nov 2026, 21:15 · created by you',
+      facts: [['Total', '84.00 EUR'], ['Paid in', 'EUR'], ['Tips', '8.00 EUR'], ['People', '3']],
+      lines: [['Pasta', '48.00 EUR', chips([[P.a], [P.b], [P.d]]), 'split equally'],
+              ['Tiramisu', '28.00 EUR', chips([[P.b, 1], [P.d, 1]], true), 'by parts']],
+      payments: [],
+      ledger: null,
+      actions: '<span class="muted" style="font-size:.8rem">Add a payment to finalize</span><a class="btn btn-primary" style="opacity:.5">✓ Finalize</a><a class="btn btn-danger">Cancel bill</a>',
+      canEdit: true,
+    },
+    exchange: {
+      title: 'Exchange with Boris', st: ['pill-accent', 'Draft'], sub: '22 Nov 2026, 10:02 · created by you',
+      desc: 'Exchange 0.2326 EUR/PLN',
+      facts: [['Total', '430.00 PLN'], ['Paid in', 'EUR'], ['Tips', '—'], ['People', '2']],
+      lines: [['Exchange', '430.00 PLN', chips([[P.b]]), '']],
+      payments: [[P.a, '100.00 EUR']],
+      ledger: null,
+      actions: '<a class="btn btn-danger">Cancel exchange</a>',
+      x: true,
+    },
+  }
+  BILLS.processing = { ...BILLS.draft, st: ['pill-muted', 'Processing…'], payments: [[P.a, '84.00 EUR']], actions: '', canEdit: false, processing: true }
+  BILLS['add-line'] = { ...BILLS.draft, editor: 'line' }
+  BILLS['add-payment'] = { ...BILLS.draft, editor: 'payment' }
+
+  const lineEditor = `<div class="editor">
+      <div class="row" style="margin-bottom:.75rem"><h2>Add line</h2></div>
+      <div class="grid">
+        <div><label class="label">Item</label><input class="input focus" value="Lemonade"></div>
+        <div><label class="label">Subtotal, EUR</label><input class="input num" value="12.00" style="text-align:right"></div>
+      </div>
+      <div class="row" style="margin-top:.75rem"><span class="label" style="margin:0">Split</span><span class="seg"><span class="opt">Equally</span><span class="opt on">By parts</span></span></div>
+      <div class="who">
+        <div class="w"><span class="box on">✓</span><span style="flex:1">Anna (you)</span><input class="input part" value="2"></div>
+        <div class="w"><span class="box on">✓</span><span style="flex:1">Boris</span><input class="input part" value="1"></div>
+        <div class="w"><span class="box"></span><span style="flex:1" class="muted">Clara</span><input class="input part" value="" disabled></div>
+        <div class="w"><span class="box on">✓</span><span style="flex:1">Dmitry</span><input class="input part" value="1"></div>
+        <div class="w"><span class="box"></span><span style="flex:1" class="muted">Mum</span><input class="input part" value="" disabled></div>
+      </div>
+      <div class="row" style="margin-top:.875rem"><a class="btn btn-primary">Add line</a><a class="btn btn-ghost">Cancel</a><span class="spacer"></span><span class="muted" style="font-size:.8rem">The total stays 84.00 EUR: it includes tips</span></div>
+    </div>`
+  const payEditor = `<div class="editor">
+      <div class="row" style="margin-bottom:.75rem"><h2>Add payment</h2></div>
+      <div class="grid">
+        <div><label class="label">Who paid</label><select class="input focus"><option>Anna (you)</option></select></div>
+        <div><label class="label">Amount, EUR</label><input class="input num" value="84.00" style="text-align:right"></div>
+      </div>
+      <p class="muted" style="font-size:.8rem;margin:.5rem 0 0">Adding a payment for someone who already paid replaces their amount.</p>
+      <div class="row" style="margin-top:.875rem"><a class="btn btn-primary">Add payment</a><a class="btn btn-ghost">Cancel</a></div>
+    </div>`
+
+  window.MOCK = {
+    page: 'bills',
+    ctxFor: (s) => ['S:Drafts',
+      { i: '🔁', t: 'Exchange with Boris', s: '22 Nov · 100.00 EUR ⇄ 430.00 PLN', a: s === 'exchange' },
+      { i: '✏️', t: 'Dinner at Molto', s: '21 Nov · 84.00 EUR', a: ['draft', 'add-line', 'add-payment', 'processing'].includes(s) },
+      'S:Recent bills',
+      { i: '🧾', t: 'Pizza night', s: '18 Nov · 50.00 EUR', a: s === 'processed' },
+      { i: '🧾', t: 'Taxi to the airport', s: '15 Nov · 30.00 EUR' },
+      { i: '🧾', t: 'Groceries Lidl', s: '12 Nov · 63.40 PLN' },
+      { i: '🧾', t: 'Cinema', s: '8 Nov · cancelled' },
+      { i: '🧾', t: 'Hotel in Kraków', s: '2 Nov · 960.00 PLN' },
+      'A:All bills'],
+    render(state) {
+      const back = '<a class="back">← Bills</a>'
+      if (state === 'notfound') return back + `<div class="card empty" style="margin-top:.5rem">
+          <div class="big">🔍</div><p style="font-weight:600">Bill not found</p>
+          <p class="muted" style="font-size:.875rem;margin-bottom:1rem">It doesn’t exist, or you don’t take part in it.</p>
+          <div class="row" style="justify-content:center"><a class="btn btn-secondary">🧾 Back to bills</a></div></div>`
+      const b = BILLS[state] ?? BILLS.processed
+      const edit = b.canEdit
+      return back + `
+        <div class="title-row"><h1>${b.title}</h1><span class="pill ${b.st[0]}">${b.st[1]}</span><span class="spacer"></span>${b.actions}</div>
+        <p class="sub muted">${b.sub}</p>
+        ${b.desc ? `<p class="multi muted">${b.desc}</p>` : ''}
+        ${b.processing ? `<div class="alert-info" style="margin-bottom:1rem"><span class="spin"></span><span><b>Finalizing…</b> DebtBot is writing who owes whom. This page updates by itself.</span></div>` : ''}
+        ${b.x ? `<div class="x"><span style="font-size:1.4rem">🔁</span><div class="grow"><b>Exchange pair.</b> You give Boris <b class="num">100.00 EUR</b>, Boris gives you <b class="num">430.00 PLN</b> (rate 0.2326 EUR/PLN).<br><span class="muted">Other half:</span> <a class="link">Exchange with Boris · 100.00 EUR, paid in PLN →</a></div><a class="btn btn-primary">✓ Accept exchange</a></div>` : ''}
+        <div class="card facts">${b.facts.map(([k, v]) => `<div><div class="k">${k}</div><div class="v num">${v}</div></div>`).join('')}</div>
+        <div class="stack">
+          <div class="card">
+            <div class="card-head"><h2 class="grow">Lines</h2>${edit && b.editor !== 'line' ? '<a class="btn btn-secondary btn-sm">＋ Add line</a>' : ''}</div>
+            ${b.lines.map(([n, amt, ch, how]) => `<div class="lrow"><div class="grow"><b>${n}</b> <span class="muted" style="font-size:.8rem">${how}</span>${ch}</div><span class="num" style="font-weight:600">${amt}</span></div>`).join('')}
+            ${b.editor === 'line' ? lineEditor : ''}
+          </div>
+          <div class="two">
+            <div class="card">
+              <div class="card-head"><h2 class="grow">Payments</h2>${edit && b.editor !== 'payment' ? '<a class="btn btn-secondary btn-sm">＋ Add payment</a>' : ''}</div>
+              ${b.payments.length ? b.payments.map(([n, a]) => `<div class="prow"><span style="flex:1">${n}</span><span class="num" style="font-weight:600">${a}</span></div>`).join('') : b.editor === 'payment' ? '' : '<div class="note muted">No payments yet. Add who paid before you finalize.</div>'}
+              ${b.editor === 'payment' ? payEditor : ''}
+            </div>
+            <div class="card">
+              <div class="card-head"><h2 class="grow">Who owes whom</h2></div>
+              ${b.ledger ? b.ledger.map(([t, a, c]) => `<div class="prow"><span style="flex:1">${t}</span><span class="num ${c}" style="font-weight:700">${a}</span></div>`).join('')
+                : `<div class="note muted">${b.processing ? 'Being written…' : 'Worked out when the bill is finalized.'}</div>`}
+            </div>
+          </div>
+        </div>`
+    },
+  }
+</script>
+<script src="../common/shell.js"></script>
+</body>
+</html>
