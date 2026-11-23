@@ -46,6 +46,8 @@ On 2026-11-23 the user set up how the DebtBot API + auth + web UI work is run.
 - 2026-11-23: T2 merged into web-ui (09b6243). 120 tests pass in sdk:8.0. On .NET 10 roll-forward AutoMapper 12 breaks, so T3 must update it. Open: DELETE Users/{id} never works; bot finalize/cancel commands have no creator check; compose doesn't wait for Postgres.
 - 2026-11-23: T3 (.NET 11) started as worker "DebtBot T3 net11", id 5c21aa68. The user added the pre-existing bugs T2 found (bot creator check, subscription ids, DELETE Users, PUT Telegram id, ILike wildcard) to T3 (brief item 5b).
 - 2026-11-23: T3 merged into web-ui (497db49). net11, SDK 11.0.100 in ~/.dotnet, 154 tests pass. AutoMapper 14 keeps 3 NU1903 advisories (no free fix). Open: paging race in ToPagingResult (count and page are separate queries).
+- 2026-11-23: T4 (UI foundation) started as worker "DebtBot T4 ui foundation", id f4223192.
+- 2026-11-23: I stopped T3 while the user was still giving it work (line-ending commit; question about debts by Telegram id or username without contacts). Resumed it (same id 5c21aa68) to do that on task/03b-eol. Rule: before `claude stop`, check that the worker is idle and that its transcript has no user messages after its report.
 
 **Why:** the user wants a clean context per task, control over how each view looks, and a durable record of the work.
 **How to apply:** follow this for every task in the series. Related: [[web-ui-palette]].
