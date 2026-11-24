@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DebtBot Following mockup</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .totals { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+  .phone .totals { grid-template-columns: 1fr; gap: .5rem; }
+  .total { padding: .75rem 1rem; }
+  .total .k { font-size: .72rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+  .total .v { margin-top: .25rem; display: flex; flex-wrap: wrap; gap: .25rem 1rem; font-size: 1.1rem; font-weight: 700; }
+  .amt { font-weight: 700; }
+  .desc { font-weight: 600; }
+  .by { font-size: .8rem; }
+  .whose { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: -.75rem 0 1rem; }
+  .whose .label { margin: 0; }
+  .whose-sel { width: 13rem; }
+  .dd { position: relative; }
+  .menu { position: absolute; left: 0; top: calc(100% + 4px); width: 15rem; z-index: 5; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); box-shadow: 0 10px 25px -10px rgba(0,0,0,.35); overflow: hidden; padding-bottom: .25rem; }
+  .menu div { padding: .4rem .75rem; font-size: .875rem; }
+  .menu div.on { background: var(--accent-faint); color: var(--accent); font-weight: 600; }
+  .menu .sep { font-size: .68rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); border-top: 1px solid var(--border); margin-top: .25rem; padding-top: .5rem; }
+  .mb { margin-bottom: 1rem; }
+</style>
+</head>
+<body>
+<script>
+  // view=debts|bills|spendings, state=mine|boris
+  const view = new URLSearchParams(location.search).get('view') ?? 'debts'
+  const f = (n) => Math.abs(n).toFixed(2)
+  const TITLE = { debts: 'Debts', bills: 'Bills', spendings: 'Spendings' }
+  const WHAT = { debts: 'debts', bills: 'bills', spendings: 'spendings' }
+
+  // A dropdown: "Mine" first, then everyone whose bills and debts you get (mySubscription = Confirmed), A–Z.
+  // Past ~8 people the menu gets a search box on top.
+  const PEOPLE = ['Boris', 'Clara', 'Dmitry', 'Grisha', 'Lena', 'Marta', 'Oleg', 'Pavel', 'Sasha', 'Vera']
+  const whose = (boris, open) => `<div class="whose"><span class="label">Whose</span>
+      <div class="dd"><select class="input whose-sel${boris ? ' on' : ''}"><option>${boris ? '🔔 Boris' : '👤 Mine'}</option></select>
+      ${open ? `<div class="menu"><input class="input focus" placeholder="Search…" style="margin:.4rem;width:calc(100% - .8rem)">
+        <div class="${boris ? '' : 'on'}">👤 Mine</div><div class="sep">Subscribed to</div>
+        ${PEOPLE.slice(0, 7).map((p) => `<div class="${boris && p === 'Boris' ? 'on' : ''}">🔔 ${p}</div>`).join('')}<div class="muted">… 3 more</div></div>` : ''}
+      </div></div>`
+  const banner = (v) => `<div class="alert-info mb">🔔 <span style="flex:1">You're seeing <b>Boris's ${WHAT[v]}</b> because you're subscribed to Boris. Read-only.</span><a class="btn btn-secondary btn-sm">Back to mine</a></div>`
+
+  function debts(boris, phone) {
+    const ROWS = boris ? [
+      { name: 'Anna Petrova', user: '@anna_petrova', n: -30, c: 'EUR', you: true },
+      { name: 'Anna Petrova', user: '@anna_petrova', n: +120, c: 'PLN', you: true },
+      { name: 'Dmitry K.', user: '@dmitry_k', n: +45, c: 'EUR' },
+      { name: 'Grisha', user: '@grisha_v', n: -18.4, c: 'USD' },
+    ] : [
+      { name: 'Boris', user: '@boris_iv', n: +30, c: 'EUR' },
+      { name: 'Boris', user: '@boris_iv', n: -120, c: 'PLN' },
+      { name: 'Clara', user: '@clara_m', n: -12.5, c: 'USD' },
+      { name: 'Dmitry', user: '@dmitry_k', n: +215, c: 'PLN' },
+    ]
+    const who = boris ? 'Boris' : 'you'
+    const word = (r) => r.n > 0 ? `<span class="pos">owes ${who}</span>` : `<span class="neg">${boris ? 'Boris owes' : 'you owe'}</span>`
+    const amt = (r) => `<span class="amt num ${r.n > 0 ? 'pos' : 'neg'}">${f(r.n)} ${r.c}</span>`
+    const name = (r) => `<b>${r.name}</b>${r.you ? ' <span class="muted" style="font-size:.8rem">(you)</span>' : ''} <span class="muted" style="font-size:.8rem">${r.user}</span>`
+    const totals = boris
+      ? `<div class="totals"><div class="card total"><div class="k pos">Owed to Boris</div><div class="v pos num"><span>45.00 EUR</span><span>120.00 PLN</span></div></div>
+         <div class="card total"><div class="k neg">Boris owes</div><div class="v neg num"><span>30.00 EUR</span><span>18.40 USD</span></div></div></div>`
+      : `<div class="totals"><div class="card total"><div class="k pos">Owed to you</div><div class="v pos num"><span>30.00 EUR</span><span>215.00 PLN</span></div></div>
+         <div class="card total"><div class="k neg">You owe</div><div class="v neg num"><span>120.00 PLN</span><span>12.50 USD</span></div></div></div>`
+    return totals + list({
+      phone, activeCount: 0,
+      filters: [
+        { type: 'text', label: 'Person', placeholder: 'Type a name…' },
+        { type: 'select', label: 'Currency', value: 'Any currency' },
+        { type: 'seg', label: 'Direction', options: boris ? ['All', 'Owed to Boris', 'Boris owes'] : ['All', 'Owed to you', 'You owe'], value: 'All' },
+      ],
+      sort: { field: 'Person', dir: '↑ A–Z' },
+      columns: [
+        { label: 'Person', sorted: '↑', cell: name },
+        { label: 'Currency', w: '6rem', cell: (r) => r.c },
+        { label: '', w: '8rem', cell: word },
+        { label: 'Amount', cls: 'r', w: '9rem', cell: amt },
+        { label: '', cls: 'r', w: '7rem', cell: () => '<a class="btn btn-secondary btn-sm">🧾 Bills</a>' },
+      ],
+      rows: ROWS,
+      card: (r) => `<div class="l1"><span style="flex:1;min-width:0">${name(r)}</span>${amt(r)}</div>
+        <div class="l2 muted"><span>${word(r)}</span><span class="spacer"></span><a class="btn btn-secondary btn-sm">🧾 Bills</a></div>`,
+      pager: { range: `1–4 of 4`, pages: 1 }, empty: '',
+    })
+  }
+
+  function bills(boris, phone) {
+    const ROWS = boris ? [
+      { date: '20 Nov', desc: 'Football pitch rent', by: 'Boris', total: '90.00 EUR', st: 'Processed', bal: [+1, '45.00 EUR'] },
+      { date: '18 Nov', desc: 'Pizza night', by: 'you', total: '50.00 EUR', st: 'Processed', bal: [-1, '10.00 EUR'], you: true },
+      { date: '15 Nov', desc: 'Taxi to the airport', by: 'Boris', total: '30.00 EUR', st: 'Processed', bal: [+1, '20.00 EUR'], you: true },
+      { date: '13 Nov', desc: 'Board games', by: 'Grisha', total: '36.80 USD', st: 'Processed', bal: [-1, '18.40 USD'] },
+      { date: '9 Nov', desc: 'Groceries', by: 'Boris', total: '42.00 PLN', st: 'Draft' },
+    ] : [
+      { date: '21 Nov', desc: 'Dinner at Molto', by: 'you', total: '84.00 EUR', st: 'Draft' },
+      { date: '18 Nov', desc: 'Pizza night', by: 'you', total: '50.00 EUR', st: 'Processed', bal: [+1, '30.00 EUR'] },
+      { date: '15 Nov', desc: 'Taxi to the airport', by: 'Boris', total: '30.00 EUR', st: 'Processed', bal: [-1, '10.00 EUR'] },
+      { date: '12 Nov', desc: 'Groceries Lidl', by: 'Dmitry', total: '63.40 PLN', st: 'Processed', bal: [-1, '31.70 PLN'] },
+    ]
+    const PILL = { Draft: ['pill-accent', 'Draft'], Processed: ['pill-muted', 'Finalized'] }
+    const pill = (s) => `<span class="pill ${PILL[s][0]}">${PILL[s][1]}</span>`
+    const owner = boris ? 'Boris' : 'you'
+    const bal = (r) => r.bal ? `<span class="num ${r.bal[0] > 0 ? 'pos' : 'neg'}">${r.bal[0] > 0 ? `owed to ${owner}` : `${boris ? 'Boris owes' : 'you owe'}`} ${r.bal[1]}</span>` : '<span class="muted">—</span>'
+    const youOn = (r) => boris && r.you ? ' · <span class="pill pill-muted" style="padding:0 .4rem">you\'re on it</span>' : ''
+    return list({
+      phone, activeCount: 0,
+      filters: [
+        { type: 'text', label: 'Search', placeholder: 'Description contains…' },
+        { type: 'text', label: 'Person', placeholder: 'Type a name…' },
+        { type: 'select', label: 'Currency', value: 'Any currency' },
+        { type: 'seg', label: 'Status', options: ['All', 'Draft', 'Processing', 'Finalized', 'Cancelled'], value: 'All' },
+        { type: 'check', label: boris ? 'Created by Boris' : 'Created by me' },
+      ],
+      sort: { field: 'Date', dir: '↓ Newest first' },
+      columns: [
+        { label: 'Date', w: '5.5rem', sorted: '↓', cell: (r) => `<span class="muted num">${r.date}</span>` },
+        { label: 'Bill', cell: (r) => `<div class="desc">${r.desc}</div><div class="by muted">by ${r.by}${youOn(r)}</div>` },
+        { label: 'Total', cls: 'r', cell: (r) => `<span class="num">${r.total}</span>` },
+        { label: boris ? "Boris's balance" : 'Your balance', cls: 'r', cell: bal },
+        { label: 'Status', cell: (r) => pill(r.st) },
+      ],
+      rows: ROWS,
+      card: (r) => `<div class="l1"><span class="desc" style="flex:1;min-width:0">${r.desc}</span>${pill(r.st)}</div>
+        <div class="l2 muted"><span>${r.date} · by ${r.by}${youOn(r)}</span><span class="spacer"></span><span class="num" style="color:var(--text)">${r.total}</span></div>
+        ${r.bal ? `<div class="l2"><span class="spacer"></span>${bal(r)}</div>` : ''}`,
+      pager: { range: boris ? '1–5 of 23' : '1–4 of 57', pages: boris ? 2 : 3 }, empty: '',
+    })
+  }
+
+  function spendings(boris, phone) {
+    const ROWS = boris ? [
+      { date: '20 Nov', desc: 'Football pitch rent', amt: '45.00 EUR', share: '50 %' },
+      { date: '18 Nov', desc: 'Pizza night', amt: '10.00 EUR', share: '20 %' },
+      { date: '15 Nov', desc: 'Taxi to the airport', amt: '10.00 EUR', share: '33 %' },
+      { date: '13 Nov', desc: 'Board games', amt: '18.40 USD', share: '50 %' },
+    ] : [
+      { date: '21 Nov', desc: 'Dinner at Molto', amt: '28.00 EUR', share: '33 %' },
+      { date: '18 Nov', desc: 'Pizza night', amt: '20.00 EUR', share: '40 %' },
+      { date: '15 Nov', desc: 'Taxi to the airport', amt: '10.00 EUR', share: '33 %' },
+      { date: '12 Nov', desc: 'Groceries Lidl', amt: '31.70 PLN', share: '50 %' },
+    ]
+    return list({
+      phone, activeCount: 0,
+      filters: [
+        { type: 'select', label: 'Currency', value: 'Any currency' },
+        { type: 'date', label: 'From' }, { type: 'date', label: 'To' },
+        { type: 'check', label: 'Show cancelled' },
+      ],
+      sort: { field: 'Date', dir: '↓ Newest first' },
+      columns: [
+        { label: 'Date', w: '5.5rem', sorted: '↓', cell: (r) => `<span class="muted num">${r.date}</span>` },
+        { label: 'Bill', cell: (r) => `<div class="desc"><a class="link">${r.desc}</a></div><div class="by muted">${r.share} of the bill</div>` },
+        { label: 'Amount', cls: 'r', cell: (r) => `<span class="amt num">${r.amt}</span>` },
+      ],
+      rows: ROWS,
+      card: (r) => `<div class="l1"><a class="desc link" style="flex:1;min-width:0">${r.desc}</a><span class="amt num">${r.amt}</span></div>
+        <div class="l2 muted"><span>${r.date} · ${r.share} of the bill</span></div>`,
+      pager: { range: boris ? '1–4 of 19' : '1–4 of 41', pages: boris ? 1 : 3 }, empty: '',
+    })
+  }
+
+  const CTX = {
+    debts: (b) => b
+      ? ['S:Boris\'s balances', { i: '👤', t: 'Anna Petrova (you)', s: '<span class="neg">Boris owes 30.00 EUR</span> · <span class="pos">owes 120.00 PLN</span>' }, { i: '👤', t: 'Dmitry K.', s: '<span class="pos">owes Boris 45.00 EUR</span>' }, { i: '👤', t: 'Grisha', s: '<span class="neg">Boris owes 18.40 USD</span>' }]
+      : ['S:Balances', { i: '👤', t: 'Boris', s: '<span class="pos">owes you 30.00 EUR</span> · <span class="neg">you owe 120.00 PLN</span>' }, { i: '👤', t: 'Clara', s: '<span class="neg">you owe 12.50 USD</span>' }, { i: '👤', t: 'Dmitry', s: '<span class="pos">owes you 215.00 PLN</span>' }],
+    bills: (b) => b
+      ? ['S:Boris\'s drafts', { i: '✏️', t: 'Groceries', s: '9 Nov · 42.00 PLN' }, 'S:Boris\'s recent bills', { i: '🧾', t: 'Football pitch rent', s: '20 Nov · 90.00 EUR' }, { i: '🧾', t: 'Pizza night', s: '18 Nov · 50.00 EUR' }, { i: '🧾', t: 'Taxi to the airport', s: '15 Nov · 30.00 EUR' }]
+      : ['S:Drafts', { i: '✏️', t: 'Dinner at Molto', s: '21 Nov · 84.00 EUR' }, 'S:Recent bills', { i: '🧾', t: 'Pizza night', s: '18 Nov · 50.00 EUR' }, { i: '🧾', t: 'Taxi to the airport', s: '15 Nov · 30.00 EUR' }, 'A:All bills'],
+    spendings: (b) => b
+      ? ['S:Boris this month', { i: '📊', t: '65.00 EUR', s: 'November · 3 spendings' }, { i: '📊', t: '18.40 USD', s: 'November · 1 spending' }]
+      : ['S:This month', { i: '📊', t: '58.00 EUR', s: 'November · 3 spendings' }, { i: '📊', t: '351.70 PLN', s: 'November · 2 spendings' }, 'A:All spendings'],
+  }
+  const FOLLOW = (b) => ['S:Following', { i: '🔔', t: 'Boris', s: b ? 'showing now' : `see Boris's ${WHAT[view]}`, a: b }]
+
+  window.MOCK = {
+    page: view,
+    ctxFor: (s) => [...CTX[view](s.startsWith('boris')), ...FOLLOW(s.startsWith('boris'))],
+    render(state, phone) {
+      const b = state.startsWith('boris')
+      const sub = { debts: b ? "Boris's balances with each person, per currency." : 'Balances with each person, per currency.',
+        bills: b ? 'Bills Boris takes part in.' : 'Bills you take part in.',
+        spendings: b ? "Boris's share of every bill Boris takes part in." : 'Your share of every bill you take part in.' }[view]
+      const head = `<div class="title-row"><h1>${b ? `Boris's ${WHAT[view]}` : TITLE[view]}</h1></div><p class="sub muted">${sub}</p>`
+      return head + whose(b, state.endsWith('open')) + (b ? banner(view) : '') + { debts, bills, spendings }[view](b, phone)
+    },
+  }
+</script>
+<script src="../common/list.js"></script>
+<script src="../common/shell.js"></script>
+</body>
+</html>
