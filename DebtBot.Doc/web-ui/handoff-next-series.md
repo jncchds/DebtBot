@@ -1,6 +1,6 @@
 You are the orchestrator for the **next** DebtBot task series, in `/mnt/git/DebtBot`. The user started you on 2026-11-24.
 
-The web-ui series (T1 to T9) is finished. Its orchestrator, "DebtBot orchestrator" (id `334ad10a`), stays responsible only for PR #34 (marking it ready when the user says so). Everything below is yours. Run it with the **`orchestrate-tasks` skill** (`~/.claude/skills/orchestrate-tasks/`): one worker session per task, mockups first for UI, merge, clean up, report. This project's memory and this handoff add to the skill.
+The web-ui series (T1 to T9) is finished, and the user merged its PR #34 into `main`. Its orchestrator, "DebtBot orchestrator" (id `334ad10a`), has nothing left to run. Everything below is yours. Run it with the **`orchestrate-tasks` skill** (`~/.claude/skills/orchestrate-tasks/`): one worker session per task, mockups first for UI, merge, clean up, report. This project's memory and this handoff add to the skill.
 
 ## Read first
 - The skill, `~/.claude/skills/orchestrate-tasks/SKILL.md` and `templates.md`.
@@ -12,13 +12,14 @@ The web-ui series (T1 to T9) is finished. Its orchestrator, "DebtBot orchestrato
 - The top-level `README.md`.
 
 ## State now (2026-11-24)
-- **`web-ui`:** has everything from T1 to T9 (head `d8b6806` or later). **PR #34** (`web-ui` → main) is still a **draft**; the user hasn't said to mark it ready. It hasn't been merged to main.
+- **`main`** has the whole web-ui series: **PR #34 was merged** on 2026-11-24 (`e7a93a3`).
+- **`web-ui`** is one docs commit ahead of main: this handoff. Bring it into your branch with `git merge origin/web-ui`. After that, `web-ui` is finished, so don't build on it.
 - **Prod:** the user deployed it: the migrations up to `LinkOldExchanges` are applied on prod. They were checking whether the app is serving after a slow-looking start. Don't touch prod.
 - **Machine:** 4 cores, 5.4 GB of RAM, about 15 GB of free disk. Other projects share it. SDK 11 is in `~/.dotnet` (see common.md). Line endings are LF.
 - **Usage limits:** the account hits its 5-hour limit during long tasks. If a worker goes quiet without a report, read the end of its transcript, and after the reset tell it to continue (see the skill).
 
 ## First steps
-1. **Git:** decide with the user where the series lives. My recommendation is a new integration branch from `web-ui`, because these features need the web UI and #34 isn't merged yet: for example `web-ui-2`, with its own draft PR. Its base is `web-ui` until #34 merges, then `main`. Make your own worktree under `/mnt/git/DebtBot/.claude/worktrees/`.
+1. **Git:** a new integration branch from `origin/main` (for example `series-2`), with `origin/web-ui` merged in for this handoff, and one draft PR to main. Make your own worktree under `/mnt/git/DebtBot/.claude/worktrees/`. The user's checkout at `/mnt/git/DebtBot` is on `main`; leave it alone.
 2. **Docs:** create your series folder (for example `DebtBot.Doc/series-2/`) with `README.md`, `plan.md`, `briefs/common.md` (adapted from web-ui's, with **your** name and ids in "Waking the orchestrator"), `briefs/`, `reports/`, `notes/` and `mockups/`.
 3. **Memory:** add a memory file for your series (for example `series-2-orchestration`, type feedback), with your name, id and session id, the decisions, and Progress. Add one line for it to `MEMORY.md`.
 4. **Plan:** write the plan for the three items below with the user, and split it into tasks. Ask only about the decisions that are theirs, then run the tasks one at a time.
