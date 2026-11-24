@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: 645e1162-a1e5-44ec-8c96-df03ffb46bbe
-  modified: 2026-11-24T15:55:24.520Z
+  modified: 2026-11-24T15:56:10.722Z
 ---
 
 Series 2 of DebtBot, started 2026-11-24 after the web-ui series (PR #34) was merged to main. Run like [[web-ui-orchestration]] with the `orchestrate-tasks` skill.
@@ -28,6 +28,7 @@ Series 2 of DebtBot, started 2026-11-24 after the web-ui series (PR #34) was mer
 
 **Progress**
 - 2026-11-24: series set up (branch, docs, memory); plan draft in `plan.md`, questions sent to the user.
+- 2026-11-24: decisions recorded (7e3147c). T1 (creator leave) started as worker "DebtBot S2 T1 creator leave", id e6c8481a. Next for me alongside: write `receipt-parse.md` with the user.
 
 **Why:** the user wants a clean context per task, mockup approval per view, and a durable record.
 **How to apply:** follow this and the skill for every series-2 task. Related: [[web-ui-palette]].
