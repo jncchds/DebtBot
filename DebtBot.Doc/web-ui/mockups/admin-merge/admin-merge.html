@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DebtBot Admin Merge mockup</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .mb { margin-bottom: 1rem; }
+  .small { font-size: .8rem; }
+  .pair { display: grid; grid-template-columns: 1fr auto 1fr; gap: .75rem; align-items: stretch; padding: 1rem; }
+  .phone .pair { grid-template-columns: 1fr; }
+  .arrow { align-self: center; font-size: 1.4rem; color: var(--text-muted); text-align: center; }
+  .phone .arrow { transform: rotate(90deg); line-height: 1; }
+  .u { border: 1px solid var(--border); border-radius: 8px; padding: .75rem .875rem; background: var(--input-bg); }
+  .u.keep { border-color: color-mix(in srgb, var(--accent) 55%, transparent); background: var(--accent-faint); }
+  .u.gone { border-style: dashed; }
+  .u .tag { font-size: .68rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); }
+  .u.keep .tag { color: var(--accent); }
+  .u .nm { font-weight: 700; margin: .15rem 0 .4rem; }
+  .u dl { display: grid; grid-template-columns: 6.5rem 1fr; gap: .2rem .5rem; margin: 0; font-size: .82rem; }
+  .u dt { color: var(--text-muted); }
+  .u dd { margin: 0; }
+  .why { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; padding: .7rem 1rem; border-bottom: 1px solid var(--border); }
+  .acts { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; padding: .7rem 1rem; border-top: 1px solid var(--border); }
+  .confirm { padding: .875rem 1rem; border-top: 1px solid var(--border); background: color-mix(in srgb, var(--danger) 6%, transparent); font-size: .875rem; }
+  .confirm ul { margin: .4rem 0 .6rem; padding-left: 1.2rem; line-height: 1.55; }
+  .confirm h3 { margin: 0; font-size: .95rem; }
+  .pick { display: grid; grid-template-columns: 1fr auto 1fr; gap: .75rem; align-items: end; padding: 1rem; }
+  .phone .pick { grid-template-columns: 1fr; }
+  .dd { position: relative; }
+  .menu { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 5; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); box-shadow: 0 10px 25px -10px rgba(0,0,0,.35); overflow: hidden; }
+  .menu div { padding: .45rem .7rem; font-size: .85rem; }
+  .menu div.on { background: var(--accent-faint); }
+  .chosen { display: flex; align-items: center; gap: .5rem; border: 1px solid var(--border); border-radius: 6px; padding: .35rem .6rem; font-size: .875rem; background: var(--input-bg); }
+</style>
+</head>
+<body>
+<script>
+  const P = [
+    { keep: { name: 'Boris Ivanov', tg: '@boris_iv', tid: '201554870', bot: true, login: null, pw: false, bills: 31, contacts: 4, first: '3 Mar 2025' },
+      merge: { name: '@Boris_Iv', tg: '@Boris_Iv', tid: null, bot: false, login: null, pw: false, bills: 2, contacts: 0, first: '14 Nov 2026' },
+      why: ['Same username'] },
+    { keep: { name: 'Clara Müller', tg: '@clara_m', tid: '377120045', bot: true, login: 'clara', pw: true, bills: 12, contacts: 3, first: '12 Oct 2025' },
+      merge: { name: 'Clara M', tg: '@Clara_M', tid: '377120045', bot: false, login: null, pw: false, bills: 1, contacts: 0, first: '2 Nov 2026' },
+      why: ['Same Telegram id', 'Same username'] },
+  ]
+  const yes = (b, t) => b ? `<span class="pos">${t}</span>` : '<span class="muted">—</span>'
+  const card = (u, kind) => `<div class="u ${kind === 'keep' ? 'keep' : 'gone'}">
+      <div class="tag">${kind === 'keep' ? '✓ Keep' : '✕ Merge away'}</div>
+      <div class="nm">${u.name}</div>
+      <dl>
+        <dt>Telegram</dt><dd class="num">${u.tg}${u.tid ? ` · ${u.tid}` : ' · <span class="muted">no id</span>'}</dd>
+        <dt>Bot</dt><dd>${u.bot ? '<span class="pos">started</span>' : '<span class="muted">placeholder</span>'}</dd>
+        <dt>Login</dt><dd>${u.login ? `<span class="num">${u.login}</span>` : '<span class="muted">—</span>'}${u.pw ? ' · 🔑 password' : ''}</dd>
+        <dt>Bills</dt><dd class="num">${u.bills} <span class="muted">· since ${u.first}</span></dd>
+        <dt>Contacts</dt><dd class="num">${u.contacts}</dd>
+      </dl></div>`
+
+  function confirmBox(k, m) {
+    return `<div class="confirm"><h3 class="neg">Merge ${m.name} into ${k.name}? This can't be undone.</h3>
+      <ul>
+        <li><b>Moves to ${k.name}:</b> ${m.name}'s ${m.bills} bills, payments and shares, debts, spendings, contacts and subscriptions. Rows on the same bill are added together.</li>
+        <li><b>Deleted:</b> any debts, contact links and subscriptions between the two of them, and the ${m.name} account itself.</li>
+        <li><b>Profile:</b> ${k.name}'s name, Telegram and contact details win; ${m.name}'s only fill gaps.${m.login || m.pw ? '' : ''}</li>
+        <li><b>Sign-in:</b> ${k.login || k.pw ? `${k.name} keeps their login and password; ${m.name}'s are dropped.` : `${k.name} has none, so they take ${m.name}'s login and password, if any.`} ${m.name} is signed out of the web app.</li>
+      </ul>
+      <div class="row"><a class="btn btn-danger">🔀 Merge</a><a class="btn btn-ghost">Cancel</a></div></div>`
+  }
+
+  function pairCard(p, i, state, phone) {
+    const swapped = state === 'swapped' && i === 0
+    const k = swapped ? p.merge : p.keep, m = swapped ? p.keep : p.merge
+    const confirming = (state === 'confirm' && i === 0) || (state === 'swapped-confirm' && i === 0)
+    return `<div class="card mb">
+      <div class="why">${p.why.map((w) => `<span class="pill pill-accent">${w}</span>`).join('')}<span class="spacer"></span>
+        ${swapped ? '<span class="pill pill-danger">Swapped: against the suggestion</span>' : `<span class="muted small">suggested keeper ${phone ? 'on top' : 'on the left'}</span>`}</div>
+      <div class="pair">${card(k, 'keep')}<div class="arrow">←</div>${card(m, 'merge')}</div>
+      ${confirming ? confirmBox(k, m) : `<div class="acts"><a class="btn btn-primary">🔀 Merge…</a><a class="btn btn-secondary">⇄ Swap</a>${swapped ? '<a class="btn btn-ghost">Back to the suggestion</a>' : ''}</div>`}
+    </div>`
+  }
+
+  function manual(state, phone) {
+    const filled = state === 'manual' || state === 'manual-confirm'
+    const typing = state === 'manual-typing'
+    const keepBox = filled ? `<div class="chosen"><b>Dmitry K.</b><span class="muted small">@dmitry_k</span><span class="spacer"></span><span class="muted">✕</span></div>`
+      : `<input class="input" placeholder="Search name, @username or login">`
+    const mergeBox = filled ? `<div class="chosen"><b>Dima</b><span class="muted small">@dima_k_old</span><span class="spacer"></span><span class="muted">✕</span></div>`
+      : typing ? `<div class="dd"><input class="input focus" value="dim"><div class="menu"><div class="on"><b>Dima</b> <span class="muted small">@dima_k_old · placeholder · 3 bills</span></div><div><b>Dmitry K.</b> <span class="muted small">@dmitry_k · 22 bills</span></div></div></div>`
+      : `<input class="input" placeholder="Search name, @username or login">`
+    const k = { name: 'Dmitry K.', tg: '@dmitry_k', tid: '499812003', bot: true, login: null, pw: false, bills: 22, contacts: 5, first: '1 Nov 2025' }
+    const m = { name: 'Dima', tg: '@dima_k_old', tid: null, bot: false, login: null, pw: false, bills: 3, contacts: 0, first: '5 Feb 2026' }
+    return `<div class="card mb"><div class="card-head"><h2 class="grow">Merge any two users</h2>${phone ? '' : '<span class="muted small">for duplicates the suggestions miss</span>'}</div>
+      <div class="pick"><div><label class="label">✓ Keep</label>${keepBox}</div><div class="arrow" style="padding-bottom:.3rem">←</div><div><label class="label">✕ Merge away</label>${mergeBox}</div></div>
+      ${filled ? `<div class="pair" style="padding-top:0">${card(k, 'keep')}<div class="arrow">←</div>${card(m, 'merge')}</div>` : ''}
+      ${state === 'manual-confirm' ? confirmBox(k, m) : `<div class="acts"><a class="btn btn-primary"${filled ? '' : ' disabled'}>🔀 Merge…</a>${filled ? '<a class="btn btn-secondary">⇄ Swap</a>' : '<span class="muted small">Pick two different users.</span>'}</div>`}
+    </div>`
+  }
+
+  window.MOCK = {
+    page: 'admin',
+    ctxFor: (s) => ['S:Admin',
+      { i: '👥', t: 'Users', s: 'Search, roles, passwords' },
+      { i: '🔀', t: `Merge users${s === 'empty' ? '' : ` <span class="count" style="margin-left:.25rem">${s === 'done' ? 1 : 2}</span>`}`, s: 'Duplicate suggestions', a: true },
+      { i: '🧾', t: 'All bills', s: 'read-only' }],
+    render(state, phone) {
+      const head = `<div class="title-row"><h1>Merge users</h1></div><p class="sub muted">Pairs that look like the same person: the same Telegram id, or the same username ignoring case. Merging moves everything onto the kept user.</p>`
+      const manualOnly = state.startsWith('manual')
+      if (state === 'empty') return head + `<div class="card empty mb"><div class="big">✅</div><p style="font-weight:600">No duplicates found</p>
+        <p class="muted" style="font-size:.875rem">No two users share a Telegram id or username.</p></div>` + manual('', phone)
+      const done = state === 'done' ? `<div class="alert-info mb">✅ <span>Merged <b>@Boris_Iv</b> into <b>Boris Ivanov</b>. Their bills and debts are now Boris Ivanov's.</span></div>` : ''
+      const pairs = (state === 'done' ? P.slice(1) : P)
+      const sugg = `<h2 class="mb">Suggestions <span class="muted" style="font-weight:500">(${pairs.length})</span></h2>` + pairs.map((p, i) => pairCard(p, state === 'done' ? 1 : i, state, phone)).join('')
+      return head + done + sugg + manual(manualOnly ? state : '', phone)
+    },
+  }
+</script>
+<script src="../common/shell.js"></script>
+</body>
+</html>
