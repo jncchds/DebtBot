@@ -78,7 +78,7 @@ public sealed class AdminTests : IDisposable
         return controller;
     }
 
-    private UsersController Users(User me) => As(new UsersController(_f.UserService, Substitute.For<IAuthService>()), me);
+    private UsersController Users(User me) => As(new UsersController(_f.UserService, Substitute.For<IAuthService>(), Substitute.For<IApiTokenService>()), me);
 
     private BillsController Bills(User me) =>
         As(new BillsController(_f.BillService, Substitute.For<IExcelService>(), _f.UserService, Substitute.For<IParserService>(), _f.UserContactService), me);

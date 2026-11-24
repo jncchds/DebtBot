@@ -18,6 +18,7 @@ public class DebtContext : DbContext
     public DbSet<BillParticipant> BillParticipants { get; set; }
     public DbSet<NotificationSubscription> NotificationSubscriptions { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
+    public DbSet<ApiToken> ApiTokens { get; set; }
 
     public DebtContext(DbContextOptions<DebtContext> options) : base(options)
     {
@@ -46,5 +47,17 @@ public class DebtContext : DbContext
             .Entity<RefreshToken>()
             .HasIndex(t => t.TokenHash)
             .IsUnique();
+
+        modelBuilder
+            .Entity<ApiToken>()
+            .HasIndex(t => t.Hash)
+            .IsUnique();
+
+        modelBuilder
+            .Entity<ApiToken>()
+            .HasOne(t => t.User)
+            .WithMany()
+            .HasForeignKey(t => t.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

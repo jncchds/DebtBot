@@ -19,6 +19,8 @@ public class AdminUserModel
     public int BillCount { get; set; }
     /// <summary>Contacts in the user's own contact list.</summary>
     public int ContactCount { get; set; }
+    /// <summary>Active (not expired, not revoked) API tokens. Admins never see the tokens themselves.</summary>
+    public int ApiTokenCount { get; set; }
     /// <summary>Date of the earliest bill the user takes part in; the "older" user in merge suggestions. Null without bills.</summary>
     public DateTime? FirstBillDate { get; set; }
 }

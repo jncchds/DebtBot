@@ -9,6 +9,16 @@
         public JwtConfiguration JwtConfiguration { get; set; }
         public TelegramConfiguration Telegram { get; set; }
         public ForwardedHeadersConfiguration ForwardedHeaders { get; set; } = new();
+        public ApiTokenConfiguration ApiTokens { get; set; } = new();
+    }
+
+    /// <summary>Personal API tokens (<c>dbt_…</c>).</summary>
+    public class ApiTokenConfiguration
+    {
+        /// <summary>Requests a minute per token (fixed window). 0 or less turns the limit off.</summary>
+        public int RateLimitPerMinute { get; set; } = 120;
+        /// <summary>Active (not expired, not revoked) tokens a user may have.</summary>
+        public int MaxActivePerUser { get; set; } = 20;
     }
 
     /// <summary>
