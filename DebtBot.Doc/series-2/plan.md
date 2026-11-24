@@ -51,16 +51,19 @@ Free OpenRouter models that read images and support structured output, checked 2
 - **Tests:** an `ILlmClient` interface with a fake in tests and CI, fixture receipts with recorded responses; one manual check with a real key.
 - Mockups for the upload step and the prefilled form.
 
-## Questions for the user
-See the conversation of 2026-11-24; answers are recorded here once given.
+## User decisions (2026-11-24)
+- **Creator removal:** the same lock as everyone else. Your chip shows • while you are on a line or a payment; once you are off them all it gets ×. No "remove from everything".
+- **Token scopes:** chosen per token, "Read only" or "Read and write". A read-only token gets 403 on anything but GET (and HEAD/OPTIONS).
+- **Admin and tokens:** Admin Users shows each user's active token count and a "Revoke all tokens" action. Admins never see individual tokens.
+- **Receipt parse:** plan only in this series. The orchestrator writes `receipt-parse.md` (design, settings, schema, errors, tests, open questions) and agrees it with the user; building it, including mockups and any bot support, is a later series.
+- Defaults the orchestrator picked: token expiry offered as 30, 90 or 365 days or never, 90 preselected; a token can't manage tokens, passwords or Telegram linking (JWT only); privacy note and manual fallback for receipts as above.
 
 ## Task series
-To be fixed after the questions are answered. Draft:
 
 | Task | What | Brief |
 |---|---|---|
 | T1 | Creator leaves and rejoins a bill's people (mockups, UI, tests) | `briefs/task-01.md` |
-| T2 | API tokens: entity, auth scheme, endpoints, Profile card, Swagger (mockups first) | `briefs/task-02.md` |
-| T3 | Receipt parse: backend (`ILlmClient`, OpenRouter client, schema, validation, endpoint, settings, fake) | `briefs/task-03.md` |
-| T4 | Receipt parse: UI (mockups, upload, prefill) | `briefs/task-04.md` |
-| T5 | End-to-end check, polish, docs, PR description | `briefs/task-05.md` |
+| T2 | API tokens: entity and migration, auth scheme, scopes, endpoints, rate limit, Profile card, Admin revoke-all, Swagger (mockups first) | `briefs/task-02.md` |
+| T3 | End-to-end check (extend `web-ui/e2e`), polish, docs, PR description | `briefs/task-03.md` |
+
+Alongside: the orchestrator writes `receipt-parse.md` with the user (no worker).
