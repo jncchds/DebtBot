@@ -105,6 +105,7 @@ export type SortOrder = 'Asc' | 'Desc'
 export type BillSortField = 'Date' | 'Description' | 'Total' | 'Status'
 export type DebtSortField = 'Person' | 'Amount' | 'Currency'
 export type DebtDirection = 'All' | 'OwedToMe' | 'IOwe'
+export type ExchangeSortField = 'Date' | 'Amount'
 
 // Bills (api/v1/Bills)
 
@@ -208,9 +209,94 @@ export interface BillPaymentCreation {
   amount: number
 }
 
+/** POST Bills: always a draft. */
+export interface BillCreation {
+  /** 3 letters, stored upper case. */
+  currencyCode: string
+  /** Defaults to currencyCode. */
+  paymentCurrencyCode?: string
+  description?: string
+  /** ISO; defaults to now. */
+  date?: string
+  /** > 0; defaults to the sum of line subtotals. */
+  totalWithTips?: number
+  lines?: BillLineCreation[]
+  payments?: BillPaymentCreation[]
+}
+
+/** A person in the bot's text format, as typed (`@name`, a contact's name, a phone or an email). */
+export interface UserSearch {
+  id: string | null
+  displayName: string | null
+  telegramId: number | null
+  telegramUserName: string | null
+  phone: string | null
+  email: string | null
+  queryString: string | null
+}
+
+/** POST Bills/text/preview `result`: the bill as parsed; parts the parser didn't reach are null. */
+export interface ParsedBill {
+  currencyCode: string | null
+  paymentCurrencyCode: string | null
+  description: string | null
+  date: string | null
+  totalWithTips: number | null
+  lines: { itemDescription: string | null; subtotal: number | null; participants: { part: number | null; user: UserSearch }[] }[] | null
+  payments: { amount: number | null; user: UserSearch }[] | null
+}
+
+/** POST Bills/text/preview: always 200. Errors may hold `<pre>…</pre>` around the text they quote. */
+export interface TextPreview {
+  result: ParsedBill | null
+  errors: string[]
+  isValid: boolean
+}
+
 export interface Exchange {
   forwardBillId: string
   backwardBillId: string
+}
+
+/** POST Bills/exchange: "from" hands over fromAmount, "to" hands back toAmount. */
+export interface ExchangeCreation {
+  fromUserId: string
+  fromAmount: number
+  fromCurrencyCode: string
+  toUserId: string
+  toAmount: number
+  toCurrencyCode: string
+  /** Defaults to "Exchange". */
+  description?: string
+  date?: string
+}
+
+/** GET Bills/exchanges items: one per pair. When you're one of the two people, "from" is you. */
+export interface ExchangeListItem {
+  /** The bill "from" pays in. Send both ids to exchange/finalize to accept. */
+  forwardBillId: string
+  backwardBillId: string
+  date: string
+  status: ProcessingState
+  description: string
+  creator: UserDisplay
+  fromUser: UserDisplay | null
+  fromAmount: number
+  fromCurrencyCode: string
+  toUser: UserDisplay | null
+  toAmount: number
+  toCurrencyCode: string
+  /** fromAmount / toAmount. */
+  rate: number
+}
+
+/** GET Bills/exchanges query. `status`: Draft = waiting to accept, Processed = accepted (includes Ready), Cancelled. */
+export interface ExchangeListQuery extends Paging {
+  withUserId?: string
+  currencyCode?: string
+  status?: ProcessingState
+  sortBy?: ExchangeSortField
+  sortOrder?: SortOrder
 }
 
 // Debts (api/v1/Debts)

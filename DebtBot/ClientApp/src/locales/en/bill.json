@@ -1,5 +1,4 @@
 {
-  "acceptExchange": "Accept exchange",
   "blockers": {
     "noLines": "Add a line to finalize",
     "noParticipants": "Every line needs people",
@@ -15,8 +14,6 @@
   "cancelNo": "Keep it",
   "cancelYes": "Yes, cancel",
   "cancelling": "Cancelling…",
-  "exchangeDeal": "{{giver}} gives {{taker}} {{give}}, {{taker}} gives back {{back}}.",
-  "exchangePair": "Exchange pair.",
   "finalize": "Finalize",
   "finalizing": "Finalizing…",
   "forbidden": "Only the bill’s creator or an admin can change it.",
@@ -29,8 +26,6 @@
   "noPayments": "No payments yet. Add who paid before you finalize.",
   "notFound": "Bill not found",
   "notFoundHint": "It doesn’t exist, or you don’t take part in it.",
-  "open": "Open it",
-  "otherHalf": "Other half:",
   "owes": "{{debtor}} owes {{creditor}}",
   "paidIn": "Paid in",
   "payments": "Payments",

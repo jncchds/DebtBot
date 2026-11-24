@@ -13,6 +13,8 @@ import { canCancel, canChange, finalizeBlockers, firstLine, isEqualSplit, people
 import { useFormat } from '../lib/useFormat'
 import { usePeople, useNameOf, type Person } from '../lib/usePeople'
 import { PeoplePicker } from '../components/people/PeoplePicker'
+import { ExchangeBanner, ExchangeStatusPill } from '../components/exchange/ExchangeBits'
+import { dealFromBill, orientDeal } from '../lib/exchange'
 import { POLL_MS, usePollWindow } from '../lib/usePollWindow'
 
 /** What the page is waiting for after an action that finishes in the background. */
@@ -78,6 +80,8 @@ export default function Bill({ mode }: { mode?: 'add-line' | 'add-payment' }) {
 
   const mine = canChange(bill, user?.id, isAdmin)
   const isExchange = !!bill.exchangeBillId
+  const rawDeal = isExchange ? dealFromBill(bill) : null
+  const deal = rawDeal && orientDeal(rawDeal, user?.id)
   const editable = mine && bill.status === 'Draft' && !isExchange && !processing
   const blockers = finalizeBlockers(bill)
   const base = `/bills/${bill.id}`
@@ -141,7 +145,7 @@ export default function Bill({ mode }: { mode?: 'add-line' | 'add-payment' }) {
       </Link>
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="min-w-0 text-[1.4rem] font-bold break-words">{title}</h1>
-        <StatusPill status={bill.status} />
+        {isExchange ? <ExchangeStatusPill status={bill.status} /> : <StatusPill status={bill.status} />}
         <span className="flex-1" />
         {actions}
       </div>
@@ -188,13 +192,25 @@ export default function Bill({ mode }: { mode?: 'add-line' | 'add-payment' }) {
         </div>
       )}
 
-      {isExchange && (
+      {deal && (
         <ExchangeBanner
-          bill={bill}
-          other={other.data}
-          canAccept={mine && bill.status === 'Draft' && !processing && other.data?.status === 'Draft'}
-          busy={accept.isPending}
-          onAccept={() => run('accept', accept.mutateAsync({ forwardBillId: bill.id, backwardBillId: bill.exchangeBillId! }))}
+          deal={deal}
+          status={bill.status}
+          actions={
+            mine &&
+            bill.status === 'Draft' &&
+            !processing &&
+            other.data?.status === 'Draft' && (
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={accept.isPending}
+                onClick={() => run('accept', accept.mutateAsync({ forwardBillId: bill.id, backwardBillId: bill.exchangeBillId! }))}
+              >
+                ✓ {t('exchange.accept')}
+              </button>
+            )
+          }
         />
       )}
 
@@ -339,45 +355,6 @@ export default function Bill({ mode }: { mode?: 'add-line' | 'add-payment' }) {
         </div>
       </div>
     </>
-  )
-}
-
-/** One half of an exchange: who gives whom what, a link to the other half, and Accept. */
-function ExchangeBanner({ bill, other, canAccept, busy, onAccept }: { bill: BillModel; other?: BillModel; canAccept: boolean; busy: boolean; onAccept: () => void }) {
-  const { t } = useTranslation()
-  const f = useFormat()
-  const names = useNameOf()
-  // Each half: the payer hands over the payment; the line's participant hands back the line's subtotal.
-  const payment = bill.payments[0]
-  const line = bill.lines[0]
-  const taker = line?.participants[0]?.user
-  return (
-    <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-3 rounded-[10px] border border-accent/40 bg-accent-faint p-4">
-      <span className="text-[1.4rem]" aria-hidden>
-        🔁
-      </span>
-      <div className="min-w-0 flex-[1_1_18rem] text-[0.9rem]">
-        <b>{t('bill.exchangePair')}</b>{' '}
-        {payment && line && taker
-          ? t('bill.exchangeDeal', {
-              giver: names.short(payment.user),
-              taker: names.short(taker),
-              give: f.money(payment.amount, bill.paymentCurrencyCode),
-              back: f.money(line.subtotal, bill.currencyCode),
-            })
-          : null}
-        <br />
-        <span className="muted">{t('bill.otherHalf')}</span>{' '}
-        <Link to={`/bills/${bill.exchangeBillId}`} className="link">
-          {other ? `${firstLine(other.description)} · ${f.money(other.totalWithTips, other.currencyCode)} →` : `${t('bill.open')} →`}
-        </Link>
-      </div>
-      {canAccept && (
-        <button type="button" className="btn-primary" disabled={busy} onClick={onAccept}>
-          ✓ {t('bill.acceptExchange')}
-        </button>
-      )}
-    </div>
   )
 }
 

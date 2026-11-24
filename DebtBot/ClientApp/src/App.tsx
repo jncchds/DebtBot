@@ -11,6 +11,9 @@ import Placeholder from './pages/Placeholder'
 const Debts = lazy(() => import('./pages/Debts'))
 const Bills = lazy(() => import('./pages/Bills'))
 const Bill = lazy(() => import('./pages/Bill'))
+const NewBill = lazy(() => import('./pages/NewBill'))
+const PasteBill = lazy(() => import('./pages/PasteBill'))
+const Exchange = lazy(() => import('./pages/Exchange'))
 
 const page = (el: ReactNode) => <Suspense fallback={<Loading />}>{el}</Suspense>
 
@@ -33,13 +36,15 @@ export default function App() {
         <Route path="debts" element={<Navigate to="/" replace />} />
         <Route path="bills">
           <Route index element={page(<Bills />)} />
-          <Route path="new" element={<Placeholder page="newBill" />} />
-          <Route path="new/paste" element={<Placeholder page="pasteBill" />} />
+          <Route path="new" element={page(<NewBill key="form" />)} />
+          <Route path="new/add-line" element={page(<NewBill key="form" mode="add-line" />)} />
+          <Route path="new/add-payment" element={page(<NewBill key="form" mode="add-payment" />)} />
+          <Route path="new/paste" element={page(<PasteBill />)} />
           <Route path=":id" element={page(<Bill key="view" />)} />
           <Route path=":id/add-line" element={page(<Bill key="view" mode="add-line" />)} />
           <Route path=":id/add-payment" element={page(<Bill key="view" mode="add-payment" />)} />
         </Route>
-        <Route path="exchange" element={<Placeholder page="exchange" />} />
+        <Route path="exchange" element={page(<Exchange />)} />
         <Route path="spendings" element={<Placeholder page="spendings" />} />
         <Route path="contacts" element={<Placeholder page="contacts" />} />
         <Route path="contacts/requests" element={<Placeholder page="contactRequests" />} />

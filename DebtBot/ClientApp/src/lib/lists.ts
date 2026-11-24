@@ -1,4 +1,4 @@
-import type { BillListQuery, BillSortField, DebtDirection, DebtListQuery, DebtSortField, ProcessingState, SortOrder } from '../api/types'
+import type { BillListQuery, BillSortField, DebtDirection, DebtListQuery, DebtSortField, ExchangeListQuery, ExchangeSortField, ProcessingState, SortOrder } from '../api/types'
 import type { ListSpec, ListState } from './listState'
 
 /**
@@ -61,6 +61,30 @@ export function billsQuery(s: ListState): BillListQuery {
     status: s.filters.status ? BILL_STATUS[s.filters.status] : undefined,
     createdByMe: s.filters.mine ? true : undefined,
     sortBy: BILL_SORT[s.sort],
+    sortOrder: apiOrder(s),
+    pageNumber: s.page - 1,
+    countPerPage: PAGE_SIZE,
+  }
+}
+
+/**
+ * 🔁 Exchange list: /exchange?person=<userId>&currency=EUR&status=waiting|accepted|cancelled&sort=date|amount&order=asc|desc&page=2
+ * (`with`, `rate` and `draft` on the same page belong to the New exchange form and are kept as they are.)
+ */
+export const exchangesSpec: ListSpec = {
+  filters: { person: { kind: 'id' }, currency: { kind: 'currency' }, status: { kind: 'choice', values: ['waiting', 'accepted', 'cancelled'] } },
+  sorts: { date: 'desc', amount: 'desc' },
+}
+
+export const EXCHANGE_STATUS: Record<string, ProcessingState> = { waiting: 'Draft', accepted: 'Processed', cancelled: 'Cancelled' }
+const EXCHANGE_SORT: Record<string, ExchangeSortField> = { date: 'Date', amount: 'Amount' }
+
+export function exchangesQuery(s: ListState): ExchangeListQuery {
+  return {
+    withUserId: s.filters.person,
+    currencyCode: s.filters.currency,
+    status: s.filters.status ? EXCHANGE_STATUS[s.filters.status] : undefined,
+    sortBy: EXCHANGE_SORT[s.sort],
     sortOrder: apiOrder(s),
     pageNumber: s.page - 1,
     countPerPage: PAGE_SIZE,

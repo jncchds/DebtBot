@@ -22,10 +22,18 @@
     "title": "Balances",
     "youOwe": "you owe {{amount}}"
   },
+  "exchange": {
+    "none": "No exchanges yet",
+    "noneWaiting": "Nothing to accept",
+    "recent": "Recent exchanges",
+    "waiting": "Waiting to accept"
+  },
   "newBill": {
+    "drafts": "Continue a draft",
     "form": "Form",
     "formHint": "Lines, people and payments",
     "mode": "Mode",
+    "noLines": "no lines yet",
     "paste": "Paste text",
     "pasteHint": "The bot’s bill format"
   },
