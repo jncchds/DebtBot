@@ -201,17 +201,9 @@ export function BillForm({ form, setForm, base, editor, tried, people, personOf,
                 )
               const equal = isEqualSplit(l.participants.map((p) => p.part ?? 1))
               return (
-                <li key={i} className="flex items-start gap-3 px-4 py-3">
+                <li key={i} className="flex flex-wrap items-start gap-x-3 px-4 py-3">
                   <div className="min-w-0 flex-1">
-                    <b className="break-words">{l.itemDescription}</b> <span className="text-[0.8rem] muted">{t(equal ? 'bill.splitEqually' : 'bill.byParts')}</span>
-                    <div className="mt-1.5 flex flex-wrap gap-1.5">
-                      {l.participants.map((p) => (
-                        <span key={p.userId} className="chip">
-                          {personOf(p.userId).name}
-                          {!equal && ` ×${p.part ?? 1}`}
-                        </span>
-                      ))}
-                    </div>
+                    <b className="break-words">{l.itemDescription}</b> <span className="text-[0.8rem] whitespace-nowrap muted">{t(equal ? 'bill.splitEqually' : 'bill.byParts')}</span>
                   </div>
                   <span className="font-semibold tabular-nums whitespace-nowrap">{cur ? f.money(l.subtotal, cur) : l.subtotal}</span>
                   <Link
@@ -236,6 +228,15 @@ export function BillForm({ form, setForm, base, editor, tried, people, personOf,
                   >
                     ✕
                   </button>
+                  {/* Full width under the line, so the people don't squeeze into a narrow column on phones. */}
+                  <div className="mt-1.5 flex basis-full flex-wrap gap-1.5">
+                    {l.participants.map((p) => (
+                      <span key={p.userId} className="chip">
+                        {personOf(p.userId).name}
+                        {!equal && ` ×${p.part ?? 1}`}
+                      </span>
+                    ))}
+                  </div>
                 </li>
               )
             })}

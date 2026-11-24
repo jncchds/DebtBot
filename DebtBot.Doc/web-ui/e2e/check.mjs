@@ -44,6 +44,8 @@ async function step(name, fn, { allow = [] } = {}) {
     try {
       await b.shot(`${OUT}/FAIL-${results.length}.png`)
       console.log('  at', await b.path(), '|', (await b.text()).replace(/\s+/g, ' ').slice(0, 400))
+      const stuck = b.pending()
+      if (stuck.length) console.log('  requests still pending:', stuck.join(', '))
     } catch {
       /* page gone */
     }
@@ -78,6 +80,32 @@ const noOverflow = async () => {
 const main = () => b.eval('document.querySelector("main")?.innerText ?? ""')
 const h1 = () => b.eval('document.querySelector("main h1")?.innerText ?? ""')
 const loaded = (text) => b.waitFor(`document.querySelector("main") && !document.querySelector("main [aria-busy=true]") && document.querySelector("main").innerText.includes(${JSON.stringify(text)})`, 20000)
+/**
+ * Polls the API until the bill has `status` (finalizing runs in the background, through RabbitMQ, and can take a
+ * while on a loaded machine), up to `seconds`. Then the page has to show it too: callers wait for the text after.
+ */
+async function waitStatus(id, status, seconds = 90) {
+  let now
+  for (let i = 0; i < seconds; i++) {
+    now = (await call(tok.anna, 'GET', `/Bills/${id}`)).status
+    if (now === status) return
+    await sleep(1000)
+  }
+  throw new Error(`bill ${id} is ${now} after ${seconds} s, not ${status}`)
+}
+/**
+ * After a finalize or accept: waits for the API status, then for `text` on the page. The page polls for 30 s and then
+ * says "still processing" (by design), so when the background work took longer it needs a reload to show the result.
+ */
+async function seeStatus(id, status, text) {
+  await waitStatus(id, status)
+  const shown = await b.waitText(text, 5000).catch(() => false)
+  if (!shown) {
+    console.log(`  ${text} not shown after the poll window; reloading`)
+    await b.reload()
+    await b.waitText(text, 20000)
+  }
+}
 async function signIn(login, password) {
   await b.goto(`${URL0}/login`)
   await b.waitFor('document.querySelector("input[autocomplete=username]") || location.pathname !== "/login"')
@@ -136,6 +164,7 @@ const tour = {
     ['debts', '/', 'Boris'],
     ['bills', '/bills', 'Pizza night'],
     ['bill-draft', `/bills/${bills.draft}`, 'Dinner at Molto'],
+    ['bill-draft-edit-line', `/bills/${bills.draft}/edit-line/1`, 'Save line'],
     ['bill-exchange', `/bills/${bills.exClara.forwardBillId}`, 'Exchange rate'],
     ['new-bill', '/bills/new', 'People on this bill'],
     ['new-bill-paste', '/bills/new/paste', 'Bill text'],
@@ -147,6 +176,8 @@ const tour = {
     ['profile', '/profile', 'Display name'],
     ['profile-password', '/profile/password', 'Change login or password'],
     ['profile-telegram', '/profile/telegram', '@anna_petrova'],
+    ['profile-tokens', '/profile/tokens', 'No tokens yet'],
+    ['profile-tokens-new', '/profile/tokens/new', 'Create token'],
     ['admin-users', '/admin/users', 'Clara Müller'],
     ['admin-merge', '/admin/merge', 'Clara M'],
     ['admin-bills', '/admin/bills', '1–20 of'],
@@ -157,6 +188,7 @@ const tour = {
     ['spendings', '/spendings', 'Concert tickets'],
     ['contacts', '/contacts', 'Grisha from work'],
     ['profile', '/profile', 'Display name'],
+    ['profile-tokens', '/profile/tokens', 'No tokens yet'],
     ['admin-404', '/admin/users', 'Page not found'],
   ],
   subscriber: [
@@ -256,7 +288,7 @@ if (FLOWS) {
     await b.waitFor('[...document.querySelectorAll("main button")].some(x => x.innerText.includes("Save and finalize") && !x.disabled)')
     await shots('flow-bill-draft')
     await b.click('main button', 'Save and finalize')
-    await b.waitText('Finalized', 30000)
+    await seeStatus(bills.draft, 'Processed', 'Finalized')
     const bill = await call(tok.anna, 'GET', `/Bills/${bills.draft}`)
     expect(bill.status === 'Processed' && bill.totalWithTips === 84, `API: ${bill.status} ${bill.totalWithTips}`)
   })
@@ -285,6 +317,123 @@ if (FLOWS) {
     expect((await main()).includes('Draft'), 'not a draft')
   })
 
+  // ----- Series 2, T1: anyone can leave a bill's people, including you; a draft is the New bill form -----
+  /** The chips of "People on this bill": [name, removable]. */
+  const chips = () =>
+    b.eval(`[...([...document.querySelectorAll('main section')].find(s => s.innerText.includes('People on this bill'))?.querySelectorAll('span.inline-flex') ?? [])]
+      .map(c => [c.firstChild.textContent, !!c.querySelector('button')])`)
+  const chip = async (name) => (await chips()).find(([n]) => n.startsWith(name))
+  const lineText = (item) => b.eval(`[...document.querySelectorAll('main li')].find(l => l.querySelector('b')?.innerText === ${JSON.stringify(item)})?.innerText ?? ''`)
+  const editLine = async (base, item, n) => {
+    await b.click(`main a[aria-label="Edit ${item}"]`)
+    await b.waitFor(`location.pathname === "${base}/edit-line/${n}"`)
+    await loaded('Save line')
+  }
+  let leftId
+
+  await step('New bill: locks (payer, by parts) and ✎ Edit line; you leave the bill, the preview has no "you"', async () => {
+    await b.eval('sessionStorage.clear()')
+    await b.goto(`${URL0}/bills/new`)
+    await loaded('People on this bill')
+    await fillLabel('Description', 'Dinner without me')
+    await fillLabel('Bill currency', 'eur')
+    await pick('main input[placeholder^="Add a person"]', 'boris i', 'Boris Ivanov')
+    await pick('main input[placeholder^="Add a person"]', 'dmi', 'Dmitry K.')
+    await b.click('main a', 'Add line')
+    await b.waitFor('location.pathname === "/bills/new/add-line"')
+    await fillLabel('Item', 'Pasta', 'main form')
+    await fillLabel('Subtotal', '60', 'main form')
+    await b.click('main form button[type=submit]')
+    await b.waitFor('location.pathname === "/bills/new"')
+    expect((await lineText('Pasta')).includes('Anna'), 'you are not on the new line')
+    expect((await chip('Anna'))?.[1], 'on an equal line only, your chip should be removable')
+    // A payer is locked.
+    await b.click('main a', 'Add payment')
+    await b.waitFor('location.pathname === "/bills/new/add-payment"')
+    expect((await b.eval('document.querySelector("main form select").value')) === ids.anna, 'you are not the preselected payer')
+    await fillLabel('Who paid', ids.boris, 'main form')
+    await fillLabel('Amount', '60', 'main form')
+    await b.click('main form button[type=submit]')
+    await b.waitFor('location.pathname === "/bills/new"')
+    expect((await chip('Boris'))?.[1] === false, 'the payer is removable')
+    // ✎ Edit line on New bill: by parts locks everyone on the line; back to equal unlocks them.
+    await editLine('/bills/new', 'Pasta', 1)
+    await b.click('main form button[aria-pressed]', 'By parts')
+    await b.fill('main form input[aria-label="Part for Dmitry K."]', '2')
+    await b.click('main form button[type=submit]')
+    await b.waitFor('location.pathname === "/bills/new"')
+    expect((await lineText('Pasta')).includes('by parts'), `Pasta isn't by parts: ${await lineText('Pasta')}`)
+    expect((await chip('Dmitry'))?.[1] === false && (await chip('Anna'))?.[1] === false, `a by-parts line doesn't lock: ${JSON.stringify(await chips())}`)
+    await editLine('/bills/new', 'Pasta', 1)
+    await b.click('main form button[aria-pressed]', 'Equally')
+    await b.click('main form button[type=submit]')
+    await b.waitFor('location.pathname === "/bills/new"')
+    expect((await chip('Dmitry'))?.[1] === true, 'equal again, Dmitry should be removable')
+    // You leave: off Pasta, and the preview is only about the others.
+    await b.click('main button[aria-label^="Remove Anna"]')
+    await sleep(200)
+    expect(!(await chip('Anna')), 'you are still on the bill')
+    expect(!(await lineText('Pasta')).includes('Anna'), 'you are still on Pasta')
+    const m = await main()
+    expect(m.includes('Dmitry K. owes Boris Ivanov') && !/owes you|You owe/.test(m), 'the preview should be "Dmitry K. owes Boris Ivanov" only')
+    await b.reload()
+    await loaded('People on this bill')
+    expect(!(await chip('Anna')), 'a reload brought you back')
+    await b.click('main a', 'Add payment')
+    await b.waitFor('location.pathname === "/bills/new/add-payment"')
+    expect((await b.eval('document.querySelector("main form select").value')) === ids.boris, 'without you, the first person should be the preselected payer')
+    await b.click('main form button', 'Cancel')
+    await b.waitFor('location.pathname === "/bills/new"')
+  })
+
+  await step('…save as draft: it opens as the form, without you, and stays in your Bills', async () => {
+    await b.click('main button', 'Save as draft')
+    await b.waitFor('/^\\/bills\\/[0-9a-f-]{36}$/.test(location.pathname)', 20000)
+    leftId = (await b.path()).split('/')[2]
+    await loaded('Saved.')
+    expect(!(await chip('Anna')), 'the draft shows you on the bill')
+    const bill = await call(tok.anna, 'GET', `/Bills/${leftId}`)
+    expect(bill.creator.id === ids.anna && bill.lines[0].participants.every((p) => p.user.id !== ids.anna), 'API: not yours, or you are on the line')
+    expect((await call(tok.anna, 'GET', '/Bills?status=Draft&countPerPage=100')).items.some((x) => x.id === leftId), 'the draft is not in your Bills')
+    await shots('flow-draft-form')
+  })
+
+  await step('…on the draft: add yourself back from the search, tick yourself in ✎ Edit line, reload, Save (PUT)', async () => {
+    await pick('main input[placeholder^="Add a person"]', 'ann', 'Anna Petrova (you)')
+    expect(await chip('Anna'), 'not added back')
+    expect((await main()).includes('Saved.'), 'adding a person alone shows unsaved changes')
+    await editLine(`/bills/${leftId}`, 'Pasta', 1)
+    await shots('flow-draft-edit-line')
+    await b.eval(`[...document.querySelectorAll('main form li')].find(l => l.innerText.includes('Anna')).querySelector('input[type=checkbox]').click()`)
+    await b.click('main form button[type=submit]')
+    await b.waitFor(`location.pathname === "/bills/${leftId}"`)
+    await loaded('Unsaved changes')
+    await b.reload()
+    await loaded('Unsaved changes')
+    expect((await lineText('Pasta')).includes('Anna'), 'the edit was lost on reload')
+    await b.click('main button', 'Save')
+    await loaded('Saved.')
+    const bill = await call(tok.anna, 'GET', `/Bills/${leftId}`)
+    expect(bill.lines[0].participants.some((p) => p.user.id === ids.anna), 'you are not on the saved line')
+  })
+
+  await step('…remove yourself again (an equal line), Save, Finalize: Dmitry owes Boris 30, nothing for you', async () => {
+    expect((await chip('Anna'))?.[1], 'your chip is locked on an equal line')
+    await b.click('main button[aria-label^="Remove Anna"]')
+    await loaded('Unsaved changes')
+    await b.click('main button', 'Save')
+    await loaded('Saved.')
+    let bill = await call(tok.anna, 'GET', `/Bills/${leftId}`)
+    expect(bill.lines[0].participants.map((p) => p.user.id).sort().join() === [ids.boris, ids.dmitry].sort().join(), 'Pasta is not Boris and Dmitry')
+    await b.click('main button', 'Finalize')
+    await seeStatus(leftId, 'Processed', 'Finalized')
+    bill = await call(tok.anna, 'GET', `/Bills/${leftId}`)
+    const r = bill.ledgerRecords
+    expect(r.length === 1 && r[0].debtorUser.id === ids.dmitry && r[0].creditorUser.id === ids.boris && r[0].amount === 30, `ledger ${JSON.stringify(r)}`)
+    expect(bill.spendings.every((s) => (s.user?.id ?? s.userId) !== ids.anna), 'you have a spending')
+    expect((await call(tok.anna, 'GET', '/Bills?countPerPage=100')).items.some((x) => x.id === leftId), 'the bill left your Bills')
+  })
+
   await step('New bill, paste text: preview, then create a draft', async () => {
     await b.goto(`${URL0}/bills/new/paste`)
     await loaded('Bill text')
@@ -310,7 +459,7 @@ if (FLOWS) {
     await b.waitText('Exchange with Grisha')
     await shots('flow-exchange')
     await b.click('main button', 'Accept')
-    await b.waitText('Accepted', 30000)
+    await seeStatus(new URLSearchParams(new URL(await b.eval('location.href')).search).get('draft'), 'Processed', 'Accepted')
   })
 
   await step('Spendings: currency filter and the way into a bill', async () => {
@@ -357,6 +506,122 @@ if (FLOWS) {
     await b.click('main button[type=submit]')
     await b.waitFor('document.querySelector("aside").innerText.includes("Anna Petrova")')
   })
+
+  // ----- Series 2, T2: Profile › API tokens and Admin › Users revoke-all (the API side is in api-check.mjs) -----
+  const tokenStatus = async (token, path = '/Debts/Own') => (await fetch(`${URL0}/api/v1${path}`, { headers: { Authorization: `Bearer ${token}` } })).status
+  /** Clicks the ▾ of the visible row (table or card) that shows `name`. */
+  const openRow = (name) =>
+    b.eval(`(() => { const el = [...document.querySelectorAll('main button[aria-label]')].find(e => e.getAttribute('aria-label').startsWith('Actions: ' + ${JSON.stringify(name)}) && e.offsetParent); if (!el) return false; el.click(); return true })()`)
+  const stripEl = 'document.querySelector("main tbody td[colspan]")'
+  async function newToken(name, scope, expiry) {
+    await b.goto(`${URL0}/profile/tokens`)
+    await loaded('Your tokens')
+    await b.click('main a', 'New token')
+    await b.waitFor('location.pathname === "/profile/tokens/new"')
+    await b.fill('#tok-name', name)
+    await b.click('main label', scope)
+    await b.click('main [role=radio]', expiry)
+    await b.click('main button[type=submit]', 'Create token')
+    await b.waitFor('location.pathname === "/profile/tokens/created"')
+    const secret = await b.eval('document.querySelector("[data-testid=token-secret]")?.innerText.trim()')
+    expect(/^dbt_[A-Za-z0-9_-]{43}$/.test(secret ?? ''), `secret shown: ${secret}`)
+    const leaked = await b.eval(`[location.href, JSON.stringify({...localStorage}), JSON.stringify({...sessionStorage})].some(s => s.includes(${JSON.stringify(secret)}))`)
+    expect(!leaked, 'the secret is in the URL or storage')
+    return secret
+  }
+  let readToken, writeToken
+
+  await step('Profile › API tokens: empty, the sidebar entry; New token preselects Read only and 90 days; a name is needed', async () => {
+    await b.goto(`${URL0}/profile/tokens`)
+    await loaded('No tokens yet')
+    await b.waitFor('[...document.querySelectorAll("aside a")].some(a => a.innerText.includes("API tokens") && a.className.includes("text-accent"))')
+    await b.click('main a', 'New token')
+    await b.waitFor('location.pathname === "/profile/tokens/new"')
+    expect(await b.eval('[...document.querySelectorAll("main input[type=radio]")].find(r => r.checked)?.closest("label").innerText.startsWith("Read only")'), 'Read only preselected')
+    expect(await b.eval('document.querySelector("main [role=radio][aria-checked=true]")?.innerText === "90 days"'), '90 days preselected')
+    await b.click('main button[type=submit]', 'Create token')
+    await loaded('Enter a name (1–100 characters).')
+  })
+
+  await step('…a read-only token: shown once with the warning and curl, it reads; a reload of /created goes to the list', async () => {
+    readToken = await newToken('Home Assistant', 'Read only', '90 days')
+    const text = await main()
+    expect(text.includes("You won't see it again") && text.includes(`curl -H "Authorization: Bearer ${readToken}"`) && text.includes('/api/v1/Debts/Own'), 'warning and curl example')
+    await shots('flow-token-created')
+    expect((await tokenStatus(readToken)) === 200, 'the new token can’t read')
+    await b.reload()
+    await b.waitFor('location.pathname === "/profile/tokens"')
+    await loaded('Home Assistant')
+    expect(!(await main()).includes(readToken), 'the secret is still shown after a reload')
+    expect((await main()).includes(`dbt_${readToken.slice(4, 12)}…`), 'the list doesn’t show the prefix')
+  })
+
+  await step('…a read-and-write token that never expires; Done; revoke it from its ▾ strip (?open=): 401', async () => {
+    writeToken = await newToken('Budget script', 'Read and write', 'Never')
+    await b.click('main a', 'Done')
+    await b.waitFor('location.pathname === "/profile/tokens"')
+    await loaded('Budget script')
+    const list = await call(tok.anna, 'GET', '/profile/tokens')
+    const rw = list.find((x) => x.name === 'Budget script')
+    const ro = list.find((x) => x.name === 'Home Assistant')
+    expect(list.length === 2 && rw.scope === 'ReadWrite' && rw.expiresAt === null && ro.scope === 'Read', 'API list')
+    expect(Math.round((Date.parse(ro.expiresAt) - Date.parse(ro.createdAt)) / 86400000) === 90, 'read-only isn’t 90 days')
+    expect((await tokenStatus(writeToken)) === 200, 'the read-and-write token can’t read')
+    expect(await openRow('Budget script'), 'no ▾ for Budget script')
+    await b.waitFor(`location.search.includes("open=${rw.id}") && ${stripEl}`)
+    await shots('flow-tokens-strip')
+    await b.click('main tbody td[colspan] button', 'Revoke')
+    await b.waitText('This can')
+    await b.click('main button.btn-danger', 'Revoke')
+    await b.waitFor(`!location.search.includes("open=") && [...document.querySelectorAll("main tbody tr")].some(r => r.innerText.includes("Budget script") && r.innerText.includes("Revoked"))`)
+    expect((await tokenStatus(writeToken)) === 401, 'the revoked token still works')
+    expect((await tokenStatus(readToken)) === 200, 'the other token stopped working')
+  })
+
+  await step('Admin › Users: Boris’s token count, ▾ (?open=) Revoke all; reload keeps the strip, Back closes it', async () => {
+    const b1 = await call(tok.boris, 'POST', '/profile/tokens', { name: 'Boris phone', scope: 'Read', expiresInDays: 365 })
+    await call(tok.boris, 'POST', '/profile/tokens', { name: 'Boris laptop', scope: 'ReadWrite', expiresInDays: null })
+    const borisRow = `[...document.querySelectorAll("main tbody tr")].find(r => r.innerText.includes("Boris Ivanov") && !r.querySelector("td[colspan]"))`
+    await b.goto(`${URL0}/admin/users?search=boris`)
+    await b.waitFor(`${borisRow}?.querySelectorAll("td")[7]?.innerText.trim() === "2"`, 20000)
+    expect(await openRow('Boris Ivanov'), 'no ▾ for Boris')
+    await b.waitFor(`location.search.includes("open=${ids.boris}") && ${stripEl}?.innerText.includes("Revoke all 2 API tokens")`)
+    await b.reload()
+    await b.waitFor(`${stripEl}?.innerText.includes("Revoke all 2 API tokens")`, 20000)
+    await b.click('main tbody td[colspan] button', 'Revoke all 2 API tokens')
+    await b.waitText('Scripts and apps using them stop working at once')
+    await b.click('main button.btn-danger', 'Revoke all')
+    await b.waitFor(`${borisRow}?.querySelectorAll("td")[7]?.innerText.trim() === "0"`)
+    expect((await tokenStatus(b1.token)) === 401, 'Boris’s token still works')
+    await b.waitFor(`location.search.includes("open=") && ${stripEl}`)
+    await b.back()
+    await b.waitFor(`!location.search.includes("open=") && !${stripEl}`)
+  })
+
+  await step('Swagger: Authorize with the read-only token, then GET /api/v1/profile answers 200', async () => {
+    await b.goto(`${URL0}/swagger/index.html`)
+    await b.waitFor('document.querySelector("button.authorize")', 30000)
+    await b.eval('document.querySelector("button.authorize").click()')
+    await b.waitFor('document.querySelector(".modal-ux input")')
+    const hint = await b.eval('document.querySelector(".modal-ux").innerText')
+    expect(hint.includes('dbt_') && hint.includes('Profile'), `the hint: ${hint.slice(0, 200)}`)
+    await b.fill('.modal-ux input', readToken)
+    await b.eval('document.querySelector(".modal-ux button.authorize").click()')
+    await sleep(300)
+    await b.eval('document.querySelector(".modal-ux button.btn-done, .modal-ux .close-modal").click()')
+    const op = '#operations-Profile-get_api_v1_profile'
+    await b.waitFor(`document.querySelector("${op}")`)
+    await sleep(500)
+    // Open the operation with its arrow button (a click on the summary isn't picked up from script).
+    await b.eval(`document.querySelector("${op}.is-open") || document.querySelector("${op} .opblock-control-arrow").click()`)
+    await b.waitFor(`document.querySelector("${op} .try-out__btn")`)
+    await b.eval(`document.querySelector("${op} .try-out__btn").click()`)
+    await b.waitFor(`document.querySelector("${op} .execute")`)
+    await b.eval(`document.querySelector("${op} .execute").click()`)
+    await b.waitFor(`document.querySelector("${op} .live-responses-table tbody .response-col_status")`, 20000)
+    const code = await b.eval(`document.querySelector("${op} .live-responses-table tbody .response-col_status").innerText.trim()`)
+    expect(code === '200', `Swagger response ${code}`)
+  }, { allow: [/swagger/i] })
 
   await step('Admin › Users: no delete for admins, delete a stray placeholder', async () => {
     await b.goto(`${URL0}/admin/users`)

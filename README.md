@@ -7,9 +7,9 @@ spendings. It's a **Telegram bot** and a **web app** on the same data:
 - **Telegram bot:** add bills in a short text format, finalize them, see debts, spendings and bills, exchange
   currencies with someone (`/ExchangeDebt`), and get notified about the bills of people who let you subscribe.
 - **Web app:** the same and more, from a browser: 💸 Debts, 🧾 Bills (with a bill's lines, payments and ledger, and
-  the draft actions), ➕ New bill (a form or the bot's text format, with a preview), 🔁 Exchange (two draft bills,
+  a draft edited in the same form as a new bill), ➕ New bill (a form or the bot's text format, with a preview), 🔁 Exchange (two draft bills,
   accepted in one step), 📊 Spendings, 👥 Contacts, 🔔 Subscriptions (and read-only "following" of people who let
-  you), 👤 Profile, and 🛠 Admin (users, merging duplicate users, all bills). Sign in with the Telegram Login Widget,
+  you), 👤 Profile (with personal API tokens), and 🛠 Admin (users, merging duplicate users, all bills). Sign in with the Telegram Login Widget,
   or with an optional login and password.
 
 The server is ASP.NET Core (.NET 11) with PostgreSQL and RabbitMQ (MassTransit). The web UI (React 19, Vite,
@@ -32,6 +32,7 @@ waits for healthy Postgres and RabbitMQ and applies the database migrations on s
 | `DebtBot_DebtBot__Telegram__BotToken` | The bot token from BotFather. Optional: without it the bot is off, the app still runs, and the web UI offers only login and password. |
 | `DEFAULT_USER_TELEGRAM_ID`, `DEFAULT_USER_TELEGRAM_USERNAME` | The first admin, created when there's none. |
 | `DebtBot_DebtBot__ForwardedHeaders__Enabled` (and `__KnownProxies`, `__KnownNetworks`) | Behind a reverse proxy: take the client IP and scheme from `X-Forwarded-For`/`X-Forwarded-Proto`, so the per-IP sign-in limit sees real clients. Off by default. |
+| `DebtBot_DebtBot__ApiTokens__RateLimitPerMinute`, `__MaxActivePerUser` | Optional: requests a minute per API token (120; 0 turns the limit off) and active tokens per user (20). See "Calling the API". |
 | `DebtBot_DebtBot__Telegram__LogBotToken`, `__LogChatId` | Optional: send error logs to a Telegram chat. |
 
 **Telegram sign-in on the web** needs, besides the bot token:

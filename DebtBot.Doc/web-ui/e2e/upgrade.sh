@@ -10,7 +10,9 @@ C="-p debtbot-e2e -f docker-compose.yml -f docker-compose.override.yml -f $E/com
 
 docker compose $C down -v 2>&1 | tail -1
 docker compose $C -f "$E/compose.main.yml" up -d --no-build 2>&1 | tail -1
+"$E/wait-bus.sh" $C -f "$E/compose.main.yml"
 node "$E/upgrade-seed.mjs"
 docker compose $C -f "$E/compose.main.yml" stop debtbot 2>&1 | tail -1
 docker compose $C up -d --no-build --force-recreate debtbot 2>&1 | tail -1
+"$E/wait-bus.sh" $C
 node "$E/upgrade-check.mjs"
