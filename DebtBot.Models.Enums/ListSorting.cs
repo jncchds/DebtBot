@@ -33,3 +33,11 @@ public enum DebtDirection : byte
     /// <summary>You owe the other person (amount &lt; 0).</summary>
     IOwe = 2,
 }
+
+/// <summary>Fields <c>GET Bills/exchanges</c> can sort by (query parameter <c>sortBy</c>).</summary>
+public enum ExchangeSortField : byte
+{
+    Date = 0,
+    /// <summary>The amount the "from" side hands over: yours, when you're in the exchange.</summary>
+    Amount = 1,
+}

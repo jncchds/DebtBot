@@ -85,6 +85,7 @@ interface Debt { creditorUser: UserDisplay; debtorUser: UserDisplay; amount: num
 | `POST Bills/text/preview` | any user | `text/plain` body, the bot's bill text format (see `POST Bills/text` in Swagger) | always 200: `{ result: BillParser, errors: string[], isValid: boolean }`. Nothing is saved. |
 | `POST Bills/text?createDrafted=bool` | any user | `text/plain` | `string` bill id; 400 with `string[]` errors (unchanged, pre-existing) |
 | `POST Bills/exchange` | any user (becomes creator) | `ExchangeCreation` | `Exchange` — two **draft** bills |
+| `GET Bills/exchanges` | any user | query: `withUserId?` (the other side), `currencyCode?` (either side, any case), `status?` (`Draft` = waiting to accept, `Processed` = accepted, includes `Ready`, `Cancelled`), `sortBy?` (`Date` default, `Amount` = what "from" gives), `sortOrder?` (`Desc` default), paging | `PagingResult<ExchangeListItem>` (since T6): exchanges you created or are one of the two people in, **one row per pair**. When you're in it, "from" is you. |
 | `POST Bills/exchange/finalize` | change, on **both** bills | `Exchange` | `Exchange`. Finalizes both. |
 | `POST Bills/import/{creatorTelegramUserName}` | **Admin** | Excel file | unchanged |
 
@@ -122,7 +123,16 @@ interface ExchangeCreation {
   date?: string;
 }
 interface Exchange { forwardBillId: string; backwardBillId: string }
+interface ExchangeListItem {        // GET Bills/exchanges
+  forwardBillId: string;            // the bill "from" pays in
+  backwardBillId: string;           // the other bill; send both to exchange/finalize to accept
+  date: string; status: ProcessingState; description: string; creator: UserDisplay;
+  fromUser: UserDisplay | null; fromAmount: number; fromCurrencyCode: string;   // "from" hands this over
+  toUser: UserDisplay | null;   toAmount: number;   toCurrencyCode: string;     // "to" hands this back
+  rate: number;                     // fromAmount / toAmount
+}
 ```
+- **Exchanges list:** only linked pairs (`exchangeBillId`) are listed, so bills made by `/ExchangeDebt` before the link existed don't show up there (they still show in `GET Bills`). Access is checked on the bills themselves (creator, payer or line participant), so a new exchange shows up at once.
 - **Rules (400):** both amounts > 0; two different users that exist; 3-letter currency codes.
 - **What it creates:** the same two bills as Telegram's `/ExchangeDebt`.
   - **Forward:** "from" pays `fromAmount fromCurrency` for "to"'s one line "Exchange" of `toAmount toCurrency`. After finalizing, "to" owes "from" `fromAmount fromCurrency`.

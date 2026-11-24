@@ -125,3 +125,4 @@ tr.hl td, .item.hl { background: var(--accent-faint); }
 .pg { min-width: 2rem; height: 2rem; border-radius: 6px; border: 1px solid var(--border); display: inline-flex; align-items: center; justify-content: center; color: var(--text-muted); }
 .pg.on { background: var(--accent); border-color: var(--accent); color: var(--accent-contrast); font-weight: 700; }
 .pg.off { opacity: .45; }
+.entry.wrap .s { white-space: normal; overflow: visible; }

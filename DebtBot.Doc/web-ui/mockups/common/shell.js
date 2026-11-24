@@ -15,7 +15,7 @@ if (dark) document.documentElement.classList.add('dark')
 const ctxHtml = (MOCK.ctxFor ? MOCK.ctxFor(state) : MOCK.ctx).map((x) => {
   if (typeof x === 'string' && x.startsWith('S:')) return `<div class="section">${x.slice(2)}</div>`
   if (typeof x === 'string' && x.startsWith('A:')) return `<a class="sidebar-btn"><span class="s-icon">…</span><span class="s-label">${x.slice(2)}</span></a>`
-  return `<div class="entry${x.a ? ' active' : ''}"><span class="i">${x.i}</span><span class="c"><span class="t">${x.t}</span><span class="s">${x.s}</span></span></div>`
+  return `<div class="entry${x.a ? ' active' : ''}${x.w ? ' wrap' : ''}"><span class="i">${x.i}</span><span class="c"><span class="t">${x.t}</span><span class="s">${x.s}</span></span></div>`
 }).join('')
 
 document.body.innerHTML = `

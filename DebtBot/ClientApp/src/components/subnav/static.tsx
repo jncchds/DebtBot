@@ -2,18 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../auth/AuthContext'
 import { SidebarEntry, SidebarSection } from '../Sidebar'
 
-/** Sections that need no data. T6 adds "Continue a draft" to New bill; T8 adds the merge badge. */
-
-export function NewBillSubNav() {
-  const { t } = useTranslation()
-  return (
-    <>
-      <SidebarSection>{t('subnav.newBill.mode')}</SidebarSection>
-      <SidebarEntry to="/bills/new" icon="📝" title={t('subnav.newBill.form')} subtitle={t('subnav.newBill.formHint')} />
-      <SidebarEntry to="/bills/new/paste" icon="📋" title={t('subnav.newBill.paste')} subtitle={t('subnav.newBill.pasteHint')} />
-    </>
-  )
-}
+/** Sections that need no data. T8 adds the merge badge. (New bill and Exchange are in money.tsx.) */
 
 export function ProfileSubNav() {
   const { t } = useTranslation()

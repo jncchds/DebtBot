@@ -202,6 +202,11 @@ public class BillService : IBillService
         return _billRepository.GetForUser(userId, filter);
     }
 
+    public PagingResult<ExchangeListItem> GetExchangesForUser(Guid userId, ExchangeListQuery filter)
+    {
+        return _billRepository.GetExchangesForUser(userId, filter);
+    }
+
     public bool CanChange(Guid userId, bool isAdmin, BillModel bill)
     {
         return isAdmin || bill.Creator?.Id == userId;
