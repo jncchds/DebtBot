@@ -77,9 +77,11 @@
   },
   "users": {
     "admin": "Admin",
+    "apiTokens": "API tokens",
     "bills": "Bills",
     "bot": "Bot",
     "change": "Change",
+    "changeLogin": "Change login or password",
     "contactCount_one": "{{count}} contact",
     "contactCount_other": "{{count}} contacts",
     "contacts": "Contacts",
@@ -107,12 +109,20 @@
     "regular": "Regular",
     "removeAdmin": "Remove admin",
     "removeAdminAsk": "Remove admin from <b>{{name}}</b>?",
+    "revokeAll_one": "Revoke {{count}} API token",
+    "revokeAll_other": "Revoke all {{count}} API tokens",
+    "revokeAllAsk_one": "Revoke the API token of <b>{{name}}</b>? Scripts and apps using it stop working at once.",
+    "revokeAllAsk_other": "Revoke all <b>{{count}}</b> API tokens of <b>{{name}}</b>? Scripts and apps using them stop working at once.",
+    "revokeAllButton": "Revoke all",
     "role": "Role",
     "search": "Search",
     "searchHint": "Name, @username or login",
     "set": "Set",
+    "setLogin": "Set login and password",
     "started": "started",
     "telegram": "Telegram",
+    "tokenCount_one": "{{count}} API token",
+    "tokenCount_other": "{{count}} API tokens",
     "you": "(you)"
   }
 }

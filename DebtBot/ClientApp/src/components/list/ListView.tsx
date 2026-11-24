@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react'
+import { Fragment, useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
@@ -48,6 +48,11 @@ export interface ListViewProps<T> {
   rowHighlight?: (item: T) => boolean
   /** Shows something else in place of a row or card (an inline confirmation), across all columns. It brings its own padding. */
   rowReplace?: (item: T) => ReactNode | undefined
+  /**
+   * The open row's action strip (the ▾ pattern, Admin › Users): shown under the row, or at the end of the card, both
+   * tinted. `danger` tints them red (a destructive confirmation).
+   */
+  rowExpand?: (item: T) => { content: ReactNode; danger?: boolean } | undefined
   /** The list has one fixed order (the API can't sort the other way): the direction button only shows it. */
   orderFixed?: boolean
   /** Narrower cell padding for wide tables with many columns (Admin › Users). */
@@ -95,6 +100,9 @@ export function ListView<T>(p: ListViewProps<T>) {
   const sort = p.sorts.find((s) => s.value === p.state.sort) ?? p.sorts[0]
   const orderLabel = (o: Order) => (o === 'asc' ? sort.asc : sort.desc)
   const arrow = p.state.order === 'asc' ? '↑' : '↓'
+  // One call per item and render.
+  const expanded = new Map(p.items?.map((item) => [item, p.rowExpand?.(item)]) ?? [])
+  const tint = (item: T) => (expanded.get(item)?.danger ? 'bg-danger/5' : (p.rowHighlight?.(item) || expanded.get(item)) && 'bg-accent-faint')
   const pad = p.dense ? 'px-2 first:pl-4 last:pr-4' : 'px-4'
 
   const open = (item: T) => (e: MouseEvent) => {
@@ -196,17 +204,30 @@ export function ListView<T>(p: ListViewProps<T>) {
                   </td>
                 </tr>
               ) : (
-                <tr
-                  key={p.rowKey(item)}
-                  onClick={open(item)}
-                  className={clsx('border-b border-line last:border-b-0', p.rowHref?.(item) && 'cursor-pointer hover:bg-accent-faint', p.rowHighlight?.(item) && 'bg-accent-faint')}
-                >
-                  {p.columns.map((c) => (
-                    <td key={c.key} className={clsx('py-2.5 align-middle', pad, c.align === 'right' && 'text-right')}>
-                      {c.cell(item)}
-                    </td>
-                  ))}
-                </tr>
+                <Fragment key={p.rowKey(item)}>
+                  <tr
+                    onClick={open(item)}
+                    className={clsx(
+                      'border-b border-line last:border-b-0',
+                      p.rowHref?.(item) && 'cursor-pointer hover:bg-accent-faint',
+                      tint(item),
+                      expanded.get(item) && 'border-b-0',
+                    )}
+                  >
+                    {p.columns.map((c) => (
+                      <td key={c.key} className={clsx('py-2.5 align-middle', pad, c.align === 'right' && 'text-right')}>
+                        {c.cell(item)}
+                      </td>
+                    ))}
+                  </tr>
+                  {expanded.get(item) && (
+                    <tr className={clsx('border-b border-line last:border-b-0', expanded.get(item)!.danger ? 'bg-danger/5' : 'bg-accent-faint')}>
+                      <td colSpan={p.columns.length} className="px-4 pt-0.5 pb-3">
+                        {expanded.get(item)!.content}
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               )
             })}
           </tbody>
@@ -224,9 +245,14 @@ export function ListView<T>(p: ListViewProps<T>) {
             <li
               key={p.rowKey(item)}
               onClick={open(item)}
-              className={clsx('px-4 py-3', p.rowHref?.(item) && 'cursor-pointer hover:bg-accent-faint', p.rowHighlight?.(item) && 'bg-accent-faint')}
+              className={clsx(
+                'px-4 py-3',
+                p.rowHref?.(item) && 'cursor-pointer hover:bg-accent-faint',
+                tint(item),
+              )}
             >
               {p.card(item)}
+              {expanded.get(item) && <div className="mt-2.5 border-t border-dashed border-line pt-2.5">{expanded.get(item)!.content}</div>}
             </li>
           )
         })}

@@ -1,8 +1,8 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, refreshSession } from './client'
 import { keys } from './bills'
 import { queryKeys } from './hooks'
-import type { Contact, PasswordChange, Profile, ProfileUpdate } from './types'
+import type { ApiToken, ApiTokenCreated, ApiTokenCreation, Contact, PasswordChange, Profile, ProfileUpdate } from './types'
 
 /** Contacts, subscriptions and the profile. Every change refetches the contacts (Contacts, Subscriptions and the badge share them). */
 
@@ -68,5 +68,29 @@ export function useSetPassword() {
   return useMutation({
     mutationFn: (change: PasswordChange) => api<void>('/auth/password', { method: 'PUT', json: change }),
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.profile }),
+  })
+}
+
+const tokensKey = ['profile', 'tokens'] as const
+
+/** `GET profile/tokens`: active first, then expired, then revoked (the API's order). */
+export function useApiTokens() {
+  return useQuery({ queryKey: tokensKey, queryFn: () => api<ApiToken[]>('/profile/tokens') })
+}
+
+/** `POST profile/tokens`: the answer carries the secret, this once. */
+export function useCreateApiToken() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (create: ApiTokenCreation) => api<ApiTokenCreated>('/profile/tokens', { method: 'POST', json: create }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: tokensKey }),
+  })
+}
+
+export function useRevokeApiToken() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api<void>(`/profile/tokens/${id}`, { method: 'DELETE' }),
+    onSettled: () => qc.invalidateQueries({ queryKey: tokensKey }),
   })
 }

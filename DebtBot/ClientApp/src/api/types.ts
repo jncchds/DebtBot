@@ -384,6 +384,8 @@ export interface AdminUser {
   billCount: number
   /** Entries in the user's own contact list. */
   contactCount: number
+  /** Active (not expired, not revoked) API tokens. Admins never see the tokens themselves. */
+  apiTokenCount: number
   /** The earliest bill they take part in. */
   firstBillDate: string | null
 }
@@ -421,4 +423,34 @@ export interface AdminSetPassword {
 /** `GET Bills/All` (admin): Bills' query without `ofUserId` and `createdByMe`, plus the creator. `withUserId` is anyone on the bill. */
 export interface AdminBillListQuery extends Omit<BillListQuery, 'ofUserId' | 'createdByMe'> {
   creatorId?: string
+}
+
+export type ApiTokenScope = 'Read' | 'ReadWrite'
+export type ApiTokenStatus = 'Active' | 'Expired' | 'Revoked'
+
+/** `GET profile/tokens`: one of your API tokens, never its secret. */
+export interface ApiToken {
+  id: string
+  name: string
+  /** The first 8 characters after `dbt_`. */
+  prefix: string
+  scope: ApiTokenScope
+  createdAt: string
+  lastUsedAt: string | null
+  /** null: never expires. */
+  expiresAt: string | null
+  revokedAt: string | null
+  status: ApiTokenStatus
+}
+
+/** `POST profile/tokens`: the record plus the secret, which the API returns this once. */
+export interface ApiTokenCreated extends ApiToken {
+  token: string
+}
+
+export interface ApiTokenCreation {
+  name: string
+  scope: ApiTokenScope
+  /** 30, 90 or 365; null never expires. */
+  expiresInDays: number | null
 }

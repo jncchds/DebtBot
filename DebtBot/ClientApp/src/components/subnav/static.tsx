@@ -13,6 +13,7 @@ export function ProfileSubNav() {
       <SidebarEntry to="/profile" icon="🪪" title={t('subnav.profile.details')} subtitle={t('subnav.profile.detailsHint')} />
       <SidebarEntry to="/profile/password" icon="🔑" title={t('subnav.profile.password')} subtitle={t('subnav.profile.passwordHint')} />
       <SidebarEntry to="/profile/telegram" icon="✈️" title={t('subnav.profile.telegram')} subtitle={t('subnav.profile.telegramHint')} />
+      <SidebarEntry to="/profile/tokens" end={false} icon="🗝️" title={t('subnav.profile.tokens')} subtitle={t('subnav.profile.tokensHint')} />
     </>
   )
 }

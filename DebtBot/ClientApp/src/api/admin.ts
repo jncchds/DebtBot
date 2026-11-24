@@ -87,6 +87,15 @@ export function useSetRole() {
   })
 }
 
+/** `POST Users/{id}/tokens/revoke-all`: returns how many were revoked. */
+export function useRevokeAllTokens() {
+  const invalidate = useInvalidateAdmin()
+  return useMutation({
+    mutationFn: (id: string) => api<{ revoked: number }>(`/Users/${id}/tokens/revoke-all`, { method: 'POST' }),
+    onSettled: () => invalidate(),
+  })
+}
+
 export function useDeleteUser() {
   const invalidate = useInvalidateAdmin()
   return useMutation({

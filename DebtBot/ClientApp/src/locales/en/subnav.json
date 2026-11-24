@@ -51,7 +51,9 @@
     "passwordHint": "Web sign-in",
     "telegram": "Telegram",
     "telegramHint": "Account and bot",
-    "title": "Sections"
+    "title": "Sections",
+    "tokens": "API tokens",
+    "tokensHint": "Scripts and apps"
   },
   "spendings": {
     "all": "All spendings",

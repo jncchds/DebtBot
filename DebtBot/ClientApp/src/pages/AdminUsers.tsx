@@ -2,28 +2,31 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { Trans, useTranslation } from 'react-i18next'
 import clsx from 'clsx'
-import { useAdminUsers, useDeleteUser, useMergeSuggestions, useSetRole } from '../api/admin'
+import { useAdminUsers, useDeleteUser, useMergeSuggestions, useRevokeAllTokens, useSetRole } from '../api/admin'
 import { ApiError } from '../api/client'
 import type { AdminUser } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import { PasswordDialog } from '../components/admin/PasswordDialog'
+import { ExpandButton } from '../components/list/ExpandButton'
 import { FilterChoice, FilterText } from '../components/list/filters'
 import { ListView, type Column } from '../components/list/ListView'
 import { PageTitle } from '../components/ui'
 import { duplicateIds } from '../lib/admin'
+import { toggleOpen } from '../lib/apiTokens'
 import { handle } from '../lib/bills'
 import { withFilter } from '../lib/listState'
 import { adminUsersQuery, adminUsersSpec, PAGE_SIZE } from '../lib/lists'
 import { useListState } from '../lib/useListState'
 
-/** An open inline confirmation on one row (not in the URL, like the other inline confirmations). */
-type Confirm = { id: string; kind: 'role' | 'delete' } | { id: string; kind: 'error'; message: string } | { id: string; kind: 'inUse' }
+/** An inline confirmation in the open row's strip (not in the URL, like the other inline confirmations). */
+type Confirm = { id: string; kind: 'role' | 'delete' | 'revokeAll' } | { id: string; kind: 'error'; message: string } | { id: string; kind: 'inUse' }
 
 const small = 'px-2.5 py-1 text-[0.8rem] whitespace-nowrap'
 
 /**
- * 🛠 Admin › Users (mockups/admin-users): everyone DebtBot knows, with search and a role filter, Login & password
- * (`/admin/users/<id>/password`, a dialog over the list), roles, and deleting stray placeholders.
+ * 🛠 Admin › Users (mockups/admin-users, series-2/mockups/api-tokens): everyone DebtBot knows, with search and a role
+ * filter. Rows show values only; ▾ at the end opens the row's actions (`?open=<id>`): Login & password
+ * (`/admin/users/<id>/password`, a dialog over the list), the role, revoking all API tokens, deleting stray placeholders.
  */
 export default function AdminUsers() {
   const { t } = useTranslation()
@@ -39,7 +42,13 @@ export default function AdminUsers() {
   const duplicates = duplicateIds(useMergeSuggestions().data)
   const setRole = useSetRole()
   const remove = useDeleteUser()
+  const revokeAll = useRevokeAllTokens()
   const [confirm, setConfirm] = useState<Confirm>()
+  const openId = new URLSearchParams(search).get('open')
+  const toggle = (u: AdminUser) => {
+    setConfirm(undefined)
+    navigate({ search: toggleOpen(search, u.id) })
+  }
 
   const isMe = (u: AdminUser) => u.id === me?.id
   const isPlaceholder = (u: AdminUser) => !u.telegramBotEnabled
@@ -64,7 +73,7 @@ export default function AdminUsers() {
 
   const passwordButton = (u: AdminUser) => (
     <Link to={passwordHref(u)} className={clsx('btn-secondary', small)}>
-      {u.login || u.hasPassword ? `✏️ ${t('admin.users.change')}` : `＋ ${t('admin.users.set')}`}
+      {u.login || u.hasPassword ? `✏️ ${t('admin.users.changeLogin')}` : `＋ ${t('admin.users.setLogin')}`}
     </Link>
   )
 
@@ -91,13 +100,20 @@ export default function AdminUsers() {
     isPlaceholder(u) &&
     u.role !== 'Admin' &&
     !isMe(u) && (
-      <button type="button" className="rounded px-1.5 py-0.5 text-danger hover:bg-danger/10" title={t('admin.users.delete')} aria-label={t('admin.users.deleteNamed', { name: u.displayName })} onClick={() => setConfirm({ id: u.id, kind: 'delete' })}>
-        🗑
+      <button type="button" className={clsx('btn-secondary text-danger', small)} aria-label={t('admin.users.deleteNamed', { name: u.displayName })} onClick={() => setConfirm({ id: u.id, kind: 'delete' })}>
+        🗑 {t('admin.users.delete')}
+      </button>
+    )
+
+  const revokeAllButton = (u: AdminUser) =>
+    u.apiTokenCount > 0 && (
+      <button type="button" className={clsx('btn-secondary text-danger', small)} onClick={() => setConfirm({ id: u.id, kind: 'revokeAll' })}>
+        🚫 {t('admin.users.revokeAll', { count: u.apiTokenCount })}
       </button>
     )
 
   const box = (tone: 'ask' | 'danger', text: ReactNode, actions: ReactNode) => (
-    <div className={clsx('flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5 text-sm', tone === 'ask' ? 'bg-accent-faint' : 'bg-danger/5')} role={tone === 'danger' ? 'alert' : undefined}>
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm" role={tone === 'danger' ? 'alert' : undefined}>
       <span className={clsx('min-w-48 flex-1', tone === 'danger' && 'text-danger')}>{text}</span>
       {actions}
     </div>
@@ -109,8 +125,25 @@ export default function AdminUsers() {
     </button>
   )
 
-  const replace = (u: AdminUser) => {
-    if (confirm?.id !== u.id) return undefined
+  /** The open row's strip: its actions, or the confirmation one of them asked for. */
+  const strip = (u: AdminUser): { content: ReactNode; danger?: boolean } | undefined => {
+    if (openId !== u.id) return undefined
+    const c = confirm?.id === u.id ? confirm : undefined
+    if (!c)
+      return {
+        content: (
+          <div className="flex flex-wrap items-center gap-2">
+            {passwordButton(u)}
+            {roleButton(u)}
+            {revokeAllButton(u)}
+            {deleteButton(u)}
+          </div>
+        ),
+      }
+    return { content: confirmation(u, c), danger: c.kind !== 'role' }
+  }
+
+  const confirmation = (u: AdminUser, confirm: Confirm) => {
     const b = { b: <strong /> }
     switch (confirm.kind) {
       case 'role': {
@@ -163,6 +196,22 @@ export default function AdminUsers() {
             {cancel(t('common.close'))}
           </>,
         )
+      case 'revokeAll':
+        return box(
+          'danger',
+          <Trans i18nKey="admin.users.revokeAllAsk" count={u.apiTokenCount} values={{ name: u.displayName, count: u.apiTokenCount }} components={b} />,
+          <>
+            <button
+              type="button"
+              className={clsx('btn-danger', small)}
+              disabled={revokeAll.isPending}
+              onClick={() => revokeAll.mutate(u.id, { onSuccess: () => setConfirm(undefined), onError: (e) => failed(u, e) })}
+            >
+              🚫 {t('admin.users.revokeAllButton')}
+            </button>
+            {cancel(t('common.cancel'))}
+          </>,
+        )
       case 'error':
         return box('danger', confirm.message, cancel(t('common.close')))
     }
@@ -187,29 +236,18 @@ export default function AdminUsers() {
       key: 'login',
       header: t('admin.users.loginPassword'),
       cell: (u) => (
-        <div className="flex items-center gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="truncate">{u.login ?? '—'}</div>
-            {u.hasPassword && <div>{passwordSet}</div>}
-          </div>
-          {passwordButton(u)}
+        <div className="min-w-0">
+          <div className="truncate">{u.login ?? '—'}</div>
+          {u.hasPassword && <div>{passwordSet}</div>}
         </div>
       ),
     },
-    {
-      key: 'role',
-      header: t('admin.users.role'),
-      cell: (u) => (
-        <div className="flex items-center gap-3">
-          <span className="flex-1">{rolePill(u)}</span>
-          {roleButton(u)}
-        </div>
-      ),
-    },
+    { key: 'role', header: t('admin.users.role'), cell: rolePill },
     { key: 'bot', header: t('admin.users.bot'), cell: botPill },
     { key: 'bills', header: t('admin.users.bills'), align: 'right', cell: (u) => <span className="tabular-nums">{u.billCount}</span> },
     { key: 'contacts', header: t('admin.users.contacts'), align: 'right', cell: (u) => <span className="tabular-nums">{u.contactCount}</span> },
-    { key: 'delete', header: <span className="sr-only">{t('admin.users.delete')}</span>, align: 'right', cell: deleteButton },
+    { key: 'tokens', header: t('admin.users.apiTokens'), align: 'right', cell: (u) => <span className={clsx('tabular-nums', !u.apiTokenCount && 'muted')}>{u.apiTokenCount}</span> },
+    { key: 'open', header: <span className="sr-only">{t('list.actions')}</span>, align: 'right', width: '2.5rem', cell: (u) => <ExpandButton open={openId === u.id} label={u.displayName} onClick={() => toggle(u)} /> },
   ]
 
   const card = (u: AdminUser) => (
@@ -217,6 +255,9 @@ export default function AdminUsers() {
       <div className="flex items-baseline gap-2">
         <span className="min-w-0 flex-1">{name(u)}</span>
         {rolePill(u)}
+        <span className="self-center">
+          <ExpandButton open={openId === u.id} label={u.displayName} onClick={() => toggle(u)} />
+        </span>
       </div>
       <div className="flex items-center gap-2 text-[0.8rem]">
         <span className="min-w-0 flex-1 truncate muted">{[u.telegramUserName ? handle(u.telegramUserName) : '—', u.telegramId && String(u.telegramId)].filter(Boolean).join(' · ')}</span>
@@ -238,14 +279,9 @@ export default function AdminUsers() {
             t('admin.users.noLogin')
           )}
         </span>
-        {passwordButton(u)}
       </div>
-      <div className="flex items-center gap-2 text-[0.8rem]">
-        <span className="min-w-0 flex-1 muted">
-          {t('admin.bills.count', { count: u.billCount })} · {t('admin.users.contactCount', { count: u.contactCount })}
-        </span>
-        {roleButton(u)}
-        {deleteButton(u)}
+      <div className="text-[0.8rem] muted">
+        {t('admin.bills.count', { count: u.billCount })} · {t('admin.users.contactCount', { count: u.contactCount })} · {t('admin.users.tokenCount', { count: u.apiTokenCount })}
       </div>
     </div>
   )
@@ -260,6 +296,7 @@ export default function AdminUsers() {
           setConfirm(undefined)
           setState(next)
         }}
+        rowExpand={strip}
         filters={
           <>
             <FilterText label={t('admin.users.search')} placeholder={t('admin.users.searchHint')} value={state.filters.search} onChange={(v) => setState(withFilter(state, 'search', v))} />
@@ -281,7 +318,6 @@ export default function AdminUsers() {
         columns={columns}
         card={card}
         rowKey={(u) => u.id}
-        rowReplace={replace}
         items={users.data?.items}
         total={users.data?.totalCount ?? 0}
         pageSize={PAGE_SIZE}
