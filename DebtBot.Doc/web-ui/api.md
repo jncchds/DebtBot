@@ -58,12 +58,13 @@ interface Bill {                       // GET Bills/{id}, and the bill returned 
   lines: BillLine[]; payments: BillPayment[]; spendings: Spending[]; ledgerRecords: LedgerRecord[];
 }
 
-interface BillListItem {               // GET Bills
+interface BillListItem {               // GET Bills, GET Bills/All
   id: string; currencyCode: string; paymentCurrencyCode: string; description: string; date: string;
   status: ProcessingState; totalWithTips: number;
   creator: UserDisplay; exchangeBillId: string | null;
   ledgerRecords: LedgerRecord[];
   participantIds: string[];            // since T7b: everyone in the bill's participants list
+  participantCount: number;            // since T8: how many (creator, payers and line participants)
 }
 
 interface Debt { creditorUser: UserDisplay; debtorUser: UserDisplay; amount: number; currencyCode: string }
@@ -78,7 +79,7 @@ With `ofUserId` (since T7b), `creditorUser` is that person and `debtorUser` carr
 |---|---|---|---|
 | `GET Bills` | any user | query: `ofUserId?` (since T7b: someone you're subscribed to, confirmed; else 403), `withUserId?`, `currencyCode?` (payment currency, any case), `status?`, `createdByMe?`, `dateFrom?`, `dateTo?` (`yyyy-mm-dd`, whole days, UTC), `search?` (description contains, ignoring case), `sortBy?` (`Date` default, `Description`, `Total`, `Status`), `sortOrder?` (`Asc`, `Desc` default), paging | `PagingResult<BillListItem>` — bills you take part in. `withUserId` (since T5) matches a ledger record between you, or a not yet finalized bill you're both in. With `ofUserId`, "you" in `withUserId` and `createdByMe` is that person. |
 | `GET Bills/Own` | any user | paging | `PagingResult<Bill>` — bills you created |
-| `GET Bills/All` | **Admin** | paging | `PagingResult<Bill>` — all bills |
+| `GET Bills/All` | **Admin** | since T8: the `GET Bills` query without `ofUserId` and `createdByMe` (ignored), plus `creatorId?`; `withUserId` is anyone taking part (the participants list) | `PagingResult<BillListItem>` — every bill (before T8: `PagingResult<Bill>`, paging only) |
 | `GET Bills/{id}` | read the bill (`CanRead`) | – | `Bill`, or 404 |
 | `POST Bills` | any user (becomes creator) | `BillCreation` | `string` (the new bill id, JSON string). Always a **draft**. |
 | `POST Bills/{id}/lines` | change, **draft only** | `BillLineCreation[]` (at least one) | `Bill` |
@@ -241,7 +242,7 @@ Removing a contact keeps bills, debts and subscriptions. A later finalized bill 
 | `GET Users` | query `search?` (display name, Telegram username or login; contains, ignoring case), `role?`, paging | `PagingResult<AdminUser>` ordered by display name |
 | `GET Users/{id}` | – | `UserModel` (id, displayName, telegramId, telegramUserName, phone, email, telegramBotEnabled, role) |
 | `POST Users/{id}/password` | `{ login?, password }` | 204 / 400 / 404 / 409 (from T1; signs the user out everywhere) |
-| `POST Users/{id}/Role?role=Admin` | – | 200 / 404 (unchanged) |
+| `POST Users/{id}/Role?role=Admin\|Regular` | – | 200; 404 `{ message }` for an unknown id; **400 `{ message }` for your own account** (since T8). `Regular` removes admin. |
 | `GET Users/merge/suggestions` | – | `MergeSuggestion[]` |
 | `POST Users/merge` | `{ oldUserId, newUserId }` (the old query parameters still work) | `AdminUser` (the kept user); 400 for missing or identical ids, or for merging away your own signed-in account; 404 for an unknown id |
 | `PUT Users/{id}` | `UserCreationModel` (displayName, telegramUserName, phone, email; null fields stay as they are) | 200; 404 for an unknown id; **400 when `telegramId` differs from the user's** (a Telegram id is never editable, since T3) |

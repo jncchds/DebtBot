@@ -213,9 +213,9 @@ public class BillService : IBillService
         return await _billRepository.GetAsync(id, cancellationToken);
     }
 
-    public PagingResult<BillModel> Get(int pageNumber = 0, int? countPerPage = null)
+    public PagingResult<BillListModel> GetAll(AdminBillListQuery filter)
     {
-        return _billRepository.Get(pageNumber, countPerPage);
+        return _billRepository.GetAll(filter);
     }
 
     public PagingResult<BillListModel> GetForUser(Guid userId, Guid? filterByUserId, string? filterByCurrencyCode, int pageNumber = 0, int? countPerPage = null, ProcessingState? status = null)
