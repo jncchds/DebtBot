@@ -9,13 +9,20 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 export async function launch(port = 9333) {
   const dir = mkdtempSync(join(process.env.TMPDIR ?? tmpdir(), 'chrome-'))
   const proc = spawn('google-chrome', ['--headless=new', '--no-sandbox', '--disable-gpu', '--hide-scrollbars', `--remote-debugging-port=${port}`, `--user-data-dir=${dir}`, 'about:blank'], { stdio: 'ignore' })
-  const removeProfile = () => rmSync(dir, { recursive: true, force: true, maxRetries: 3 })
+  // Chrome's helper processes can still be writing for a moment after the browser exits: retry, and never fail the run.
+  const removeProfile = () => {
+    try {
+      rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 })
+    } catch (e) {
+      console.log(`  couldn't remove the Chrome profile ${dir}: ${e.message}`)
+    }
+  }
   // Also when the script dies without close().
   process.once('exit', () => {
     try {
       proc.kill('SIGKILL')
-      removeProfile()
     } catch { /* already gone */ }
+    removeProfile()
   })
   let ver
   // Chrome can take a minute to come up on a loaded machine.
@@ -101,13 +108,19 @@ export async function launch(port = 9333) {
     },
     async waitFor(expr, timeout = 15000) {
       const end = Date.now() + timeout
+      let last = 'never evaluated'
+      let tries = 0
       while (Date.now() < end) {
+        tries++
         try {
           if (await b.eval(`!!(${expr})`)) return true
-        } catch { /* page navigating */ }
+          last = 'false'
+        } catch (e) {
+          last = e.message.slice(0, 200) // page navigating
+        }
         await sleep(150)
       }
-      throw new Error(`timeout waiting for ${expr}`)
+      throw new Error(`timeout waiting for ${expr} (${tries} tries, last: ${last})`)
     },
     /** Waits until some element's text includes `text`. */
     async waitText(text, timeout) {
