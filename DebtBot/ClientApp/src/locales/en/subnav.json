@@ -15,6 +15,13 @@
     "none": "No bills yet",
     "recent": "Recent bills"
   },
+  "contacts": {
+    "all": "All contacts",
+    "nobody": "Nobody yet",
+    "nobodyHint": "Add someone by @username",
+    "recent": "Recently added",
+    "today": "today"
+  },
   "debts": {
     "owesYou": "owes you {{amount}}",
     "settled": "All settled",
@@ -45,5 +52,27 @@
     "telegram": "Telegram",
     "telegramHint": "Account and bot",
     "title": "Sections"
+  },
+  "spendings": {
+    "all": "All spendings",
+    "count_one": "{{month}} · {{count}} spending",
+    "count_other": "{{month}} · {{count}} spendings",
+    "none": "{{month}} · no spendings",
+    "nothing": "Nothing yet",
+    "thisMonth": "This month"
+  },
+  "subscriptions": {
+    "confirmed_one": "{{count}} confirmed",
+    "confirmed_other": "{{count}} confirmed",
+    "noRequests": "nobody is waiting",
+    "nobody": "nobody",
+    "none": "none",
+    "people_one": "{{count}} person",
+    "people_other": "{{count}} people",
+    "requests_one": "{{count}} waiting for you",
+    "requests_other": "{{count}} waiting for you",
+    "title": "Summary",
+    "waiting_one": "{{count}} waiting",
+    "waiting_other": "{{count}} waiting"
   }
 }

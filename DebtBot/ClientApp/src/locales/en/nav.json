@@ -8,6 +8,9 @@
   "menu": "Menu",
   "newBill": "New bill",
   "profile": "Profile",
+  "requestsBadge_one": "{{count}} request waiting",
+  "requestsBadge_other": "{{count}} requests waiting",
   "skip": "Skip to content",
-  "spendings": "Spendings"
+  "spendings": "Spendings",
+  "subscriptions": "Subscriptions"
 }

@@ -1,0 +1,19 @@
+{
+  "confirm": "Confirm",
+  "confirmed": "Confirmed",
+  "decline": "Decline",
+  "failed": "That didn't work. Try again.",
+  "noRequests": "No requests.",
+  "nobody": "Nobody yet.",
+  "noneYours": "None yet. Use <a>🔔 Ask for their bills</a> on Contacts.",
+  "requests": "Requests",
+  "requestsHint": "people asking for your bills and debts",
+  "stop": "Stop",
+  "theyGetYours": "Get your bills and debts",
+  "theyGetYoursHint": "people you confirmed",
+  "waitingFor": "Waiting for {{name}}",
+  "withdraw": "Withdraw",
+  "youGetTheirs": "You get theirs",
+  "yours": "Your subscriptions",
+  "yoursHint": "whose bills and debts you get"
+}

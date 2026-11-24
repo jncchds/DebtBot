@@ -1,0 +1,16 @@
+{
+  "amount": "Amount",
+  "bill": "Bill",
+  "cancelled": "Cancelled",
+  "currency": "Currency",
+  "date": "Date",
+  "empty": "No spendings yet",
+  "emptyHint": "Once a bill you're on is finalized, your share of it shows up here.",
+  "noMatch": "No spendings match these filters",
+  "noMatchHint": "Try another currency or date range.",
+  "paidAs": "paid as {{amount}}",
+  "share": "{{percent}} % of the bill",
+  "showCancelled": "Show cancelled",
+  "sortAmount": "Amount",
+  "status": "Status"
+}

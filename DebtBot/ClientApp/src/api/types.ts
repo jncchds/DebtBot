@@ -106,6 +106,7 @@ export type BillSortField = 'Date' | 'Description' | 'Total' | 'Status'
 export type DebtSortField = 'Person' | 'Amount' | 'Currency'
 export type DebtDirection = 'All' | 'OwedToMe' | 'IOwe'
 export type ExchangeSortField = 'Date' | 'Amount'
+export type SpendingSortField = 'Date' | 'Amount'
 
 // Bills (api/v1/Bills)
 
@@ -148,6 +149,23 @@ export interface Spending {
   date: string
   isCanceled: boolean
   user: UserDisplay
+}
+
+/** GET Spendings/Own query. Dates are yyyy-mm-dd, whole days (UTC). */
+export interface SpendingListQuery extends Paging {
+  currencyCode?: string
+  dateFrom?: string
+  dateTo?: string
+  includeCancelled?: boolean
+  sortBy?: SpendingSortField
+  sortOrder?: SortOrder
+}
+
+/** GET Spendings/Own/summary: non-cancelled totals per bill currency. */
+export interface SpendingSummary {
+  currencyCode: string
+  amount: number
+  count: number
 }
 
 /** GET Bills/{id}, and the bill returned by lines/payments. */
@@ -333,4 +351,6 @@ export interface Contact {
   telegramBotEnabled: boolean
   mySubscription: SubscriptionState
   theirSubscription: SubscriptionState
+  /** When you added them (ISO, UTC); null for contacts added before this was recorded. */
+  addedAt: string | null
 }

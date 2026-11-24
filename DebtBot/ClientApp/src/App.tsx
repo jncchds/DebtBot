@@ -14,12 +14,16 @@ const Bill = lazy(() => import('./pages/Bill'))
 const NewBill = lazy(() => import('./pages/NewBill'))
 const PasteBill = lazy(() => import('./pages/PasteBill'))
 const Exchange = lazy(() => import('./pages/Exchange'))
+const Spendings = lazy(() => import('./pages/Spendings'))
+const Contacts = lazy(() => import('./pages/Contacts'))
+const Subscriptions = lazy(() => import('./pages/Subscriptions'))
+const Profile = lazy(() => import('./pages/Profile'))
 
 const page = (el: ReactNode) => <Suspense fallback={<Loading />}>{el}</Suspense>
 
 /**
  * Every view has its own URL so Back/Forward, reload and bookmarks work (mockups/shell/README.md).
- * Filters, paging and tabs belong in the URL too. T6–T8 replace the remaining placeholders.
+ * Filters, paging and tabs belong in the URL too. T8 replaces the remaining (admin) placeholders.
  */
 export default function App() {
   return (
@@ -45,12 +49,14 @@ export default function App() {
           <Route path=":id/add-payment" element={page(<Bill key="view" mode="add-payment" />)} />
         </Route>
         <Route path="exchange" element={page(<Exchange />)} />
-        <Route path="spendings" element={<Placeholder page="spendings" />} />
-        <Route path="contacts" element={<Placeholder page="contacts" />} />
-        <Route path="contacts/requests" element={<Placeholder page="contactRequests" />} />
-        <Route path="profile" element={<Placeholder page="profile" />} />
-        <Route path="profile/password" element={<Placeholder page="password" />} />
-        <Route path="profile/telegram" element={<Placeholder page="telegram" />} />
+        <Route path="spendings" element={page(<Spendings />)} />
+        <Route path="contacts" element={page(<Contacts />)} />
+        {/* Requests moved to their own page (T7). */}
+        <Route path="contacts/requests" element={<Navigate to="/subscriptions" replace />} />
+        <Route path="subscriptions" element={page(<Subscriptions />)} />
+        <Route path="profile" element={page(<Profile key="details" section="details" />)} />
+        <Route path="profile/password" element={page(<Profile key="password" section="password" />)} />
+        <Route path="profile/telegram" element={page(<Profile key="telegram" section="telegram" />)} />
         <Route
           path="admin"
           element={

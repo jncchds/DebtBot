@@ -1,4 +1,4 @@
-import type { BillListQuery, BillSortField, DebtDirection, DebtListQuery, DebtSortField, ExchangeListQuery, ExchangeSortField, ProcessingState, SortOrder } from '../api/types'
+import type { BillListQuery, BillSortField, DebtDirection, DebtListQuery, DebtSortField, ExchangeListQuery, ExchangeSortField, ProcessingState, SortOrder, SpendingListQuery, SpendingSortField } from '../api/types'
 import type { ListSpec, ListState } from './listState'
 
 /**
@@ -85,6 +85,28 @@ export function exchangesQuery(s: ListState): ExchangeListQuery {
     currencyCode: s.filters.currency,
     status: s.filters.status ? EXCHANGE_STATUS[s.filters.status] : undefined,
     sortBy: EXCHANGE_SORT[s.sort],
+    sortOrder: apiOrder(s),
+    pageNumber: s.page - 1,
+    countPerPage: PAGE_SIZE,
+  }
+}
+
+/** 📊 Spendings: /spendings?currency=EUR&from=yyyy-mm-dd&to=yyyy-mm-dd&cancelled=1&sort=date|amount&order=asc|desc&page=2 */
+export const spendingsSpec: ListSpec = {
+  filters: { currency: { kind: 'currency' }, from: { kind: 'date' }, to: { kind: 'date' }, cancelled: { kind: 'flag' } },
+  sorts: { date: 'desc', amount: 'desc' },
+}
+
+const SPENDING_SORT: Record<string, SpendingSortField> = { date: 'Date', amount: 'Amount' }
+
+/** The URL state as a `GET Spendings/Own` query. Whose spendings they are is the endpoint's business, not the URL's. */
+export function spendingsQuery(s: ListState): SpendingListQuery {
+  return {
+    currencyCode: s.filters.currency,
+    dateFrom: s.filters.from,
+    dateTo: s.filters.to,
+    includeCancelled: s.filters.cancelled ? true : undefined,
+    sortBy: SPENDING_SORT[s.sort],
     sortOrder: apiOrder(s),
     pageNumber: s.page - 1,
     countPerPage: PAGE_SIZE,
