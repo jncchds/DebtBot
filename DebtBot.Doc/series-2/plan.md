@@ -62,6 +62,9 @@ Free OpenRouter models that read images and support structured output, checked 2
     - Mockups show the real page with each section once, not a sheet of states.
 - **Token scopes:** chosen per token, "Read only" or "Read and write". A read-only token gets 403 on anything but GET (and HEAD/OPTIONS).
 - **Admin and tokens:** Admin Users shows each user's active token count and a "Revoke all tokens" action. Admins never see individual tokens.
+- **Tables with actions (user, T2 mockups):** Profile › API tokens and Admin › Users show values only. A ▾ at the end of the row opens an action strip (the open row is in the URL, `?open=<id>`), and confirmations show inside the strip. This moved T8's Admin Users buttons into the strip. Other lists keep their inline buttons for now.
+- **Swagger in production (user, T2):** Swagger is served in every environment.
+- **Merging users and tokens (T2 default):** the merged user's tokens are revoked (deleted with that user), not moved.
 - **Receipt parse:** plan only in this series. The orchestrator writes `receipt-parse.md` (design, settings, schema, errors, tests, open questions) and agrees it with the user; building it, including mockups and any bot support, is a later series.
 - Defaults the orchestrator picked: token expiry offered as 30, 90 or 365 days or never, 90 preselected; a token can't manage tokens, passwords or Telegram linking (JWT only); privacy note and manual fallback for receipts as above.
 

@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: 645e1162-a1e5-44ec-8c96-df03ffb46bbe
-  modified: 2026-11-24T16:41:26.790Z
+  modified: 2026-11-24T18:45:20.188Z
 ---
 
 Series 2 of DebtBot, started 2026-11-24 after the web-ui series (PR #34) was merged to main. Run like [[web-ui-orchestration]] with the `orchestrate-tasks` skill.
@@ -40,6 +40,12 @@ Series 2 of DebtBot, started 2026-11-24 after the web-ui series (PR #34) was mer
 - 2026-11-24: `receipt-parse.md` draft committed (65b67a4), with 4 open questions for the user.
 - 2026-11-24: T1 merged into series-2 (aac0685): PUT Bills/{id} (draft replace, exchanges 400), BillForm shared by New bill and drafts, Edit line URLs, and the equal-split lock rule. 205 .NET tests, 122 vitest, e2e browser 74/74 (check.mjs updated). Worker e6c8481a stopped, worktree and branch removed. Open: finalizeBlockers is unused except in tests; exchange drafts can't be edited.
 - 2026-11-24: T2 (API tokens) started as worker "DebtBot S2 T2 api tokens", id a771b97d.
+- 2026-11-24: T2 merged into series-2: ApiToken entity and migration, JwtOrApiToken policy scheme, read-only scope middleware, [JwtOnly], 120/min per token, Profile › API tokens, Admin revoke-all.
+  - User decisions: ▾ action strips (?open=) on the tokens list and Admin Users only; Swagger in every environment.
+  - Merged users' tokens are revoked.
+  - 231 .NET tests and 130 vitest pass; t2check 12/12; e2e flaky on load (bus not ready before seeding, Admin 390 "Loading…", finalize 15 s timeout), handed to T3.
+  - Worker a771b97d stopped and cleaned up.
+- 2026-11-24: T3 (e2e, polish, docs, PR description) brief written.
 
 **Why:** the user wants a clean context per task, mockup approval per view, and a durable record.
 **How to apply:** follow this and the skill for every series-2 task. Related: [[web-ui-palette]].
