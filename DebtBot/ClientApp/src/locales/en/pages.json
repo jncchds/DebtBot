@@ -1,7 +1,7 @@
 {
-  "adminBills": { "subtitle": "Every bill, read-only.", "title": "All bills" },
-  "adminMerge": { "subtitle": "Suggested duplicates and manual merges.", "title": "Merge users" },
-  "adminUsers": { "subtitle": "Search users, set roles and passwords.", "title": "Users" },
+  "adminBills": { "subtitle": "Every bill in DebtBot, read-only. Open one to see it in full.", "title": "All bills" },
+  "adminMerge": { "subtitle": "Pairs that look like the same person: the same Telegram id, or the same username ignoring case. Merging moves everything onto the kept user.", "title": "Merge users" },
+  "adminUsers": { "subtitle": "Everyone DebtBot knows: people who started the bot, and placeholders made from @mentions.", "title": "Users" },
   "bill": { "subtitle": "Lines, payments and ledger records.", "title": "Bill" },
   "bills": { "subtitle": "Bills you take part in.", "title": "Bills" },
   "contacts": { "subtitle": "People you share bills with. The names here are yours: only you see them.", "title": "Contacts" },

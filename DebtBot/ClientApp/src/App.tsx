@@ -5,7 +5,6 @@ import { Layout } from './components/Layout'
 import { Loading } from './components/ui'
 import Login from './pages/Login'
 import NotFound from './pages/NotFound'
-import Placeholder from './pages/Placeholder'
 
 // Route-level code splitting: each real page is its own chunk.
 const Debts = lazy(() => import('./pages/Debts'))
@@ -18,12 +17,15 @@ const Spendings = lazy(() => import('./pages/Spendings'))
 const Contacts = lazy(() => import('./pages/Contacts'))
 const Subscriptions = lazy(() => import('./pages/Subscriptions'))
 const Profile = lazy(() => import('./pages/Profile'))
+const AdminUsers = lazy(() => import('./pages/AdminUsers'))
+const AdminMerge = lazy(() => import('./pages/AdminMerge'))
+const AdminBills = lazy(() => import('./pages/AdminBills'))
 
 const page = (el: ReactNode) => <Suspense fallback={<Loading />}>{el}</Suspense>
 
 /**
  * Every view has its own URL so Back/Forward, reload and bookmarks work (mockups/shell/README.md).
- * Filters, paging and tabs belong in the URL too. T8 replaces the remaining (admin) placeholders.
+ * Filters, paging and tabs belong in the URL too.
  */
 export default function App() {
   return (
@@ -65,9 +67,11 @@ export default function App() {
             </RequireAdmin>
           }
         />
-        <Route path="admin/users" element={<RequireAdmin><Placeholder page="adminUsers" /></RequireAdmin>} />
-        <Route path="admin/merge" element={<RequireAdmin><Placeholder page="adminMerge" /></RequireAdmin>} />
-        <Route path="admin/bills" element={<RequireAdmin><Placeholder page="adminBills" /></RequireAdmin>} />
+        {/* The password dialog sits over the list; both paths render the same page so the list stays put. */}
+        <Route path="admin/users" element={<RequireAdmin>{page(<AdminUsers key="users" />)}</RequireAdmin>} />
+        <Route path="admin/users/:id/password" element={<RequireAdmin>{page(<AdminUsers key="users" />)}</RequireAdmin>} />
+        <Route path="admin/merge" element={<RequireAdmin>{page(<AdminMerge />)}</RequireAdmin>} />
+        <Route path="admin/bills" element={<RequireAdmin>{page(<AdminBills />)}</RequireAdmin>} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

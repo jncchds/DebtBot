@@ -1,0 +1,148 @@
+# T8 report: Admin (Users, Merge users, All bills)
+
+- **Branch:** `task/08-ui-admin`, based on local `web-ui` at `99dee9b` (T1 to T7b merged).
+- **Commits:**
+  - `a6c31b7`: backend (`GET Bills/All` with filters, sort and `participantCount`; no changing your own role), tests, `api.md`;
+  - `67ca6c9`: the three admin pages, the merge badge, routes, strings, vitest tests;
+  - the last commit: the table fit fix (`dense`), the runtime-check scripts, the screenshots, the READMEs and this report.
+- **No mockup round:** built from the approved `mockups/admin-users/`, `admin-merge/` and `admin-bills/`. Nothing in them was unclear enough to ask the user. What I decided while building is under "Decisions" and in each README's new "Built (T8)" section.
+
+## Backend
+- **`POST Users/{id}/Role`:** 400 `{ message }` ("You can't change your own role.") for your own id, whatever the role. `Regular` removes admin (tested). An unknown id now gives 404 `{ message }` instead of an empty 404.
+- **`GET Bills/All`** (admin) binds `[FromQuery] AdminBillListQuery`: `BillListQuery` plus `creatorId`.
+  - It has the same `search`, `currencyCode` (any case), `status`, `dateFrom`, `dateTo`, `sortBy`, `sortOrder` and paging as `GET Bills`.
+  - `withUserId` means anyone on the bill (its participants list).
+  - `ofUserId` and `createdByMe` are ignored.
+  - It returns `PagingResult<BillListItem>` instead of full `Bill`s.
+  - `BillRepository` now shares `ApplyCommonFilters` and `SortAndPage` between `GetForUser` and the new `GetAll`, so sorting and stable paging are the same code.
+- **`participantCount`** on `BillListItem` (both `GET Bills` and `GET Bills/All`) is the size of the bill's participants list (creator, payers and line participants).
+- The old `IBillService.Get`/`IBillRepository.Get` (all bills, paging only) were only used by `Bills/All` and are replaced by `GetAll`.
+- **`api.md`** is updated (`Bills/All`, `participantCount`, `Role`). No migration.
+
+## Frontend
+- **🛠 Admin › Users** (`/admin/users?search=&role=admin|regular&page=`, `pages/AdminUsers.tsx`):
+  - the shared `ListView` with Search and Role, and Sort showing "Name ↑ A–Z" with its direction button disabled;
+  - the columns and phone cards as in the mockup;
+  - "(you)", and "🔀 possible duplicate" (links to `/admin/merge`) for anyone in a merge suggestion;
+  - **Login & password** at `/admin/users/<id>/password`: a modal over the list (`components/admin/PasswordDialog.tsx`). It handles the checks in the browser, the 409 "taken" alert with the login field marked, the API's message for anything else, and the "signs out" note. Closing or saving goes back to `/admin/users?…`. A reload or bookmark reopens it.
+  - **Make admin / Remove admin:** an inline confirmation across the row (accent tint). The button is disabled for yourself, titled "You can't change your own role".
+  - **🗑** only for placeholders that aren't you. There's an inline danger confirmation; a **409** turns it into "can't be deleted … Merge them instead" with **🔀 Merge…** → `/admin/merge?merge=<id>`.
+- **🛠 Admin › Merge users** (`/admin/merge?swap=&keep=&merge=`, `pages/AdminMerge.tsx`):
+  - one card per suggestion: the reason pills, the hint ("on the left" / "on top" on phones), ✓ Keep ← ✕ Merge away boxes (stacked with ↑ on phones), **🔀 Merge…** and **⇄ Swap**;
+  - swapped: the danger pill and "Back to the suggestion";
+  - the confirmation lists what moves, what's deleted, the profile and sign-in rules from `api.md`; sign-in says "keeps" or "takes" depending on the kept user;
+  - after a merge: the ✅ alert, and every query refetches, so the list and the badge update. Errors (e.g. merging away yourself) show the API's message in the card;
+  - **Merge any two users** (hidden on phones): two type-to-search boxes over all users (`components/admin/UserSearch.tsx`, `GET Users?search=`). Chosen users show as chips with ✕, then the boxes, Swap and the same confirmation. Merge… is disabled with "Pick two different users." until both are chosen;
+  - the empty state, with the manual picker still shown.
+- **🛠 Admin › All bills** (`/admin/bills?q=&by=&with=&currency=&from=&to=&status=&sort=&order=&page=`, `pages/AdminBills.tsx`):
+  - the shared list with Search, **Created by** and Person (both `FilterUser`, over all users), Currency, From, To and Status;
+  - sorts as Bills;
+  - columns Date · Bill (🔁, "by <creator>", Exchange pair) · People · Total · Status;
+  - rows open `/bills/<id>`;
+  - phone cards, and both empty states;
+  - a summary subtitle ("Created by Boris Ivanov.").
+- **Sidebar:** Admin's 🔀 Merge users carries the suggestion-count badge (none at 0).
+- **Shared code:**
+  - `api/admin.ts` (queries are off for non-admins);
+  - `lib/admin.ts` (merge URL state, duplicates, sign-in wording, the admin password checks);
+  - `adminUsersSpec`/`adminUsersQuery` and `adminBillsSpec`/`adminBillsQuery` in `lib/lists.ts`;
+  - `ListView` gains `rowReplace` (an inline confirmation across a row or card), `orderFixed` and `dense` (narrower cell padding, as the Users mockup uses);
+  - `useFormat().dateYear`;
+  - the new `admin` string group.
+- **`pages/Placeholder.tsx`** and its `common.comingSoon*` strings are removed: nothing uses them any more.
+- **READMEs:** the shell URL map and Admin sub-section, the ClientApp README (admin conventions, tests), and "Built (T8)" in the three mockup READMEs.
+
+## Checks
+- `npm run build`: OK. `npm run lint`: oxlint clean, i18n OK (650 keys).
+- `npm test`: **108 passed** in 12 files (87 before, plus 21 in `lib/admin.test.ts`), covering:
+  - the Users spec: defaults, search, role, invalid values, the single sort, back to page 1;
+  - the All bills spec: defaults, the full URL to query, no `mine`, `by` keeps the sort;
+  - the merge URL: parsing and junk, writing back, swap on and off, the shown pair, the manual picker and swapping it, two different users, forgetting merged users;
+  - duplicates, the sign-in wording, the admin password checks and request.
+- `dotnet build DebtBot.sln`: 0 errors.
+- `dotnet test` (SDK 11): **187 passed**, 0 failed (181 before, plus 6 in `AdminTests`), covering:
+  - Make admin then `Regular`;
+  - your own role refused, both ways;
+  - an unknown id gives 404;
+  - `Bills/All` with every bill, `participantCount` and the creator;
+  - the creator, person, currency (any case), status, date and search filters; `createdByMe`/`ofUserId` ignored;
+  - each sort, and stable paging.
+
+## Runtime check (docker compose, cold build)
+- **Setup:** the real `docker-compose.yml` plus `reports/task-08/scripts/t8-compose.yml` (project `debtbot-t8`, image `debtbot-t8:local`, API on 18099, Development). For the final run, I removed the image and pruned the build cache, then ran `up -d --build` and `scripts/rerun.sh` (fresh volume, seed, API check, browser check).
+- **Seed** (`seed8.mjs`, through the API, plus SQL for `TelegramBotEnabled`):
+  - Anna Petrova (admin, login `anna.p`), Dmitry K. (admin), Boris, Clara (login `clara`) and Lena (regular);
+  - the default admin;
+  - placeholders: `@grandpa_vlad` (stray), `@olga_petrova` (in Anna's contacts, with a bill) and Dima (`@dima_k_old`, a bill with Dmitry);
+  - duplicates: **Clara M** (same Telegram id 200003 as Clara Müller, `@Clara_M`), and **@Boris_Iv** (username `Boris_Iv`: other case, no `@`, with login `boris.old`; Boris has none);
+  - 29 bills: a draft, a cancelled bill and a draft exchange.
+- **API (`api8.mjs`), 15/15:**
+  - Boris (regular) gets **403** on `GET Users`, the suggestions, `GET Bills/All`, Role, password, delete and merge;
+  - Anna gets 400 on her own role, 200 for making Lena admin and 200 for `Regular` (checked through the API), and 404 for an unknown id;
+  - `Bills/All` with `creatorId` returns only Boris's bills; `withUserId` = Olga with `currencyCode=eur` returns one bill with `participantCount` 2; a bad `sortBy` gives 400.
+- **Headless Chrome (`check8.mjs`), 13/13:**
+  - **Users:**
+    - "1–11 of 11", the duplicate marker on @Boris_Iv, Boris, Clara M and Clara Müller, and not on Lena;
+    - "(you)", and your own Remove admin disabled with its title;
+    - 🗑 only on placeholders, and the badge shows 2.
+  - **Search and filter:** `search=boris` (2 rows), then Admin (empty state), Clear filters, `?role=admin` (3 rows), a reload, and Back twice; the no-match empty state.
+  - **Role:** Lena made admin, then admin removed, through the inline confirmations (checked through the API).
+  - **Password:**
+    - Set on Lena opens `/admin/users/<id>/password` with the help text;
+    - login `clara` gives the 409 alert with the field marked;
+    - a reload keeps the dialog; a short password is caught;
+    - saved: back on `/admin/users`, with "password set" (checked through the API);
+    - Back reopens the dialog and Forward closes it.
+  - **Delete:** `@grandpa_vlad` deleted (gone from the API). `@olga_petrova` gives the 409 row; **Merge…** opens `/admin/merge?merge=<olga>`, with Olga chosen to merge away.
+  - **Merge:**
+    - two suggestions with their reasons;
+    - Swap adds `?swap=<@Boris_Iv>`, which survives a reload, and Back undoes it;
+    - **one-click merge** of Boris ← @Boris_Iv: the confirmation says "@Boris_Iv's 2 bills" and "Boris Ivanov has none, so they take @Boris_Iv's login and password". After it, the ✅ alert and "Suggestions (1)". **The badge drops from 2 to 1.** Through the API, Boris has login `boris.old` and one more bill (the shared Bowling bill was folded together), and @Boris_Iv is gone.
+  - **Manual merge:**
+    - "Pick two different users." with Merge… disabled;
+    - typing "dim" suggests Dima;
+    - picked Dima, then Dmitry K. (`?keep=&merge=`); Swap and Back; a reload;
+    - the confirmation, then the merge: Dima is gone and Dmitry has the bill.
+    - Merging away your own account (`?keep=<Lena>&merge=<Anna>`) shows the API's 400 message in the card.
+  - **All bills:**
+    - "1–20 of 29", the exchange pair row with both totals;
+    - Created by Boris gives `?by=`, the subtitle "Created by Boris Ivanov.", and only his bills;
+    - Finalized, then sort by total (largest first), a reload, and Back;
+    - `?with=<Olga>` shows her bill; the filtered-empty state;
+    - page 2 ("21–"), a reload; a row click opens `/bills/<id>`, and Back returns to page 2.
+  - **Phone (390):**
+    - cards on all three pages, and nothing wider than the screen;
+    - "suggested keeper on top", and the manual picker hidden;
+    - the drawer shows the Admin section with the badge.
+  - **Other users:**
+    - signing out, then **`boris.old`** signs in as **Boris Ivanov** (the password that moved with the merge), with no Admin in the nav;
+    - **Lena** signs in with the password set in the dialog;
+    - `/admin/users`, `/admin/merge`, `/admin/bills` and `/admin/users/<id>/password` all show the 404 page for her.
+- **Screenshots** of the real app, light and dark (`reports/task-08/`):
+  - Users: `users-1280`, `users-search-1280`, `users-empty-1280`, `users-role-1280`, `users-password-1280`, `users-password-taken-1280`, `users-delete-1280`, `users-delete-409-1280`, `users-390`;
+  - Merge: `merge-1280`, `merge-swapped-1280`, `merge-confirm-1280`, `merge-done-1280`, `merge-manual-typing-1280`, `merge-manual-confirm-1280`, `merge-390`;
+  - All bills: `bills-1280`, `bills-filtered-1280`, `bills-filtered-empty-1280`, `bills-390`, `bills-390-drawer`;
+  - `nonadmin-404-1280`.
+  - I sent the main ones to the user with SendUserFile.
+- **Found and fixed at runtime:** at 1280 px the Users table was 35 px wider than its card, so the 🗑 column and the confirmation's Cancel were clipped. It now uses the mockup's narrower cell padding (`dense`), and the duplicate marker, Telegram id and "password set" don't wrap.
+- **Clean-up:**
+  - `down -v`;
+  - removed `debtbot-t8:local` and the pulled `postgres:14.1-alpine` and `rabbitmq:3`;
+  - ran image and builder prune;
+  - removed `wwwroot`, `bin` and `obj`;
+  - ran `dotnet build-server shutdown`.
+  - About 15 GB is free. `ClientApp/node_modules` is kept in the worktree.
+- **Not verified live:** Telegram widget sign-in (everyone signs in with a password); the empty suggestions state (only compiled; the empty-state screens of Users and All bills were checked).
+
+## Decisions
+- **`swap` is keyed by the suggested merge user's id**, as the spec says. In a group of three where one user is the merge side of two pairs, swapping one swaps both.
+- **The default admin** (`DEFAULT_USER_TELEGRAM_ID`) shows as a placeholder with 🗑 until they start the bot. That follows the spec ("placeholders that aren't you"). The API still refuses if they have data.
+- **Currency on All bills** is the same 3-letter box as Bills, not the mockup's select, because there's no list of every currency. Suggestions come from the bills on the page.
+- **People for an exchange pair** is the larger count of its two bills.
+- **A merge refetches every query**, since bills, debts and contacts all move.
+- **Role errors other than your own role**, and delete errors other than 409, show the API's message in the row.
+- **`POST Users/{id}/Role`** for an unknown id now sends `{ message }` with its 404, like the other admin endpoints.
+
+## Open for later tasks
+- **T9:** `reports/task-08/scripts/` holds the seed, the API check and the browser check. `rerun.sh` runs from the repo root, after `docker compose -p debtbot-t8 -f docker-compose.yml -f DebtBot.Doc/web-ui/reports/task-08/scripts/t8-compose.yml up -d --build`.
+- **Possibly worth a look:** deleting an admin who never started the bot is allowed when they have no data. The API could refuse deleting any admin.

@@ -46,3 +46,12 @@ Title "Users", subtitle "Everyone DebtBot knows: people who started the bot, and
 
 ## Backend needs (T8)
 - Check that `POST Users/{id}/Role` accepts `Regular` (removing admin) and refuses changing your own role (the UI disables it, but the API should too).
+
+## Built (T8)
+- `pages/AdminUsers.tsx`, `components/admin/PasswordDialog.tsx`, `lib/admin.ts` (form checks), `lib/lists.ts` (`adminUsersSpec`).
+- `/admin/users/<id>/password` renders the same page with the dialog on top; Cancel, ✕, Esc, a click on the backdrop and Save go back to `/admin/users?…`. A bookmarked dialog for a user who isn't on the current page finds them with `GET Users/{id}` and a search by name.
+- The direction button next to Sort shows "↑ A–Z" disabled: the API has no other order. An `order=desc` in the URL is ignored.
+- The login field is lower-cased before it's checked and sent (the API stores logins lower case); an empty login keeps the current one.
+- Role and delete errors other than the 409 show the API's message in the row.
+- The table uses narrower cell padding (`dense`), as the mockup does, so it fits at 1280 px.
+- The default admin (`DEFAULT_USER_TELEGRAM_ID`) shows as a placeholder with 🗑 until they start the bot; deleting them works only if they have no data.

@@ -79,12 +79,17 @@ public class BillsController : DebtBotControllerBase
         return Ok(bills);
     }
 
-    /// <summary>All bills (admin).</summary>
+    /// <summary>
+    /// Every bill (admin). The same query as <c>GET Bills</c> without <c>ofUserId</c> and <c>createdByMe</c>, plus
+    /// <c>creatorId</c>; <c>withUserId</c> is anyone taking part in the bill.
+    /// </summary>
     [Authorize(IdentityData.AdminUserPolicyName)]
     [HttpGet("All")]
-	public IActionResult GetAll(int pageNumber = 0, int? countPerPage = null)
+	public IActionResult GetAll([FromQuery] AdminBillListQuery query)
 	{
-		return Ok(_billService.Get(pageNumber, countPerPage));
+        query.CurrencyCode = string.IsNullOrWhiteSpace(query.CurrencyCode) ? null : query.CurrencyCode.Trim().ToUpperInvariant();
+
+		return Ok(_billService.GetAll(query));
 	}
 
     /// <summary>Creates a draft bill from the form. Returns the new bill's id.</summary>

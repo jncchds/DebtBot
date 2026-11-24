@@ -11,7 +11,8 @@ namespace DebtBot.Interfaces.Services;
 public interface IBillService
 {
     Task<BillModel?> GetAsync(Guid id, CancellationToken cancellationToken);
-    PagingResult<BillModel> Get(int pageNumber = 0, int? countPerPage = null);
+    /// <summary>Every bill (admin, <c>GET Bills/All</c>).</summary>
+    PagingResult<BillListModel> GetAll(AdminBillListQuery filter);
     PagingResult<BillListModel> GetForUser(Guid userId, Guid? filterByUserId, string? filterByCurrencyCode, int pageNumber = 0, int? countPerPage = null, ProcessingState? status = null);
     PagingResult<BillListModel> GetForUser(Guid userId, BillListQuery filter);
     /// <summary>Exchanges you created or take part in, one row per pair of bills (<c>GET Bills/exchanges</c>).</summary>

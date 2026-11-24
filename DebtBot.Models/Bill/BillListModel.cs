@@ -18,4 +18,6 @@ public class BillListModel
     public List<LedgerRecordModel> LedgerRecords { get; set; }
     /// <summary>Everyone taking part in the bill (its participants list), so a subscriber's view can mark bills you're on too.</summary>
     public List<Guid> ParticipantIds { get; set; }
+    /// <summary>How many people take part: the creator, payers and line participants (its participants list).</summary>
+    public int ParticipantCount { get; set; }
 }

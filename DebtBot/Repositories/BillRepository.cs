@@ -38,14 +38,23 @@ public class BillRepository : IBillRepository
         return bill;
     }
 
-    public PagingResult<BillModel> Get(int pageNumber = 0, int? countPerPage = null)
+    public PagingResult<BillListModel> GetAll(AdminBillListQuery filter)
     {
-        var bills = _debtContext
-            .Bills
-            .OrderByDescending(q => q.Date)
-            .ProjectTo<BillModel>(_mapper.ConfigurationProvider)
-            .ToPagingResult<BillModel>(pageNumber, countPerPage);
-        return bills;
+        IQueryable<Bill> query = _debtContext.Bills;
+
+        if (filter.CreatorId != null)
+        {
+            var creatorId = filter.CreatorId.Value;
+            query = query.Where(b => b.CreatorId == creatorId);
+        }
+
+        if (filter.WithUserId != null)
+        {
+            var withUserId = filter.WithUserId.Value;
+            query = query.Where(b => b.BillParticipants.Any(p => p.UserId == withUserId));
+        }
+
+        return SortAndPage(ApplyCommonFilters(query, filter), filter);
     }
 
     public PagingResult<BillListModel> GetForUser(Guid userId, Guid? filterByUserId, string? filterByCurrencyCode, int pageNumber = 0, int? countPerPage = null, ProcessingState? status = null)
@@ -69,6 +78,32 @@ public class BillRepository : IBillRepository
                 .BillParticipants
                 .Any(p => p.UserId == userId));
 
+        query = ApplyCommonFilters(query, filter);
+
+        if (filter.CreatedByMe)
+        {
+            query = query.Where(b => b.CreatorId == userId);
+        }
+
+        if (filter.WithUserId != null)
+        {
+            var withUserId = filter.WithUserId.Value;
+            query = filter.WithIncludesUnfinalized
+                ? query.Where(b =>
+                    b.LedgerRecords.Any(q => (q.CreditorUserId == withUserId && q.DebtorUserId == userId)
+                        || (q.DebtorUserId == withUserId && q.CreditorUserId == userId))
+                    || (!b.LedgerRecords.Any() && b.BillParticipants.Any(p => p.UserId == withUserId)))
+                : query.Where(b =>
+                    b.LedgerRecords.Any(q => (q.CreditorUserId == withUserId && q.DebtorUserId == userId)
+                        || (q.DebtorUserId == withUserId && q.CreditorUserId == userId)));
+        }
+
+        return SortAndPage(query, filter);
+    }
+
+    /// <summary>The filters <c>GET Bills</c> and <c>GET Bills/All</c> share: currency, status, dates and search.</summary>
+    private static IQueryable<Bill> ApplyCommonFilters(IQueryable<Bill> query, BillListQuery filter)
+    {
         if (filter.CurrencyCode != null)
         {
             query = query.Where(b => b.PaymentCurrencyCode == filter.CurrencyCode);
@@ -77,11 +112,6 @@ public class BillRepository : IBillRepository
         if (filter.Status != null)
         {
             query = query.Where(b => b.Status == filter.Status);
-        }
-
-        if (filter.CreatedByMe)
-        {
-            query = query.Where(b => b.CreatorId == userId);
         }
 
         if (filter.DateFrom != null)
@@ -102,19 +132,11 @@ public class BillRepository : IBillRepository
             query = query.Where(b => b.Description.ToLower().Contains(search));
         }
 
-        if (filter.WithUserId != null)
-        {
-            var withUserId = filter.WithUserId.Value;
-            query = filter.WithIncludesUnfinalized
-                ? query.Where(b =>
-                    b.LedgerRecords.Any(q => (q.CreditorUserId == withUserId && q.DebtorUserId == userId)
-                        || (q.DebtorUserId == withUserId && q.CreditorUserId == userId))
-                    || (!b.LedgerRecords.Any() && b.BillParticipants.Any(p => p.UserId == withUserId)))
-                : query.Where(b =>
-                    b.LedgerRecords.Any(q => (q.CreditorUserId == withUserId && q.DebtorUserId == userId)
-                        || (q.DebtorUserId == withUserId && q.CreditorUserId == userId)));
-        }
+        return query;
+    }
 
+    private PagingResult<BillListModel> SortAndPage(IQueryable<Bill> query, BillListQuery filter)
+    {
         var desc = filter.SortOrder == SortOrder.Desc;
         // A unique last key keeps pages stable when the sort field has equal values.
         var sorted = filter.SortBy switch

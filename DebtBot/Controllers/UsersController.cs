@@ -102,11 +102,18 @@ public class UsersController : DebtBotControllerBase
         return Ok();
     }
 
+    /// <summary>Makes a user an admin (<c>role=Admin</c>) or removes it (<c>role=Regular</c>). 400 for your own account.</summary>
     [HttpPost("{id}/Role")]
-    public ActionResult SetRole(Guid id, UserRole role)
+    public IActionResult SetRole(Guid id, UserRole role)
     {
-        var res = _userService.SetRole(id, role);
-        return res? Ok(): NotFound();
+        if (id == UserId)
+        {
+            return ErrorResult(StatusCodes.Status400BadRequest, "You can't change your own role.");
+        }
+
+        return _userService.SetRole(id, role)
+            ? Ok()
+            : ErrorResult(StatusCodes.Status404NotFound, "User not found.");
     }
 
     /// <summary>
