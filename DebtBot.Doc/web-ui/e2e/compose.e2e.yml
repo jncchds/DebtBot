@@ -1,0 +1,17 @@
+# Added to the shipped docker-compose.yml + docker-compose.override.yml for the end-to-end run:
+# - a JWT signing key (the scripts mint tokens with the same key to seed data faster than signing in);
+# - Postgres and RabbitMQ data in throwaway named volumes instead of ./dbdata and ./rabbitdata, so `down -v`
+#   gives a fresh database and a real ./dbdata is never touched.
+services:
+  debtbot:
+    environment:
+      - DebtBot_DebtBot__JwtConfiguration__Key=E2eRunKeyE2eRunKeyE2eRunKeyE2eRunKeyE2eRunKey00
+  db:
+    volumes:
+      - e2e-db:/var/lib/postgresql/data
+  rabbit:
+    volumes:
+      - e2e-rabbit:/var/lib/rabbitmq
+volumes:
+  e2e-db:
+  e2e-rabbit:

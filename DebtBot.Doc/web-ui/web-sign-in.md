@@ -12,6 +12,7 @@ Every web user is a Telegram identity. There are two ways to sign in:
 - Only the SHA-256 hash of a refresh token is stored, in the `RefreshTokens` table.
 - Every refresh rotates the token. If a token that was already rotated is presented again, the whole chain that came from it is revoked, and that browser has to sign in again.
 - When a user changes their own password, their other web sessions are signed out. When an admin sets a user's password, all of that user's web sessions are signed out.
+- A background job (`RefreshTokenPurgeService`, a minute after start and then every 12 hours) deletes refresh tokens that can't be used again: expired ones, and ones revoked more than 7 days ago. Revoked tokens are kept that long so a replayed old token is still recognised and revokes its chain.
 
 ## Endpoints (`api/v1/auth`)
 | Endpoint | Auth | Notes |
@@ -34,7 +35,7 @@ The admin endpoint `POST api/v1/Users/{id}/password` takes `{ login?, password }
 - The first time, both a login and a password are needed. After that, any change needs the current password.
 - To change only the login, send `login` and `currentPassword` and leave out `newPassword`.
 
-`POST login` and `POST telegram` are limited to 10 requests per minute per client IP. Behind a reverse proxy, all clients share the proxy's IP, because forwarded headers aren't set up yet.
+`POST login` and `POST telegram` are limited to 10 requests per minute per client IP. Behind a reverse proxy, turn on forwarded headers (below); otherwise all clients share the proxy's IP and its limit.
 
 ## Settings
 | Setting (env var) | Default | |
@@ -43,6 +44,15 @@ The admin endpoint `POST api/v1/Users/{id}/password` takes `{ login?, password }
 | `DebtBot_DebtBot__JwtConfiguration__LifeTime` | 60 | Access token lifetime in minutes. |
 | `DebtBot_DebtBot__JwtConfiguration__RefreshTokenLifetimeDays` | 30 | Refresh token lifetime in days. |
 | `DebtBot_DebtBot__Telegram__BotToken` | – | When it's empty, the bot doesn't poll Telegram, `config` returns no bot username, and `POST telegram` is rejected. |
+| `DebtBot_DebtBot__ForwardedHeaders__Enabled` | false | Behind a reverse proxy: take the client IP and scheme from `X-Forwarded-For` and `X-Forwarded-Proto`. See below. |
+| `DebtBot_DebtBot__ForwardedHeaders__KnownProxies` | – | Comma-separated proxy IPs to trust, e.g. `10.0.0.5`. |
+| `DebtBot_DebtBot__ForwardedHeaders__KnownNetworks` | – | Comma-separated networks to trust, e.g. `172.16.0.0/12` for a proxy in another Docker container. |
+
+## Behind a reverse proxy
+With `ForwardedHeaders__Enabled=true` the app takes the client's IP from the last hop of `X-Forwarded-For` and the scheme from `X-Forwarded-Proto` (one proxy: `ForwardLimit` 1). That keeps the per-IP sign-in limit per real client, and makes `Request.IsHttps` true for HTTPS behind the proxy.
+- Only the listed proxies or networks are trusted. With neither list set, **any** sender is trusted, which is only safe when the app can't be reached except through the proxy (for example, its port isn't published and only the proxy shares its Docker network).
+- The proxy must set the headers itself (nginx: `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; proxy_set_header X-Forwarded-Proto $scheme;`; Caddy and Traefik do it by default).
+- The refresh cookie's `Secure` flag doesn't depend on this: it is set everywhere except in Development, so the browser must reach the proxy over HTTPS.
 
 ## Telegram Login Widget setup
 1. In BotFather, send `/setdomain`, pick the bot, and enter the domain the web UI is served from, for example `debts.example.com`. The widget only works on that domain.
