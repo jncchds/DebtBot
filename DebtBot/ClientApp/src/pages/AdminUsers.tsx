@@ -175,7 +175,10 @@ export default function AdminUsers() {
       header: t('admin.users.telegram'),
       cell: (u) => (
         <>
-          <div>{u.telegramUserName ? handle(u.telegramUserName) : '—'}</div>
+          {/* Long usernames can't wrap: cut them (full name on hover) so the table still fits at 1280 px. */}
+          <div className="max-w-28 truncate" title={u.telegramUserName ?? undefined}>
+            {u.telegramUserName ? handle(u.telegramUserName) : '—'}
+          </div>
           <div className="text-[0.78rem] whitespace-nowrap tabular-nums muted">{telegramId(u)}</div>
         </>
       ),

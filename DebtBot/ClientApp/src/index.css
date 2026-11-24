@@ -97,6 +97,12 @@
   @apply w-full rounded-md border border-line bg-input px-2.5 py-1.5 text-sm text-fg placeholder:text-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25;
 }
 
+/* The height of an .input (text-sm line, py-1.5 and a 1px border), for controls that sit in a row of inputs
+   (pill choices, a checkbox), so every caption in the row lines up and the controls are centred on the inputs. */
+@utility input-h {
+  min-height: calc(2rem + 2px);
+}
+
 @utility card {
   @apply rounded-[10px] border border-line bg-surface;
 }

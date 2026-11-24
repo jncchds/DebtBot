@@ -134,7 +134,7 @@ export function ListView<T>(p: ListViewProps<T>) {
     </button>
   )
 
-  const filtersBox = <div className="flex flex-wrap items-end gap-x-4 gap-y-3 px-4 py-3.5">{p.filters}</div>
+  const filtersBox = <div className="flex flex-wrap items-start gap-x-4 gap-y-3 px-4 py-3.5">{p.filters}</div>
 
   let body: ReactNode
   if (p.loading) {
