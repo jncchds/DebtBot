@@ -49,7 +49,7 @@ export function WhoseSelect() {
 
   return (
     <div className="-mt-3 mb-4 flex flex-wrap items-center gap-2">
-      <span className="label m-0">{t('following.whose')}</span>
+      <span className="label mb-0">{t('following.whose')}</span>
       <div
         ref={root}
         className="relative"

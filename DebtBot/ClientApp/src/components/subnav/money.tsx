@@ -9,7 +9,7 @@ import { dealFromListItem } from '../../lib/exchange'
 import { withOf } from '../../lib/following'
 import { useFormat } from '../../lib/useFormat'
 import { FollowingSubNav } from '../following/Following'
-import { useFollowing } from '../../lib/useFollowing'
+import { isNoAccess, useFollowing } from '../../lib/useFollowing'
 import { useNameOf } from '../../lib/usePeople'
 import { SidebarEntry, SidebarMore, SidebarSection } from '../Sidebar'
 
@@ -39,6 +39,9 @@ export function DebtsSubNav() {
     of
       ? t(amount > 0 ? 'following.subnav.owesThem' : 'following.subnav.theyOwe', { amount: money, name })
       : t(amount > 0 ? 'subnav.debts.owesYou' : 'subnav.debts.youOwe', { amount: money })
+
+  // Someone you may not see: no section of theirs, only Following.
+  if (of && isNoAccess(debts.error)) return <FollowingSubNav page="debts" path="/" />
 
   return (
     <>
@@ -138,6 +141,7 @@ export function BillsSubNav() {
   const recent = useBills({ countPerPage: 15, ofUserId: of })
   const draftRows = pairExchanges(drafts.data?.items ?? [])
   const recentRows = pairExchanges((recent.data?.items ?? []).filter((b) => b.status !== 'Draft')).slice(0, 5)
+  if (of && isNoAccess(recent.error)) return <FollowingSubNav page="bills" path="/bills" />
 
   return (
     <>

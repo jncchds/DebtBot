@@ -7,7 +7,7 @@ import { groupSubscriptions, isPlaceholder, isoDay, monthRange, recentContacts }
 import { withOf } from '../../lib/following'
 import { useFormat } from '../../lib/useFormat'
 import { FollowingSubNav } from '../following/Following'
-import { useFollowing } from '../../lib/useFollowing'
+import { isNoAccess, useFollowing } from '../../lib/useFollowing'
 import { SidebarEntry, SidebarMore, SidebarSection } from '../Sidebar'
 
 /**
@@ -25,6 +25,7 @@ export function SpendingsSubNav() {
   const summary = useSpendingSummary(from, to, of)
   const month = new Intl.DateTimeFormat(i18n.language === 'en' ? 'en-GB' : i18n.language, { month: 'long' }).format(now)
   const items = summary.data ?? []
+  if (of && isNoAccess(summary.error)) return <FollowingSubNav page="spendings" path="/spendings" />
   return (
     <>
       <SidebarSection>{viewing.kind === 'of' ? t('following.subnav.thisMonth', { name: viewing.name }) : t('subnav.spendings.thisMonth')}</SidebarSection>
