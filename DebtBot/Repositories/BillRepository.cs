@@ -7,6 +7,7 @@ using DebtBot.Models;
 using DebtBot.Models.Bill;
 using DebtBot.Models.BillLine;
 using DebtBot.Models.Enums;
+using DebtBot.Models.Exchange;
 using DebtBot.Models.User;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -131,6 +132,96 @@ public class BillRepository : IBillRepository
         return sorted
             .ThenBy(b => b.Id)
             .ProjectTo<BillListModel>(_mapper.ConfigurationProvider)
+            .ToPagingResult(filter.PageNumber, filter.CountPerPage);
+    }
+
+    public PagingResult<ExchangeListItem> GetExchangesForUser(Guid userId, ExchangeListQuery filter)
+    {
+        // An exchange is two bills linked by ExchangeBillId. Each bill has one payer ("from") and one line
+        // participant ("to"), and the two bills mirror each other, so one bill describes the whole exchange.
+        // Pick one bill per pair: the one you pay in when you're one of the two people (so "from" is you),
+        // otherwise (you only created it) the one with the smaller id.
+        // Access is the same as GET Bills: creator, payer or line participant. It's checked on the bills
+        // themselves, not on BillParticipants, which is filled in the background just after the bills are created.
+        var query = _debtContext
+            .Bills
+            .Where(b => b.ExchangeBillId != null)
+            .Where(b => b.Payments.Any(p => p.UserId == userId)
+                || (b.CreatorId == userId
+                    && !b.Lines.Any(l => l.Participants.Any(p => p.UserId == userId))
+                    && b.Id < b.ExchangeBillId!.Value));
+
+        if (filter.WithUserId != null)
+        {
+            var withUserId = filter.WithUserId.Value;
+            query = query.Where(b => b.Lines.Any(l => l.Participants.Any(p => p.UserId == withUserId))
+                || b.Payments.Any(p => p.UserId == withUserId));
+        }
+
+        if (filter.CurrencyCode != null)
+        {
+            var currency = filter.CurrencyCode;
+            query = query.Where(b => b.CurrencyCode == currency || b.PaymentCurrencyCode == currency);
+        }
+
+        if (filter.Status != null)
+        {
+            query = filter.Status == ProcessingState.Processed
+                ? query.Where(b => b.Status == ProcessingState.Processed || b.Status == ProcessingState.Ready)
+                : query.Where(b => b.Status == filter.Status);
+        }
+
+        var desc = filter.SortOrder == SortOrder.Desc;
+        // Cast for SQLite (tests), which can't order by decimal; Postgres orders the same.
+        var sorted = filter.SortBy switch
+        {
+            ExchangeSortField.Amount => (desc
+                    ? query.OrderByDescending(b => b.Payments.Select(p => (double)p.Amount).FirstOrDefault())
+                    : query.OrderBy(b => b.Payments.Select(p => (double)p.Amount).FirstOrDefault()))
+                .ThenByDescending(b => b.Date),
+            _ => desc ? query.OrderByDescending(b => b.Date) : query.OrderBy(b => b.Date),
+        };
+
+        return sorted
+            .ThenBy(b => b.Id)
+            .Select(b => new ExchangeListItem
+            {
+                ForwardBillId = b.Id,
+                BackwardBillId = b.ExchangeBillId!.Value,
+                Date = b.Date,
+                Status = b.Status,
+                Description = b.Description,
+                Creator = new UserDisplayModel
+                {
+                    Id = b.Creator.Id,
+                    DisplayName = b.Creator.DisplayName,
+                    TelegramId = b.Creator.TelegramId,
+                    TelegramUserName = b.Creator.TelegramUserName,
+                },
+                FromUser = b.Payments
+                    .Select(p => new UserDisplayModel
+                    {
+                        Id = p.User.Id,
+                        DisplayName = p.User.DisplayName,
+                        TelegramId = p.User.TelegramId,
+                        TelegramUserName = p.User.TelegramUserName,
+                    })
+                    .FirstOrDefault(),
+                FromAmount = b.Payments.Select(p => p.Amount).FirstOrDefault(),
+                FromCurrencyCode = b.PaymentCurrencyCode,
+                ToUser = b.Lines
+                    .SelectMany(l => l.Participants)
+                    .Select(p => new UserDisplayModel
+                    {
+                        Id = p.User.Id,
+                        DisplayName = p.User.DisplayName,
+                        TelegramId = p.User.TelegramId,
+                        TelegramUserName = p.User.TelegramUserName,
+                    })
+                    .FirstOrDefault(),
+                ToAmount = b.TotalWithTips,
+                ToCurrencyCode = b.CurrencyCode,
+            })
             .ToPagingResult(filter.PageNumber, filter.CountPerPage);
     }
 

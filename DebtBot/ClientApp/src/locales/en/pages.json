@@ -7,10 +7,9 @@
   "contactRequests": { "subtitle": "People who want notifications about your bills.", "title": "Requests" },
   "contacts": { "subtitle": "People you split bills with.", "title": "Contacts" },
   "debts": { "subtitle": "Balances with each person, per currency.", "title": "Debts" },
-  "exchange": { "subtitle": "Swap money between two currencies.", "title": "Exchange" },
-  "newBill": { "subtitle": "Split a bill between contacts.", "title": "New bill" },
+  "exchange": { "subtitle": "Swap money in two currencies with someone.", "title": "Exchange" },
+  "newBill": { "subtitle": "Pick the people first, then add lines and who paid.", "title": "New bill" },
   "password": { "subtitle": "Your login and password for the web.", "title": "Login & password" },
-  "pasteBill": { "subtitle": "Paste a bill in the bot’s text format.", "title": "Paste a bill" },
   "profile": { "subtitle": "Your name, phone and email.", "title": "Profile" },
   "spendings": { "subtitle": "Your share of every bill.", "title": "Spendings" },
   "telegram": { "subtitle": "Your Telegram account and the bot.", "title": "Telegram" }

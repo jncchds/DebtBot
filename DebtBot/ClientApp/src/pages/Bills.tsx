@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useAcceptExchange, useAllOwnDebts, useBills } from '../api/bills'
 import { ApiError } from '../api/client'
 import { MyBalance, StatusPill } from '../components/bill/bits'
+import { ExchangeStatusPill } from '../components/exchange/ExchangeBits'
 import { FilterChoice, FilterCurrency, FilterDate, FilterFlag, FilterPerson, FilterText } from '../components/list/filters'
 import { ListView, type Column } from '../components/list/ListView'
 import { PageTitle } from '../components/ui'
@@ -15,6 +16,11 @@ import { useFormat } from '../lib/useFormat'
 import { POLL_MS, usePollWindow } from '../lib/usePollWindow'
 import { useListState } from '../lib/useListState'
 import { useNameOf, usePeople } from '../lib/usePeople'
+
+/** A row's status; an exchange uses the Exchange page's words ("Waiting to accept", "Accepted"). */
+function RowStatus({ r }: { r: BillRow }) {
+  return r.bill.exchangeBillId ? <ExchangeStatusPill status={r.bill.status} /> : <StatusPill status={r.bill.status} />
+}
 
 /** 🧾 Bills: the bills you take part in, as the shared list (mockups/bills). */
 export default function Bills() {
@@ -100,7 +106,7 @@ export default function Bills() {
           )
         }}
       >
-        ✓ {t('bills.accept')}
+        ✓ {t('exchange.accept')}
       </button>
     )
 
@@ -109,7 +115,7 @@ export default function Bills() {
     { key: 'bill', header: t('bills.bill'), sort: 'description', cell: (r) => (<><div>{title(r)}</div><div className="text-[0.8rem] muted">{by(r)}</div></>) },
     { key: 'total', header: t('bills.total'), sort: 'total', align: 'right', cell: total },
     { key: 'balance', header: t('bills.yourBalance'), align: 'right', cell: (r) => <MyBalance records={[...r.bill.ledgerRecords, ...(r.pair?.ledgerRecords ?? [])]} meId={user?.id} /> },
-    { key: 'status', header: t('bills.status'), sort: 'status', width: '7.5rem', cell: (r) => <StatusPill status={r.bill.status} /> },
+    { key: 'status', header: t('bills.status'), sort: 'status', width: '7.5rem', cell: (r) => <RowStatus r={r} /> },
     { key: 'action', header: <span className="sr-only">{t('bills.actions')}</span>, align: 'right', width: '7.5rem', cell: acceptButton },
   ]
 
@@ -158,7 +164,7 @@ export default function Bills() {
           <>
             <div className="flex items-baseline gap-2">
               <span className="min-w-0 flex-1">{title(r)}</span>
-              <StatusPill status={r.bill.status} />
+              <RowStatus r={r} />
             </div>
             <div className="mt-0.5 flex items-baseline gap-2 text-[0.8rem]">
               <span className="min-w-0 flex-1 muted">

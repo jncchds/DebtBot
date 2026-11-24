@@ -1,0 +1,23 @@
+{
+  "changed": "The text changed since the preview: preview again to create it.",
+  "example": "Insert example",
+  "fixAndPreview": "Fix the text and preview again.",
+  "format": "Format",
+  "formatHint": "same as the bot’s /AddBill",
+  "formatText": "Description (several lines, no empty line)\n\nTotal with tips\nCurrency (3 letters)\nPayment currency (optional)\n\nAmount1 Payer1\nAmount2 Payer2\n\nLine 1 description\nSubtotal 1\nPart1 Person1\nPart2 Person2\n\nLine 2 description\n…",
+  "looksGood": "Looks good",
+  "namesMatched": "Names are matched when the bill is created; unknown ones become new people.",
+  "newPerson": "new person",
+  "noteParts": "Parts split a line: “2 @boris” pays twice as much as “1 @anna”.",
+  "notePeople": "People: @username, a contact’s name, a phone or an email.",
+  "noteSections": "Sections are separated by one empty line.",
+  "nothingSaved": "Nothing is saved until you create the bill.",
+  "paid": "Paid",
+  "placeholder": "Paste the bill text here…",
+  "preview": "Preview",
+  "previewTitle": "Preview",
+  "problems_one": "{{count}} problem",
+  "problems_other": "{{count}} problems",
+  "subtitle": "Paste a bill in the bot’s text format, check the preview, then create it.",
+  "text": "Bill text"
+}

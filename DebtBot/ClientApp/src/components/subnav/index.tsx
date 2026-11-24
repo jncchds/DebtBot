@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { matchPath } from 'react-router'
-import { BillsSubNav, DebtsSubNav } from './money'
-import { AdminSubNav, NewBillSubNav, ProfileSubNav } from './static'
+import { BillsSubNav, DebtsSubNav, ExchangeSubNav, NewBillSubNav } from './money'
+import { AdminSubNav, ProfileSubNav } from './static'
 
 /**
  * Page-specific sidebar sections below the divider (mockups/shell/README.md).
@@ -12,6 +12,7 @@ const SUBNAVS: { path: string; element: ReactNode }[] = [
   { path: '/', element: <DebtsSubNav /> },
   { path: '/bills/new/*', element: <NewBillSubNav /> },
   { path: '/bills/*', element: <BillsSubNav /> },
+  { path: '/exchange/*', element: <ExchangeSubNav /> },
   { path: '/profile/*', element: <ProfileSubNav /> },
   { path: '/admin/*', element: <AdminSubNav /> },
 ]

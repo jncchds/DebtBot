@@ -24,15 +24,15 @@ export function SidebarSection({ children }: { children: ReactNode }) {
 }
 
 /** A page's own entry below the divider: icon, bold title, muted subtitle, optional badge (abeat style). */
-export function SidebarEntry({ to, icon, title, subtitle, badge, end = true }: { to: string; icon: string; title: string; subtitle?: ReactNode; badge?: number; end?: boolean }) {
+export function SidebarEntry({ to, icon, title, subtitle, badge, end = true, wrap, active }: { to: string; icon: string; title: string; subtitle?: ReactNode; badge?: number; end?: boolean; /** Let the subtitle wrap instead of cutting it off (amounts, rates). */ wrap?: boolean; /** Overrides the highlight (when more than one path belongs to the entry). */ active?: boolean }) {
   return (
-    <NavLink to={to} end={end} title={title} className={({ isActive }) => clsx('sidebar-entry', isActive && 'bg-accent-faint text-accent')}>
+    <NavLink to={to} end={end} title={title} className={({ isActive }) => clsx('sidebar-entry', (active ?? isActive) && 'bg-accent-faint text-accent')}>
       <span className="shrink-0 text-[0.85rem]" aria-hidden>
         {icon}
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate font-semibold">{title}</span>
-        {subtitle && <span className="mt-px block truncate text-[0.76rem] text-muted">{subtitle}</span>}
+        {subtitle && <span className={clsx('mt-px block text-[0.76rem] text-muted', wrap ? 'break-words' : 'truncate')}>{subtitle}</span>}
       </span>
       {!!badge && <span className="ml-auto shrink-0 rounded-full bg-accent px-1.5 text-[0.68rem] leading-normal font-bold text-accent-contrast">{badge}</span>}
     </NavLink>

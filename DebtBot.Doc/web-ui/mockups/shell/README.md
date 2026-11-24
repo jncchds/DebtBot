@@ -24,8 +24,8 @@ The HTML and PNGs here are the spec for the app shell. `sections.html` shows the
 | Debts | `/?with=&currency=&dir=owed\|owe&sort=person\|amount\|currency&order=asc\|desc&page=` |
 | Bills | `/bills?q=&with=&currency=&from=&to=&status=draft\|processing\|finalized\|cancelled&mine=1&sort=date\|description\|total\|status&order=&page=` |
 | Bill | `/bills/<id>`, `/bills/<id>/add-line`, `/bills/<id>/add-payment`, each with `?people=<id>,<id>` for people added to a draft |
-| New bill | `/bills/new`, `/bills/new/paste` |
-| Exchange | `/exchange` |
+| New bill | `/bills/new`, `/bills/new/add-line`, `/bills/new/add-payment` (the form itself is kept in sessionStorage), `/bills/new/paste` (`?preview=1` once previewed) |
+| Exchange | `/exchange?with=<id>&rate=give\|get&draft=<billId>&person=&currency=&status=waiting\|accepted\|cancelled&sort=date\|amount&order=&page=` (`with`, `rate` and `draft` are the form; the rest is the list) |
 | Spendings | `/spendings?page=` |
 | Contacts | `/contacts`, `/contacts/requests` |
 | Profile | `/profile`, `/profile/password`, `/profile/telegram` |

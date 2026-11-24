@@ -153,6 +153,11 @@ The UI shows the enums as strings, now that the API sends them that way.
   - The web UI has no "following": it never shows subscribed users' debts. A web-only own-debts query is added, and the bot keeps its own.
   - Paged lists get server-side sort by a field, plus filters for the fields that make sense.
   - Bills, Debts, Spendings and Exchanges share one list pattern: a header card with filters and Sort by, then paged results, shown as a table when wide and as cards on phones. T5 builds it, and T6 (exchanges) and T7 (spendings) reuse it, with backend sort and filters.
+- **T6, mockup rounds 2–4 (user, 2026-11-24):**
+  - On Exchange, either side can be typed as a rate instead of an amount; choosing Rate on one side switches the other to Amount. The worked-out amount is shown and sent.
+  - Exchange rates are always shown both ways and in full, never cut off or shortened; the caption is "Exchange rate".
+  - On phones nothing may be wider than the screen: tables become stacked rows.
+  - A third "debts currency" (count a bill's debts in either of its two currencies) was planned once (`origin/feature-currency_selection`, an unmerged "ChargeInPaymentCurrency" commit) but never built. Today debts are always in the payment currency. Not part of T6.
 
 ## Step 3: Build and deploy
 - **`DebtBot/Dockerfile`:** add a `node:22-alpine` stage that runs `npm ci && npm run build`, writing to `DebtBot/wwwroot`. The publish stage copies that output in.

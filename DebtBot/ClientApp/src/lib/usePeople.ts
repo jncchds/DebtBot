@@ -24,6 +24,18 @@ export function matchesPerson(p: Person, query: string): boolean {
 }
 
 /**
+ * Who a name in the bot's text format stands for, among your people, the way the server finds them
+ * (UserRepository.FindUser): "@name" is a Telegram username, ignoring case; anything else is your name for a
+ * contact, ignoring case. Undefined: the server will look further (phone, email, Telegram id) or add a new person.
+ */
+export function matchTextPerson(query: string, people: Person[]): Person | undefined {
+  const q = query.trim().toLowerCase()
+  if (!q) return undefined
+  if (q.startsWith('@')) return people.find((p) => p.handle?.toLowerCase() === q)
+  return people.find((p) => !p.isMe && p.name.toLowerCase() === q)
+}
+
+/**
  * The people you can put on a bill or filter by: yourself first, then your contacts by name (api.md: the picker
  * is contacts plus yourself; there's no global user search).
  */
