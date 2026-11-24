@@ -83,6 +83,7 @@ With `ofUserId` (since T7b), `creditorUser` is that person and `debtorUser` carr
 | `GET Bills/All` | **Admin** | since T8: the `GET Bills` query without `ofUserId` and `createdByMe` (ignored), plus `creatorId?`; `withUserId` is anyone taking part (the participants list) | `PagingResult<BillListItem>` — every bill (before T8: `PagingResult<Bill>`, paging only) |
 | `GET Bills/{id}` | read the bill (`CanRead`) | – | `Bill`, or 404 |
 | `POST Bills` | any user (becomes creator) | `BillCreation` | `string` (the new bill id, JSON string). Always a **draft**. |
+| `PUT Bills/{id}` | change, **draft only** (since series-2 T1) | `BillCreation` | `Bill`. Replaces the draft's fields, lines and payments in one transaction, validated like `POST Bills`; an empty `date` keeps the bill's date, and the creator stays the creator (also when an admin saves). The bill's participants list is rebuilt: the creator always stays, people no longer on a line or payment are removed. 409 when the bill is no longer a draft (checked again inside the transaction, so a finalize that won the race isn't overwritten); 400 for an exchange bill (cancel it and make a new one). The web's draft page saves with it. |
 | `POST Bills/{id}/lines` | change, **draft only** | `BillLineCreation[]` (at least one) | `Bill` |
 | `POST Bills/{id}/payments` | change, **draft only** | `BillPaymentCreation[]` (at least one) | `Bill` |
 | `GET Bills/lines/{lineId}` | read the line's bill (`CanRead`) | – | `BillLine` |
@@ -115,6 +116,7 @@ interface BillPaymentCreation { userId: string; amount: number }   // amount > 0
 ```
 
 - **Validation (400):** bad currency code, amounts or subtotals not above zero, a line without participants, a user twice in one line or in the payments, an unknown user id, a non-draft bill.
+- **The creator doesn't have to take part** (series-2 T1): a bill whose creator is on no line and no payment is still theirs (in their lists, theirs to edit, finalize and cancel); finalizing gives them no debts and no spendings.
 - **Payments on a user who already paid** replace that user's amount (that's how the repository has always worked).
 - **Total with tips when adding lines:** if the bill's `totalWithTips` equals the sum of its current line subtotals (no tips, or an empty draft), it grows with the new lines. Otherwise it stays as it is, so a bill entered with a receipt total keeps it.
 - **Finalize (400)** needs: status `Draft`, at least one line with subtotal > 0, every line with participants, at least one payment > 0, total > 0.

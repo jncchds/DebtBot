@@ -26,8 +26,8 @@ The HTML and PNGs here are the spec for the app shell. `sections.html` shows the
 |---|---|
 | Debts | `/?of=&with=&currency=&dir=owed\|owe&sort=person\|amount\|currency&order=asc\|desc&page=` |
 | Bills | `/bills?of=&q=&with=&currency=&from=&to=&status=draft\|processing\|finalized\|cancelled&mine=1&sort=date\|description\|total\|status&order=&page=` |
-| Bill | `/bills/<id>`, `/bills/<id>/add-line`, `/bills/<id>/add-payment`, each with `?people=<id>,<id>` for people added to a draft |
-| New bill | `/bills/new`, `/bills/new/add-line`, `/bills/new/add-payment` (the form itself is kept in sessionStorage), `/bills/new/paste` (`?preview=1` once previewed) |
+| Bill | `/bills/<id>`. A draft you can change is the New bill form (series-2 T1, `series-2/mockups/creator-leave/`), with its editors at `/bills/<id>/add-line`, `/bills/<id>/add-payment` and `/bills/<id>/edit-line/<n>` (1-based). Unsaved changes are kept in sessionStorage (per bill, with the saved version they're based on) until Save. The `?people=` list of T5 is gone. |
+| New bill | `/bills/new`, `/bills/new/add-line`, `/bills/new/add-payment`, `/bills/new/edit-line/<n>` (series-2 T1; the form itself is kept in sessionStorage), `/bills/new/paste` (`?preview=1` once previewed) |
 | Exchange | `/exchange?with=<id>&rate=give\|get&draft=<billId>&person=&currency=&status=waiting\|accepted\|cancelled&sort=date\|amount&order=&page=` (`with`, `rate` and `draft` are the form; the rest is the list) |
 | Spendings | `/spendings?of=&currency=&from=&to=&cancelled=1&sort=date\|amount&order=asc\|desc&page=` |
 | Contacts | `/contacts?q=` (the search; typing replaces the history entry) |
