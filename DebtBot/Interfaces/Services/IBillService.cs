@@ -42,6 +42,11 @@ public interface IBillService
 
     // Structured (web) operations, with access checks for the calling user.
     BillActionResult<Guid> Create(BillCreationModel billModel, Guid creatorId);
+    /// <summary>
+    /// Replaces a draft's fields, lines and payments (creator or admin). 404 without access, 403 for other people,
+    /// 400 for an exchange or invalid input, 409 when the bill is no longer a draft.
+    /// </summary>
+    Task<BillActionResult<BillModel>> ReplaceDraftAsync(Guid billId, BillCreationModel billModel, Guid userId, bool isAdmin, CancellationToken cancellationToken);
     Task<BillActionResult<BillModel>> AddLinesAsync(Guid billId, List<BillLineCreationModel> lines, Guid userId, bool isAdmin, CancellationToken cancellationToken);
     Task<BillActionResult<BillModel>> AddPaymentsAsync(Guid billId, List<BillPaymentCreationModel> payments, Guid userId, bool isAdmin, CancellationToken cancellationToken);
     Task<BillActionResult<BillModel>> FinalizeAsync(Guid billId, Guid userId, bool isAdmin, CancellationToken cancellationToken);

@@ -13,6 +13,8 @@ public interface IBillRepository
     Guid Add(BillParserModel parsedBill, UserModel creator);
     void AddLines(Guid billId, List<BillLineParserModel> parsedLines, UserModel creator);
     void AddPayments(Guid billId, List<BillPaymentParserModel> payments, UserModel creator);
+    /// <summary>Replaces a draft (not an exchange) in one transaction. False when the bill is no longer such a draft.</summary>
+    bool ReplaceDraft(Guid billId, BillParserModel parsedBill, UserModel creator);
     /// <summary>Every bill (admin), filtered and sorted like <see cref="GetForUser(Guid, BillListQuery)"/>.</summary>
     PagingResult<BillListModel> GetAll(AdminBillListQuery filter);
     Task<BillModel?> GetAsync(Guid id, CancellationToken cancellationToken);

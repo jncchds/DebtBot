@@ -55,6 +55,7 @@ public class DebtBotControllerBase : ControllerBase
 		BillActionStatus.Ok => onOk(result.Value!),
 		BillActionStatus.NotFound => ErrorResult(StatusCodes.Status404NotFound, "Not found."),
 		BillActionStatus.Forbidden => ErrorResult(StatusCodes.Status403Forbidden, "Only the creator or an admin can do this."),
+		BillActionStatus.Conflict => ErrorResult(StatusCodes.Status409Conflict, result.Errors.ToArray()),
 		_ => ErrorResult(StatusCodes.Status400BadRequest, result.Errors.ToArray()),
 	};
 }

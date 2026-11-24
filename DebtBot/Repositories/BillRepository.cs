@@ -480,6 +480,51 @@ public class BillRepository : IBillRepository
         _debtContext.SaveChanges();
     }
 
+    /// <summary>
+    /// Replaces a draft's fields, lines and payments in one transaction (PUT Bills/{id}). The first statement is a
+    /// conditional update on the bill row (still a draft, not an exchange), so it takes the row lock: a finalize
+    /// running at the same time either went first (nothing is updated and this returns false) or waits for this
+    /// transaction and then finalizes the new content. The bill's participants are rebuilt: the creator always
+    /// stays, the people on the new lines and payments are added and everyone else is removed.
+    /// </summary>
+    public bool ReplaceDraft(Guid billId, BillParserModel parsedBill, UserModel creator)
+    {
+        using var transaction = _debtContext.Database.BeginTransaction();
+
+        var updated = _debtContext.Bills
+            .Where(b => b.Id == billId && b.Status == ProcessingState.Draft && b.ExchangeBillId == null)
+            .ExecuteUpdate(s => s
+                .SetProperty(b => b.CurrencyCode, parsedBill.CurrencyCode!)
+                .SetProperty(b => b.PaymentCurrencyCode, parsedBill.PaymentCurrencyCode!)
+                .SetProperty(b => b.Description, parsedBill.Description ?? "")
+                .SetProperty(b => b.Date, parsedBill.Date!.Value)
+                .SetProperty(b => b.TotalWithTips, parsedBill.TotalWithTips!.Value));
+        if (updated == 0)
+        {
+            transaction.Rollback();
+            return false;
+        }
+
+        _debtContext.BillLineParticipants.Where(p => p.BillLine.BillId == billId).ExecuteDelete();
+        _debtContext.BillLines.Where(l => l.BillId == billId).ExecuteDelete();
+        _debtContext.BillPayments.Where(p => p.BillId == billId).ExecuteDelete();
+
+        addLines(billId, parsedBill.Lines ?? [], creator);
+        addPayments(billId, parsedBill.Payments ?? [], creator);
+
+        var keep = (parsedBill.Lines ?? []).SelectMany(l => l.Participants).Select(p => p.User.Id!.Value)
+            .Concat((parsedBill.Payments ?? []).Select(p => p.User.Id!.Value))
+            .Prepend(creator.Id)
+            .Distinct()
+            .ToList();
+        _debtContext.BillParticipants.Where(p => p.BillId == billId && !keep.Contains(p.UserId)).ExecuteDelete();
+        ensureParticipants(billId, keep);
+        _debtContext.SaveChanges();
+
+        transaction.Commit();
+        return true;
+    }
+
     public async Task<bool> SetBillStatusAsync(Guid billId, ProcessingState status, CancellationToken cancellationToken)
     {
         var bill = await _debtContext.Bills.FirstOrDefaultAsync(q => q.Id == billId, cancellationToken);
