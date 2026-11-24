@@ -63,7 +63,7 @@
     const head = `<div class="title-row"><h1>Contacts</h1></div><p class="sub muted">People you share bills with. The names here are yours: only you see them.</p>`
     if (state === 'empty') return head + addCard(state) + `<div class="card empty"><div class="big">👥</div><p style="font-weight:600">No contacts yet</p>
       <p class="muted" style="font-size:.875rem">Add someone by their Telegram username above. People you share a bill with are added automatically.</p></div>`
-    const req = `<div class="alert-info mb">🔔 <span style="flex:1"><b>Dmitry</b> wants notifications about your bills.</span><a class="btn btn-primary btn-sm">Review</a></div>`
+    const req = `<div class="alert-info mb">🔔 <span style="flex:1"><b>Dmitry</b> wants notifications about your bills and debts.</span><a class="btn btn-primary btn-sm">Review</a></div>`
     const q = state === 'search' ? 'bo' : ''
     let rows = q ? C.filter((c) => (c.name + c.own + c.tg).toLowerCase().includes(q)) : C
     const added = state === 'added' ? [{ id: 'g', name: '@grandpa_vlad', own: '@grandpa_vlad', tg: '@grandpa_vlad', bot: false, my: 'None', their: 'None', hl: true }] : []
@@ -92,32 +92,10 @@
   }
   const noMatch = `<div class="empty"><div class="big">🔍</div><p style="font-weight:600">No contacts match</p><p class="muted" style="font-size:.875rem">Try part of a name or a @username.</p></div>`
 
-  function requestsPage(state, phone) {
-    const empty = state === 'requests-empty'
-    const head = `<div class="title-row"><h1>Notifications about bills</h1></div>
-      <p class="sub muted">The bot can tell someone in Telegram when you're on a new bill, and tell you about theirs. Both sides have to agree.</p>`
-    const row = (who, sub, right) => `<div class="prow"><div class="who"><div class="name">${who}</div><div class="muted small">${sub}</div></div><div class="row">${right}</div></div>`
-    const sec = (t, s, inner) => `<div class="card mb"><div class="sec-title"><h2>${t}</h2><span class="muted">${s}</span></div>${inner}</div>`
-    if (empty) return head
-      + sec('Asking for your bills', 'confirm or decline', '<div class="none muted">No requests.</div>')
-      + sec('Get your bills', 'people you confirmed', '<div class="none muted">Nobody yet.</div>')
-      + sec('Your subscriptions', 'whose bills you get', '<div class="none muted">None. Use 🔔 Ask for their bills on Contacts.</div>')
-    return head
-      + sec('Asking for your bills', 'confirm or decline',
-        row('Dmitry', '@dmitry_k · asked to be told about your bills', '<a class="btn btn-primary btn-sm">✓ Confirm</a><a class="btn btn-secondary btn-sm">Decline</a>'))
-      + sec('Get your bills', 'people you confirmed',
-        row('Boris', '@boris_iv', '<span class="pill pill-success">Confirmed</span><a class="btn btn-ghost btn-sm">Stop</a>'))
-      + sec('Your subscriptions', 'whose bills you get',
-        row('Boris', '@boris_iv', '<span class="pill pill-success">🔔 You get their bills</span><a class="btn btn-ghost btn-sm">Stop</a>')
-        + row('Clara', '@clara_m', '<span class="pill pill-muted">⏳ Waiting for Clara</span><a class="btn btn-ghost btn-sm">Withdraw</a>'))
-  }
-
   window.MOCK = {
     page: 'contacts',
+    badges: { subscriptions: 1 },
     ctxFor: (s) => [
-      'S:Requests',
-      ...(s === 'requests-empty' || s === 'empty' ? [{ i: '✅', t: 'No requests', s: 'Nobody is waiting' }]
-        : [{ i: '🔔', t: 'Dmitry', s: 'wants your bills', a: s.startsWith('requests') }]),
       'S:Recently added',
       ...(s === 'empty' ? [{ i: '👤', t: 'Nobody yet', s: 'Add someone by @username' }] : [
         ...(s === 'added' ? [{ i: '👤', t: '@grandpa_vlad', s: 'today · never started the bot' }] : []),
@@ -125,7 +103,7 @@
         { i: '👤', t: 'Dmitry', s: '@dmitry_k · 1 Nov' },
         { i: '👤', t: 'Mum', s: '@olga_petrova · 28 Oct' }]),
       'A:All contacts'],
-    render(state, phone) { return state.startsWith('requests') ? requestsPage(state, phone) : contactsPage(state, phone) },
+    render(state, phone) { return contactsPage(state, phone) },
   }
 </script>
 <script src="../common/shell.js"></script>

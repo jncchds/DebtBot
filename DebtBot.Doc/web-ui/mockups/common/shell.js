@@ -3,8 +3,10 @@
 const q = new URLSearchParams(location.search)
 const NAV = [
   ['debts', '💸', 'Debts'], ['bills', '🧾', 'Bills'], ['new', '➕', 'New bill'], ['exchange', '🔁', 'Exchange'],
-  ['spendings', '📊', 'Spendings'], ['contacts', '👥', 'Contacts'], ['profile', '👤', 'Profile'], ['admin', '🛠', 'Admin'],
+  ['spendings', '📊', 'Spendings'], ['contacts', '👥', 'Contacts'], ['subscriptions', '🔔', 'Subscriptions'], ['profile', '👤', 'Profile'], ['admin', '🛠', 'Admin'],
 ]
+// Optional nav badges: MOCK.badges = { subscriptions: 1, admin: 3 } (hidden on the collapsed phone rail).
+const navBadge = (k) => MOCK.badges?.[k] && q.get('phone') !== '1' ? `<span class="count">${MOCK.badges[k]}</span>` : ''
 const phone = q.get('phone')
 const state = q.get('state') ?? 'main'
 const dark = q.get('theme') === 'dark'
@@ -21,7 +23,7 @@ document.body.innerHTML = `
   <aside class="${phone === 'open' ? 'open' : phone ? 'collapsed' : ''}">
     <div class="top"><button class="sidebar-btn"><span class="s-icon">☰</span><span class="s-label" style="font-weight:600">DebtBot</span><span class="version-pill">v1.0.0</span></button></div>
     <nav>
-      ${NAV.map(([k, i, l]) => `<a class="sidebar-btn${k === MOCK.page ? ' active' : ''}"><span class="s-icon">${i}</span><span class="s-label">${l}</span></a>`).join('')}
+      ${NAV.map(([k, i, l]) => `<a class="sidebar-btn${k === MOCK.page ? ' active' : ''}"><span class="s-icon">${i}</span><span class="s-label">${l}</span>${navBadge(k)}</a>`).join('')}
       <div class="ctx"><div class="divider"></div>${ctxHtml}</div>
     </nav>
     <div class="bottom">

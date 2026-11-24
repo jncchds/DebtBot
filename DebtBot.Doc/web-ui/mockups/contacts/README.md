@@ -1,15 +1,15 @@
 # Contacts (approved 2026-11-24)
 
-`contacts.html` (query: `theme=dark`, `phone=1|open`, `state=main|search|added|add-error|rename|remove|empty|requests|requests-empty`) and the PNGs are the spec for 👥 Contacts (T7).
+`contacts.html` (query: `theme=dark`, `phone=1|open`, `state=main|search|added|add-error|rename|remove|empty`) and the PNGs are the spec for 👥 Contacts (T7).
 
 ## URLs
 - `/contacts?q=` — the contact list; `q` is the search text (left out when empty). Typing replaces the history entry (no entry per keystroke), like `FilterText`.
-- `/contacts/requests` — notifications about bills (subscriptions).
+- Subscriptions moved to their own page, `/subscriptions` (see `../subscriptions/README.md`). There is no `/contacts/requests`.
 
 ## `/contacts`
 Not a paged list: `GET UserContacts/Own` returns every contact, so search, sort (by your name, A–Z) and the count are done in the browser.
 
-1. **Request banner** (`alert-info`), only when someone is waiting (a contact with `theirSubscription = Pending`): "🔔 **Dmitry** wants notifications about your bills." with **Review** → `/contacts/requests`. With several: "**Dmitry** and 2 others want …". Hidden while searching.
+1. **Request banner** (`alert-info`), only when someone is waiting (a contact with `theirSubscription = Pending`): "🔔 **Dmitry** wants notifications about your bills and debts." with **Review** → `/subscriptions`. With several: "**Dmitry** and 2 others want …". Hidden while searching.
 2. **Add card:** "Add by Telegram username", an `@username` input and **＋ Add** (`POST UserContacts/Own/by-telegram?username=`; the `@` is optional, the API strips it). Hint below: "Works for people who haven't started the bot yet, too."
    - Success: the input clears, the new row is highlighted (`hl`) in the list, and an `alert-info` replaces the hint: for a placeholder (`telegramBotEnabled = false`) "✅ **@name** added. They haven't started the bot yet, so they're a placeholder for now: you can put them on bills, and they'll see everything once they start the bot."; otherwise "✅ **Name** added."
    - An existing contact comes back unchanged: say "**Name** is already in your contacts." and highlight the row.
@@ -23,30 +23,19 @@ Not a paged list: `GET UserContacts/Own` returns every contact, so search, sort 
    - Search with no match: 🔍 "No contacts match", "Try part of a name or a @username."
 4. **Empty** (no contacts): the add card, then 👥 "No contacts yet", "Add someone by their Telegram username above. People you share a bill with are added automatically."
 
-## `/contacts/requests`
-Title "Notifications about bills", subtitle "The bot can tell someone in Telegram when you're on a new bill, and tell you about theirs. Both sides have to agree." Three cards, each a list of rows (name, muted @username, actions on the right):
-
-| Card | Who | Actions |
-|---|---|---|
-| **Asking for your bills** — confirm or decline | `theirSubscription = Pending` | ✓ Confirm (`subscription/confirm`), Decline (`subscription/decline`) |
-| **Get your bills** — people you confirmed | `theirSubscription = Confirmed` | pill Confirmed, Stop (`subscription/decline`) |
-| **Your subscriptions** — whose bills you get | `mySubscription` `Confirmed` / `Pending` | Confirmed: pill "🔔 You get their bills" + **Stop**; Pending: pill "⏳ Waiting for <name>" + **Withdraw** (both the new `subscription/cancel`) |
-
-Empty cards say "No requests." / "Nobody yet." / "None. Use 🔔 Ask for their bills on Contacts."
-
 ## Sidebar sub-section
-- **Requests:** one entry per contact with `theirSubscription = Pending` (🔔, name, "wants your bills"), opening `/contacts/requests`; none: ✅ "No requests", "Nobody is waiting".
 - **Recently added:** the 3 newest contacts by `addedAt` (👤, your name, "@username · 20 Nov"; "today · never started the bot" for a fresh placeholder); none: "Nobody yet", "Add someone by @username".
 - **… All contacts** → `/contacts`.
 
 ## User decisions (rounds)
 - Before round 1: **subscriptions stay in the web UI** (request, confirm, decline), with `/contacts/requests` and the Requests sub-section. This is about the bot's Telegram notifications; the web UI still never shows other people's debts (T5's "no following").
 - Round 1 → 2: **add an "added on" date** to contacts (for Recently added), and **add Stop / Withdraw** for your own subscriptions (new endpoint).
-- Approved in round 2.
+- Round 2 → 3 (with the Profile round): subscriptions looked like one selected request in the Contacts sub-section, and couldn't be reached with no requests. So **🔔 Subscriptions became its own sidebar page** after Contacts (`/subscriptions`), with a count badge; Contacts lost its Requests sub-section. Wording: notifications about **bills and debts**.
+- Approved in round 2; the move approved with Subscriptions.
 
 ## API
-`GET UserContacts/Own`, `POST UserContacts/Own/by-telegram?username=`, `PUT UserContacts/Own/{id}`, `DELETE UserContacts/Own/{id}`, `POST UserContacts/subscription/request|confirm|decline?contactId=`, and the new `subscription/cancel` below. After any change, refetch contacts (the sidebar uses the same query).
+`GET UserContacts/Own`, `POST UserContacts/Own/by-telegram?username=`, `PUT UserContacts/Own/{id}`, `DELETE UserContacts/Own/{id}`, `POST UserContacts/subscription/request?contactId=` (the Ask button). Confirm, decline and cancel are on `/subscriptions`. After any change, refetch contacts (the sidebar uses the same query).
 
 ## Backend needs (T7)
 - **`Contact.addedAt`** (`string`, ISO UTC): when the contact link was created. Needs a column on the user-contact link (a migration via `dotnet ef`; existing rows get the migration time or null — if null, sort them last and show no date).
-- **New `POST UserContacts/subscription/cancel?contactId=`**: removes *your own* subscription to `contactId`, pending or confirmed (the mirror of `decline`, which removes theirs to you). 200; 404 `{ message }` when there is none; acts for the signed-in user only.
+- **New `POST UserContacts/subscription/cancel?contactId=`** (used on `/subscriptions`): removes *your own* subscription to `contactId`, pending or confirmed (the mirror of `decline`, which removes theirs to you). 200; 404 `{ message }` when there is none; acts for the signed-in user only.

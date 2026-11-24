@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DebtBot Profile mockup</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .form { max-width: 34rem; }
+  .field + .field { margin-top: 1rem; }
+  .field .help { margin-top: .3rem; font-size: .8rem; color: var(--text-muted); }
+  .field .err { margin-top: .3rem; font-size: .8rem; color: var(--danger); }
+  .input.bad { border-color: var(--danger); box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 18%, transparent); }
+  .foot { display: flex; align-items: center; gap: .75rem; margin-top: 1.25rem; flex-wrap: wrap; }
+  .ok { color: var(--success); font-size: .875rem; }
+  .kv { display: grid; grid-template-columns: 10rem 1fr; gap: .6rem 1rem; font-size: .9rem; align-items: center; }
+  .phone .kv { grid-template-columns: 1fr; gap: .15rem; }
+  .phone .kv dd { margin-bottom: .6rem; }
+  .kv dt { color: var(--text-muted); }
+  .kv dd { margin: 0; }
+  .mb { margin-bottom: 1rem; }
+  ol.steps { margin: .5rem 0 0; padding-left: 1.25rem; font-size: .9rem; line-height: 1.7; }
+  code { font-family: ui-monospace, monospace; font-size: .85em; background: var(--surface-2); border-radius: 4px; padding: .05rem .35rem; }
+</style>
+</head>
+<body>
+<script>
+  const field = (label, value, o = {}) => `<div class="field"><label class="label">${label}</label>
+    <input class="input${o.bad ? ' bad' : ''}${o.focus ? ' focus' : ''}" ${o.type ? `type="${o.type}"` : ''} value="${value}" placeholder="${o.ph ?? ''}"${o.ro ? ' readonly style="opacity:.7"' : ''}>
+    ${o.err ? `<div class="err">${o.err}</div>` : o.help ? `<div class="help">${o.help}</div>` : ''}</div>`
+  const dots = '••••••••••'
+
+  function details(state) {
+    const bad = state === 'details-error'
+    return `<div class="title-row"><h1>Profile</h1></div><p class="sub muted">How you appear to people you share bills with.</p>
+      <div class="card form"><div class="card-head"><h2>🪪 Details</h2></div><div class="card-body">
+        ${field('Display name', bad ? '' : 'Anna Petrova', { bad, err: bad ? 'Enter a name (1–100 characters).' : '', help: 'Contacts see their own name for you; this is the default.' })}
+        ${field('Phone', '+48 600 123 456', { ph: 'optional' })}
+        ${field('Email', bad ? 'anna.petrova.example.com' : 'anna@example.com', { bad, ph: 'optional', err: bad ? 'An email needs an @.' : '' })}
+        <div class="foot"><a class="btn btn-primary">Save</a>${state === 'details-saved' ? '<span class="ok">✓ Saved</span>' : '<a class="btn btn-ghost">Reset</a>'}</div>
+      </div></div>`
+  }
+
+  function password(state) {
+    const first = state === 'password-first'
+    const taken = state === 'password-taken'
+    const short = state === 'password-short'
+    const head = `<div class="title-row"><h1>Login &amp; password</h1></div>
+      <p class="sub muted">An extra way to sign in to the web app, besides Telegram. Optional.</p>`
+    if (first) return head + `<div class="card form"><div class="card-head"><h2>🔑 Set a login and password</h2></div><div class="card-body">
+        <div class="alert-info mb">ℹ️ <span>You sign in with Telegram now. Add a login and password to also sign in without it.</span></div>
+        ${field('Login', 'anna.p', { help: '3–64 characters: a–z, 0–9, . _ - @. Stored in lower case.' })}
+        ${field('Password', dots, { type: 'password', help: 'At least 8 characters.' })}
+        ${field('Repeat password', dots, { type: 'password' })}
+        <div class="foot"><a class="btn btn-primary">Set login and password</a></div>
+      </div></div>`
+    return head + `<div class="card form"><div class="card-head"><h2>🔑 Change login or password</h2><span class="grow"></span><span class="pill pill-success">Password set</span></div><div class="card-body">
+        ${taken ? '<div class="alert-danger mb">The login “anna” is taken. Pick another one.</div>' : ''}
+        ${field('Login', taken ? 'anna' : 'anna.p', { bad: taken, focus: taken, help: 'Change it here, or leave it as it is.' })}
+        ${field('Current password', dots, { type: 'password', help: 'Needed for any change.' })}
+        ${field('New password', short ? '•••••' : '', { type: 'password', ph: 'leave empty to keep it', bad: short, err: short ? 'At least 8 characters.' : '' })}
+        ${field('Repeat new password', short ? '•••••' : '', { type: 'password' })}
+        <div class="foot"><a class="btn btn-primary">Save changes</a>${state === 'password-saved' ? '<span class="ok">✓ Saved. Use the new login and password next time.</span>' : ''}</div>
+      </div></div>`
+  }
+
+  function telegram(state) {
+    const off = state === 'telegram-off'
+    return `<div class="title-row"><h1>Telegram</h1></div><p class="sub muted">Your account is your Telegram identity. It can't be changed here.</p>
+      <div class="card form mb"><div class="card-head"><h2>✈️ Account</h2></div><div class="card-body">
+        <dl class="kv" style="margin:0">
+          <dt>Username</dt><dd class="num">@anna_petrova</dd>
+          <dt>Telegram id</dt><dd class="num">184220911</dd>
+          <dt>Role</dt><dd><span class="pill pill-accent">Admin</span></dd>
+        </dl>
+      </div></div>
+      <div class="card form"><div class="card-head"><h2>🤖 The bot</h2><span class="grow"></span>${off ? '<span class="pill pill-danger">Not started</span>' : '<span class="pill pill-success">Started</span>'}</div><div class="card-body">
+        ${off ? `<p style="margin:0">You haven't started <b>@DebtSplitBot</b> yet, so it can't send you anything, such as notifications about new bills.</p>
+          <ol class="steps"><li>Open <a class="link">t.me/DebtSplitBot</a> in Telegram.</li><li>Press <b>Start</b> (or send <code>/start</code>).</li><li>Come back and reload this page.</li></ol>
+          <div class="foot"><a class="btn btn-primary">Open @DebtSplitBot ↗</a></div>`
+        : `<p style="margin:0">You've started <b>@DebtSplitBot</b>. It messages you about new bills and the notifications you've agreed to.</p>
+          <div class="foot"><a class="btn btn-secondary">Open @DebtSplitBot ↗</a></div>`}
+      </div></div>`
+  }
+
+  window.MOCK = {
+    page: 'profile',
+    ctxFor: (s) => ['S:Sections',
+      { i: '🪪', t: 'Details', s: 'Name, phone, email', a: s.startsWith('details') },
+      { i: '🔑', t: 'Login &amp; password', s: 'Web sign-in', a: s.startsWith('password') },
+      { i: '✈️', t: 'Telegram', s: 'Account and bot', a: s.startsWith('telegram') }],
+    render(state) {
+      if (state === 'main') state = 'details'
+      return state.startsWith('password') ? password(state) : state.startsWith('telegram') ? telegram(state) : details(state)
+    },
+  }
+</script>
+<script src="../common/shell.js"></script>
+</body>
+</html>

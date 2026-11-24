@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DebtBot Subscriptions mockup</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .name { font-weight: 600; }
+  .small { font-size: .8rem; }
+  .mb { margin-bottom: 1rem; }
+  .sec-title { padding: .75rem 1rem; border-bottom: 1px solid var(--border); display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem .5rem; }
+  .sec-title .muted { font-size: .8rem; }
+  .prow { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; padding: .75rem 1rem; border-top: 1px solid var(--border); }
+  .prow:first-of-type { border-top: 0; }
+  .prow .who { flex: 1; min-width: 10rem; }
+  .none { padding: .9rem 1rem; font-size: .875rem; }
+</style>
+</head>
+<body>
+<script>
+  // Built from GET UserContacts/Own: theirSubscription (they get yours) and mySubscription (you get theirs).
+  function page(state) {
+    const empty = state === 'empty'
+    const head = `<div class="title-row"><h1>Subscriptions</h1></div>
+      <p class="sub muted">The bot can tell someone in Telegram about your new bills and debts, and tell you about theirs. Both sides have to agree.</p>`
+    const row = (who, sub, right) => `<div class="prow"><div class="who"><div class="name">${who}</div><div class="muted small">${sub}</div></div><div class="row">${right}</div></div>`
+    const sec = (t, s, inner) => `<div class="card mb"><div class="sec-title"><h2>${t}</h2><span class="muted">${s}</span></div>${inner}</div>`
+    if (empty) return head
+      + sec('Requests', 'people asking for your bills and debts', '<div class="none muted">No requests.</div>')
+      + sec('Get your bills and debts', 'people you confirmed', '<div class="none muted">Nobody yet.</div>')
+      + sec('Your subscriptions', 'whose bills and debts you get', '<div class="none muted">None yet. Use 🔔 Ask for their bills on Contacts.</div>')
+    return head
+      + sec('Requests', 'people asking for your bills and debts',
+        row('Dmitry', '@dmitry_k', '<a class="btn btn-primary btn-sm">✓ Confirm</a><a class="btn btn-secondary btn-sm">Decline</a>'))
+      + sec('Get your bills and debts', 'people you confirmed',
+        row('Boris', '@boris_iv', '<span class="pill pill-success">Confirmed</span><a class="btn btn-ghost btn-sm">Stop</a>'))
+      + sec('Your subscriptions', 'whose bills and debts you get',
+        row('Boris', '@boris_iv', '<span class="pill pill-success">🔔 You get theirs</span><a class="btn btn-ghost btn-sm">Stop</a>')
+        + row('Clara', '@clara_m', '<span class="pill pill-muted">⏳ Waiting for Clara</span><a class="btn btn-ghost btn-sm">Withdraw</a>'))
+  }
+
+  const empty = new URLSearchParams(location.search).get('state') === 'empty'
+  window.MOCK = {
+    page: 'subscriptions',
+    badges: empty ? {} : { subscriptions: 1 },
+    ctxFor: (s) => ['S:Summary',
+      { i: '🔔', t: 'Requests', s: s === 'empty' ? 'nobody is waiting' : '1 waiting for you' },
+      { i: '📤', t: 'Get your bills and debts', s: s === 'empty' ? 'nobody' : '1 person' },
+      { i: '📥', t: 'Your subscriptions', s: s === 'empty' ? 'none' : '1 confirmed · 1 waiting' }],
+    render: (state) => page(state),
+  }
+</script>
+<script src="../common/shell.js"></script>
+</body>
+</html>
