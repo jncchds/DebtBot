@@ -46,8 +46,9 @@ export function PeoplePicker({ people, selected, onAdd, onRemove, locked, label 
             </span>
           )
         })}
-        <PersonSearch id={id} className="min-w-48 flex-1" people={people} exclude={chosen} onPick={onAdd} placeholder={t('people.add')} />
       </div>
+      {/* Always on its own line, full width, below the chips. */}
+      <PersonSearch id={id} className="mt-2 w-full" people={people} exclude={chosen} onPick={onAdd} placeholder={t('people.add')} />
     </div>
   )
 }

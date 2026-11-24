@@ -23,7 +23,7 @@ The HTML and PNGs here are the spec for the app shell. `sections.html` shows the
 |---|---|
 | Debts | `/?with=&currency=&dir=owed\|owe&sort=person\|amount\|currency&order=asc\|desc&page=` |
 | Bills | `/bills?q=&with=&currency=&from=&to=&status=draft\|processing\|finalized\|cancelled&mine=1&sort=date\|description\|total\|status&order=&page=` |
-| Bill | `/bills/<id>`, `/bills/<id>/add-line`, `/bills/<id>/add-payment` |
+| Bill | `/bills/<id>`, `/bills/<id>/add-line`, `/bills/<id>/add-payment`, each with `?people=<id>,<id>` for people added to a draft |
 | New bill | `/bills/new`, `/bills/new/paste` |
 | Exchange | `/exchange` |
 | Spendings | `/spendings?page=` |
@@ -56,7 +56,8 @@ The user's rule (T5, mockup round 2): every paged list has the same shape and lo
 - `lib/useListState.ts`: `const [state, setState] = useListState(spec)` reads and writes the URL.
 - `lib/lists.ts`: each list's spec and its `xxxQuery(state)` that maps URL state to the API query (`PAGE_SIZE` = 20). Add `spendingsSpec`/`exchangesSpec` here.
 - `components/list/ListView.tsx`: `<ListView spec state onChange filters sorts columns card rowKey rowHref? rowHighlight? items total pageSize loading fetching error empty filteredEmpty tableMinWidth? />`. `columns` are `{ key, header, sort?, align?, width?, cell }`; `sorts` are `{ value, label, asc, desc }` (the direction labels).
-- `components/list/filters.tsx`: `FilterSelect`, `FilterChoice` (pills, first option `''` = all), `FilterFlag`, `FilterText` (commits after a pause, on Enter or blur), `FilterDate`, `FilterCurrency` (3 letters, suggestions).
+- `components/list/filters.tsx`: `FilterPerson` (type to search; use it for people, never a select of all contacts), `FilterSelect`, `FilterChoice` (pills, first option `''` = all), `FilterFlag`, `FilterText` (commits after a pause, on Enter or blur), `FilterDate`, `FilterCurrency` (3 letters, suggestions).
+- `components/people/PersonSearch.tsx` (an autocomplete combobox over `usePeople()`) and `PeoplePicker.tsx` (chips, plus the search box on its own line).
 - `components/list/Pager.tsx`.
 
 **API convention** (backend, server-side sort and filter):

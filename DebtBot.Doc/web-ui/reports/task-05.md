@@ -5,7 +5,8 @@
   - `f15b731`: the approved mockups;
   - `f65978c`: backend sort and filters;
   - `5bf86b2`: the pages and the shared list pattern;
-  - the last commit: fixes from the runtime check, the docs, this report and the screenshots.
+  - `f9ab24a`: fixes from the runtime check, the docs, this report and the screenshots;
+  - round 4 (after the first report): `25788c3` people on a bill and no Exchange / settle; the last commit puts the search box on its own line and updates the docs, this report and the screenshots.
 
 ## Mockups (approved by the user)
 Three rounds; the spec is in `mockups/debts/`, `mockups/bills/`, `mockups/bill/` and `mockups/common/` (the shared CSS, `shell.js` and `list.js`).
@@ -23,6 +24,11 @@ Three rounds; the spec is in `mockups/debts/`, `mockups/bills/`, `mockups/bill/`
 **Round 3:** "remove all bill button from the pages, it's available on the left panel". So the pages have no New bill or Bills buttons. The per-row 🧾 Bills on Debts stays, because it's a filtered link. The user said not to send new mockups and to start building, so the round-3 PNGs were re-rendered and committed without another review.
 
 The Bill detail mockup wasn't changed after round 1.
+
+**Round 4, after the first report.** The user's feedback on the built pages:
+- "what's the exchange/settle button? exchanges are a feature where it creates back and forth bills to change currencies between two people". So the button is gone from the Debts rows (and from the Debts mockup README).
+- "line list would be a nightmare on a huge contacts list; make a section to select bill participants above with an autocompletion textbox and display only these in each line". This is done; see "People on a bill" below.
+- "make sure autocomplete for the participants is always on a new line". The search box sits on its own full-width line below the chips.
 
 ## Backend (sort and filters)
 **`GET Bills`** binds `[FromQuery] BillListQuery`.
@@ -98,6 +104,15 @@ No migration was needed.
 - `components/bill/PaymentEditor.tsx`: the same props, with `onSubmit(BillPaymentCreation)`.
 - Both only build the request object; the caller sends it.
 
+**People on a bill (round 4):**
+- `components/people/PersonSearch.tsx` is an ARIA combobox. It matches the start of any word of your name for them, their own name or the @username (`matchesPerson`, tested); shows up to 8 suggestions with "n more"; and supports ↑/↓, Enter and Esc.
+- `components/people/PeoplePicker.tsx`: the chosen people as chips, with the search box always on its own line below.
+- **On a draft:** a "People on this bill" section sits above the facts.
+  - It starts with you and everyone on a line or payment; those can't be removed.
+  - People you add are kept in the URL (`?people=<id>,<id>`), which survives a reload and is carried to `/add-line` and `/add-payment`.
+- `LineEditor` lists only those people, all ticked to start with (people added later also start ticked), and `PaymentEditor`'s "who paid" lists only them. T6's New bill form should use `PeoplePicker` the same way.
+- **The person filters** on Bills and Debts are type-to-search boxes too (`FilterPerson`), not a select of every contact.
+
 **Sidebar sub-sections** (`components/subnav/money.tsx`):
 - **Debts:** Balances, one entry per person, coloured, opening `/bills?with=<id>`.
 - **Bills and a bill:**
@@ -119,7 +134,7 @@ No migration was needed.
 ## Checks
 - `npm run build`: OK. The main chunk shrank from 365 kB to 246 kB (gzip 77 kB). Debts is 5 kB, Bills 7 kB and Bill 16 kB, plus shared chunks.
 - `npm run lint`: 0 warnings, 0 errors.
-- `npm test`: **34 passed** in 4 files:
+- `npm test`: **36 passed** in 5 files (34 at the first report, plus 2 for `matchesPerson`):
   - client (8);
   - `listState` (parse, clean, round-trip, changes, `pageWindow`);
   - money (units, parsing, formatting);
@@ -140,7 +155,7 @@ No migration was needed.
 - Anna added them with `by-telegram` and renamed them; "Mum" is a placeholder;
 - bills: 24 finalized in EUR, PLN, USD and PLN-paid-in-EUR, with equal and by-parts lines; 2 drafts (one with tips); 1 draft exchange (100 EUR ⇄ 430 PLN).
 
-**Headless Chrome over CDP: 17/17 checks passed.**
+**Headless Chrome over CDP: 18/18 checks passed** (re-run in full from a clean database after round 4, cold image build).
 - **Debts:** the right balances: Boris 20.00 EUR, Dmitry 111.65 EUR and 31.70 PLN, Clara 66.38 USD, Mum 40.00 EUR. It's a table at 1280 and has the Balances sub-section.
 - **Debts URL state:** a filter (`dir=owe`) and a sort (`sort=amount`) go to the URL and survive a reload; Back undoes them one at a time.
 - **Bills paging:** page 2 survives a reload and Back/Forward ("21–28 of 28").
@@ -150,9 +165,12 @@ No migration was needed.
   - search (`q=pizza`), `mine=1` and `sort=total` (the first row is the largest) work.
 - **Exchange pair in the list:** the draft exchange is one row with ⇄ and Accept. Accepting it from the list finalizes both bills, and Debts then shows Boris 120.00 EUR and 430.00 PLN.
 - **Bill detail:** a finalized bill renders lines, parts (×3), payments and "Boris owes you 30.00 EUR", with the Drafts and Recent sub-section. An exchange half shows the deal, the other half and Accept exchange.
+- **Person filters by typing:** "bor" on Bills picks Boris (`with=`) and leaves out the coffees with Clara. "dmi" on Debts picks Dmitry's two rows. Debts rows have no Exchange / settle.
 - **Draft flow:**
   - Finalize is disabled with "Add a payment to finalize";
-  - Add line goes to `/bills/<id>/add-line` (it survives a reload), and Lemonade 4 EUR for Anna and Clara is added;
+  - in "People on this bill", typing "cla" and picking Clara puts `people=<id>` in the URL;
+  - the line editor (after a reload of `/add-line`) offers exactly Anna, Boris, Dmitry and Clara, all ticked, not every contact; Boris and Dmitry are unticked for the line;
+  - Add line goes to `/bills/<id>/add-line`, and Lemonade 4 EUR for Anna and Clara is added;
   - Add payment goes to `/add-payment`, and 84 EUR is added;
   - Finalize shows Finalizing…, then Finalized;
   - Debts then gives Boris **151.50 EUR** (120 + 30 × 84/80), Dmitry 143.15 EUR and Clara 2.10 EUR, checked through the API too.
@@ -164,7 +182,8 @@ No migration was needed.
 **Screenshots** (the real app) are in `DebtBot.Doc/web-ui/reports/task-05/`:
 - `debts-1280-light.png`, `debts-1280-dark.png`, `debts-390-light.png`, `debts-390-dark.png`, `debts-390-dark-drawer.png`;
 - `bills-1280-light.png`, `bills-1280-dark.png`, `bills-drafts-1280-light.png`, `bills-390-light.png`, `bills-390-dark.png`, `bills-390-filters-dark.png`;
-- `bill-1280-light.png`, `bill-1280-dark.png`, `bill-390-light.png`, `bill-exchange-1280-light.png`, `bill-draft-addline-1280-light.png`, `bill-draft-addline-1280-dark.png`, `bill-notfound-1280-light.png`.
+- `bill-1280-light.png`, `bill-1280-dark.png`, `bill-390-light.png`, `bill-exchange-1280-light.png`, `bill-draft-addline-1280-light.png`, `bill-draft-addline-1280-dark.png`, `bill-notfound-1280-light.png`;
+- `bill-people-1280-light.png` and `bill-people-390-dark.png`: a fresh draft with People on this bill and the autocomplete open.
 
 They were taken after the flows ran, so some drafts are already finalized or cancelled in later shots.
 
@@ -185,7 +204,8 @@ They were taken after the flows ran, so some drafts are already finalized or can
 - **"Bills with them"** includes not yet finalized bills you're both in (web only; the bot unchanged).
 - **The Bills total** counts bills, so a page with a folded exchange pair shows one row fewer than "1–n of N" says.
 - **Currency filters** are a 3-letter input with suggestions (from your balances). There's no endpoint listing currencies, and a select would miss bills in currencies without a current balance.
-- **The person filter on Bills** uses your contacts. On Debts it uses the people in your balances.
+- **The person filter on Bills** searches your contacts; on Debts it searches the people in your balances.
+- **The check script waits** for the list's own rows, because the sidebar can show the same bill names first. An early run had also attached to a stray headless Chrome left by an aborted run; the script now always closes Chrome.
 - **Dates** follow the mockups (day first, 24-hour) through en-GB formatting while the UI language is English.
 - **The editors** are inline sections with their own URLs, not dialogs. Leaving one (Cancel, or after adding) uses `replace`, so Back doesn't reopen it.
 - **Polling** is 1 s, for up to 30 s, for our own action or for a bill opened while `Ready`.
