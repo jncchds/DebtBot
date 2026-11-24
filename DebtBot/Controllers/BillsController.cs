@@ -120,6 +120,19 @@ public class BillsController : DebtBotControllerBase
         return Ok(bill);
     }
 
+    /// <summary>
+    /// Exchanges you created or are one of the two people in, one row per pair of bills. By default newest first.
+    /// Query: <c>withUserId</c>, <c>currencyCode</c> (either side, any case), <c>status</c> (Draft, Processed incl. Ready,
+    /// Cancelled), <c>sortBy</c> (Date, Amount), <c>sortOrder</c> (Asc, Desc), <c>pageNumber</c>, <c>countPerPage</c>.
+    /// </summary>
+    [HttpGet("exchanges")]
+    public IActionResult GetExchanges([FromQuery] ExchangeListQuery query)
+    {
+        query.CurrencyCode = string.IsNullOrWhiteSpace(query.CurrencyCode) ? null : query.CurrencyCode.Trim().ToUpperInvariant();
+
+        return Ok(_billService.GetExchangesForUser(UserId!.Value, query));
+    }
+
     /// <summary>Creates an exchange as two draft bills; accept it with <c>POST exchange/finalize</c>.</summary>
     [HttpPost("exchange")]
     public IActionResult CreateExchange(ExchangeCreationModel exchange)
