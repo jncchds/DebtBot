@@ -1,0 +1,21 @@
+services:
+  debtbot:
+    image: debtbot-t8:local
+    build:
+      context: .
+      dockerfile: DebtBot/Dockerfile
+    ports: !override
+      - '18099:8080'
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - DebtBot_DebtBot__JwtConfiguration__Key=T8RuntimeCheckKeyT8RuntimeCheckKeyT8RuntimeCheckKey12
+      - DEFAULT_USER_TELEGRAM_ID=100001
+      - DEFAULT_USER_TELEGRAM_USERNAME=@admin_dbt
+  db:
+    container_name: debtbot-t8-db
+    volumes:
+      - t8db:/var/lib/postgresql/data
+  rabbit:
+    container_name: debtbot-t8-rabbit
+volumes:
+  t8db:

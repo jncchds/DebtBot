@@ -11,7 +11,9 @@ public class BillProfile : Profile
 {
 	public BillProfile()
     {
-        CreateProjection<Bill, BillListModel>();
+        CreateProjection<Bill, BillListModel>()
+            .ForMember(b => b.ParticipantIds, opt => opt.MapFrom(b => b.BillParticipants.Select(p => p.UserId)))
+            .ForMember(b => b.ParticipantCount, opt => opt.MapFrom(b => b.BillParticipants.Count()));
 
         CreateProjection<Bill, BillModel>();
 
@@ -25,8 +27,8 @@ public class BillProfile : Profile
         CreateProjection<BillLineParticipantModel, BillLineParticipant>();
         
 
-        CreateMap<Bill, BillModel>().ReverseMap();
-        CreateMap<BillCreationModel, Bill>();
+        CreateMap<Bill, BillModel>().ReverseMap()
+            .ForMember(b => b.LedgerRecords, opt => opt.Ignore());
 
         CreateMap<BillPayment, BillPaymentModel>().ReverseMap();
 

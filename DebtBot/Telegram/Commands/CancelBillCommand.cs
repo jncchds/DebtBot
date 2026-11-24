@@ -33,6 +33,11 @@ public class CancelBillCommand : ITelegramCommand, ITelegramCallbackQuery
             return "bill guid not detected";
         }
 
+        if (!await _billService.CanTelegramUserChangeAsync(billId, query.From.Id, cancellationToken))
+        {
+            return FinalizeBillCommand.NotAllowedText;
+        }
+
         await cancelAsync(billId, query.Message!.Chat.Id, query.Message!.MessageId, cancellationToken);
 
         return null;
@@ -60,7 +65,13 @@ public class CancelBillCommand : ITelegramCommand, ITelegramCallbackQuery
                 return;
             }
         }
-        
+
+        if (!await _billService.CanTelegramUserChangeAsync(billId, processedMessage.FromId, cancellationToken))
+        {
+            await _publishEndpoint.Publish(new TelegramMessageRequested(processedMessage.ChatId, FinalizeBillCommand.NotAllowedText));
+            return;
+        }
+
         await cancelAsync(billId, processedMessage.ChatId, null, cancellationToken);
     }
 

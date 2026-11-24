@@ -1,0 +1,78 @@
+{
+  "admin": {
+    "bills": "All bills",
+    "billsHint": "read-only",
+    "merge": "Merge users",
+    "mergeHint": "Duplicate suggestions",
+    "title": "Admin",
+    "users": "Users",
+    "usersHint": "Search, roles, passwords"
+  },
+  "bills": {
+    "all": "All bills",
+    "cancelled": "cancelled",
+    "drafts": "Drafts",
+    "none": "No bills yet",
+    "recent": "Recent bills"
+  },
+  "contacts": {
+    "all": "All contacts",
+    "nobody": "Nobody yet",
+    "nobodyHint": "Add someone by @username",
+    "recent": "Recently added",
+    "today": "today"
+  },
+  "debts": {
+    "owesYou": "owes you {{amount}}",
+    "settled": "All settled",
+    "settledHint": "No open debts",
+    "title": "Balances",
+    "youOwe": "you owe {{amount}}"
+  },
+  "exchange": {
+    "none": "No exchanges yet",
+    "noneWaiting": "Nothing to accept",
+    "recent": "Recent exchanges",
+    "waiting": "Waiting to accept"
+  },
+  "newBill": {
+    "drafts": "Continue a draft",
+    "form": "Form",
+    "formHint": "Lines, people and payments",
+    "mode": "Mode",
+    "noLines": "no lines yet",
+    "paste": "Paste text",
+    "pasteHint": "The bot’s bill format"
+  },
+  "profile": {
+    "details": "Details",
+    "detailsHint": "Name, phone, email",
+    "password": "Login & password",
+    "passwordHint": "Web sign-in",
+    "telegram": "Telegram",
+    "telegramHint": "Account and bot",
+    "title": "Sections"
+  },
+  "spendings": {
+    "all": "All spendings",
+    "count_one": "{{month}} · {{count}} spending",
+    "count_other": "{{month}} · {{count}} spendings",
+    "none": "{{month}} · no spendings",
+    "nothing": "Nothing yet",
+    "thisMonth": "This month"
+  },
+  "subscriptions": {
+    "confirmed_one": "{{count}} confirmed",
+    "confirmed_other": "{{count}} confirmed",
+    "noRequests": "nobody is waiting",
+    "nobody": "nobody",
+    "none": "none",
+    "people_one": "{{count}} person",
+    "people_other": "{{count}} people",
+    "requests_one": "{{count}} waiting for you",
+    "requests_other": "{{count}} waiting for you",
+    "title": "Summary",
+    "waiting_one": "{{count}} waiting",
+    "waiting_other": "{{count}} waiting"
+  }
+}

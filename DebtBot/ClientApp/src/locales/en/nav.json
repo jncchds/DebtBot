@@ -1,0 +1,16 @@
+{
+  "admin": "Admin",
+  "bills": "Bills",
+  "contacts": "Contacts",
+  "debts": "Debts",
+  "exchange": "Exchange",
+  "main": "Main navigation",
+  "menu": "Menu",
+  "newBill": "New bill",
+  "profile": "Profile",
+  "requestsBadge_one": "{{count}} request waiting",
+  "requestsBadge_other": "{{count}} requests waiting",
+  "skip": "Skip to content",
+  "spendings": "Spendings",
+  "subscriptions": "Subscriptions"
+}

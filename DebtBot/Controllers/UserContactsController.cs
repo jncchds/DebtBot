@@ -1,6 +1,9 @@
 ﻿using DebtBot.Identity;
 using DebtBot.Interfaces.Services;
+using DebtBot.Models.Contact;
 using DebtBot.Models.User;
+using DebtBot.Services;
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,13 +11,15 @@ namespace DebtBot.Controllers;
 
 [Route("api/v1/[controller]")]
 [ApiController]
-public class UserContactsController : DebtBotControllerBase
+public partial class UserContactsController : DebtBotControllerBase
 {
     private readonly IUserContactService _userContactService;
+    private readonly IUserService _userService;
 
-    public UserContactsController(IUserContactService userContactService)
+    public UserContactsController(IUserContactService userContactService, IUserService userService)
     {
         _userContactService = userContactService;
+        _userService = userService;
     }
 
     [Authorize(IdentityData.AdminUserPolicyName)]
@@ -37,18 +42,80 @@ public class UserContactsController : DebtBotControllerBase
         return NotFound();
     }
 
+    /// <summary>My contacts with subscription states; an empty list when there are none.</summary>
     [Authorize]
     [HttpGet("Own")]
     public IActionResult GetOwn()
     {
-        var contactLinks = _userContactService.Get(UserId!.Value);
-        if (contactLinks?.Any() ?? false)
+        return Ok(_userContactService.GetContacts(UserId!.Value));
+    }
+
+    /// <summary>Renames one of my contacts. Returns the contact.</summary>
+    [Authorize]
+    [HttpPut("Own/{contactId:guid}")]
+    public IActionResult RenameOwn(Guid contactId, ContactRenameModel model)
+    {
+        var name = model.DisplayName?.Trim();
+        if (string.IsNullOrEmpty(name) || name.Length > UserService.MaxDisplayNameLength)
         {
-            return Ok(contactLinks);
+            return ErrorResult(StatusCodes.Status400BadRequest, $"A name of 1-{UserService.MaxDisplayNameLength} characters is required.");
         }
 
-        return NotFound();
+        if (!_userContactService.RenameContact(UserId!.Value, contactId, name))
+        {
+            return ErrorResult(StatusCodes.Status404NotFound, "Contact not found.");
+        }
+
+        return Ok(_userContactService.GetContact(UserId!.Value, contactId));
     }
+
+    /// <summary>Removes one of my contacts. Bills and subscriptions stay; a later bill with them adds the contact back.</summary>
+    [Authorize]
+    [HttpDelete("Own/{contactId:guid}")]
+    public IActionResult DeleteOwn(Guid contactId)
+    {
+        if (!_userContactService.RemoveContact(UserId!.Value, contactId))
+        {
+            return ErrorResult(StatusCodes.Status404NotFound, "Contact not found.");
+        }
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Adds a contact by Telegram username. Finds the user, or creates a placeholder user the way bills do
+    /// for an unknown @mention. Returns the contact.
+    /// </summary>
+    [Authorize]
+    [HttpPost("Own/by-telegram")]
+    public IActionResult AddOwnByTelegram([FromQuery] string? username)
+    {
+        var name = username?.Trim().TrimStart('@');
+        if (string.IsNullOrEmpty(name) || !TelegramUserNameRegex().IsMatch(name))
+        {
+            return ErrorResult(StatusCodes.Status400BadRequest, "A Telegram username is 5-32 characters: letters, digits or '_'.");
+        }
+
+        var owner = _userService.GetUserById(UserId!.Value);
+        if (owner is null)
+        {
+            return ErrorResult(StatusCodes.Status404NotFound, "User not found.");
+        }
+
+        var mention = $"@{name}";
+        var contactUser = _userService.FindOrAddUser(new UserSearchModel { TelegramUserName = mention, DisplayName = mention }, owner);
+        if (contactUser.Id == owner.Id)
+        {
+            return ErrorResult(StatusCodes.Status400BadRequest, "You can't add yourself as a contact.");
+        }
+
+        _userContactService.EnsureContact(owner.Id, contactUser.Id, contactUser.DisplayName ?? mention);
+
+        return Ok(_userContactService.GetContact(owner.Id, contactUser.Id));
+    }
+
+    [GeneratedRegex("^[A-Za-z0-9_]{5,32}$")]
+    private static partial Regex TelegramUserNameRegex();
 
     [Authorize(IdentityData.AdminUserPolicyName)]
     [HttpPost("{id}")]
@@ -68,10 +135,22 @@ public class UserContactsController : DebtBotControllerBase
         return Ok();
     }
 
+    // The subscription endpoints below act for the signed-in user only; just the admin's subscription/add takes a user id.
+
+    /// <summary>Asks to get notifications about <paramref name="contactId"/>'s bills. 404 for an unknown user, 400 for yourself.</summary>
     [Authorize]
     [HttpPost("subscription/request")]
     public IActionResult RequestSubscription(Guid contactId)
     {
+        if (contactId == UserId)
+        {
+            return ErrorResult(StatusCodes.Status400BadRequest, "You can't subscribe to yourself.");
+        }
+        if (_userService.GetUserById(contactId) is null)
+        {
+            return ErrorResult(StatusCodes.Status404NotFound, "User not found.");
+        }
+
         _userContactService.RequestSubscription(UserId!.Value, contactId);
 
         return Ok();
@@ -86,20 +165,41 @@ public class UserContactsController : DebtBotControllerBase
         return Ok();
     }
 
+    /// <summary>Lets <paramref name="contactId"/> get notifications about your bills. 404 when they haven't asked.</summary>
     [Authorize]
     [HttpPost("subscription/confirm")]
     public IActionResult ConfirmSubscription(Guid contactId)
     {
-        _userContactService.ConfirmSubscription(UserId!.Value, contactId);
+        if (!_userContactService.ConfirmSubscription(UserId!.Value, contactId))
+        {
+            return ErrorResult(StatusCodes.Status404NotFound, "No subscription request from this user.");
+        }
 
         return Ok();
     }
 
+    /// <summary>Removes <paramref name="contactId"/>'s request or subscription to you. 404 when there is none.</summary>
     [Authorize]
     [HttpPost("subscription/decline")]
     public IActionResult DeclineSubscription(Guid contactId)
     {
-        _userContactService.DeclineSubscription(UserId!.Value, contactId);
+        if (!_userContactService.DeclineSubscription(UserId!.Value, contactId))
+        {
+            return ErrorResult(StatusCodes.Status404NotFound, "No subscription from this user.");
+        }
+
+        return Ok();
+    }
+
+    /// <summary>Removes your own request for, or subscription to, <paramref name="contactId"/>'s bills. 404 when there is none.</summary>
+    [Authorize]
+    [HttpPost("subscription/cancel")]
+    public IActionResult CancelSubscription(Guid contactId)
+    {
+        if (!_userContactService.CancelSubscription(UserId!.Value, contactId))
+        {
+            return ErrorResult(StatusCodes.Status404NotFound, "You have no subscription to this user.");
+        }
 
         return Ok();
     }

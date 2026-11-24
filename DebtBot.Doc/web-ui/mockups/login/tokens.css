@@ -1,0 +1,31 @@
+/* Mockup copy of the planned ClientApp tokens (nopds structure, Lime on graphite). */
+@font-face { font-family: 'Inter Variable'; src: url(inter.woff2) format('woff2'); font-weight: 100 900; }
+:root {
+  --bg: #f6f8f1; --surface: #ffffff; --surface-2: #eef2e6; --border: #dfe5d3;
+  --text: #1c2416; --text-muted: #5f6b55; --input-bg: #fbfcf8;
+  --accent: #4d7c0f; --accent-hover: #3f6a0b; --accent-contrast: #f7fee7; --accent-faint: #4d7c0f1a;
+  --danger: #b42318; --success: #2f7a45;
+  font-family: 'Inter Variable', Inter, system-ui, sans-serif;
+}
+.dark {
+  --bg: #121510; --surface: #1b2017; --surface-2: #232a1e; --border: #2c3424;
+  --text: #e6edd9; --text-muted: #9aa68c; --input-bg: #121510;
+  --accent: #a3e635; --accent-hover: #bef264; --accent-contrast: #14200a; --accent-faint: #a3e63524;
+  --danger: #f07167; --success: #6fcf8a;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; font-size: 16px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; border-radius: 6px; padding: .375rem .875rem; font-size: .875rem; font-weight: 600; border: 0; font-family: inherit; cursor: pointer; }
+.btn-primary { background: var(--accent); color: var(--accent-contrast); }
+.btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text-muted); font-weight: 500; }
+.input { width: 100%; border-radius: 6px; border: 1px solid var(--border); background: var(--input-bg); padding: .375rem .625rem; font-size: .875rem; color: var(--text); font-family: inherit; }
+.input.focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
+.card { border-radius: 10px; border: 1px solid var(--border); background: var(--surface); }
+.label { display: block; margin-bottom: .25rem; font-size: .875rem; font-weight: 500; color: var(--text-muted); }
+.muted { color: var(--text-muted); }
+.pill-muted { display: inline-flex; border-radius: 4px; padding: .125rem .5rem; font-size: .75rem; color: var(--text-muted); background: color-mix(in srgb, var(--text-muted) 10%, transparent); }
+.sidebar-btn { display: flex; width: 100%; align-items: center; gap: .5rem; overflow: hidden; border-radius: 6px; padding: .42rem .5rem; font-size: .875rem; line-height: 1.375; white-space: nowrap; color: var(--text); text-decoration: none; background: none; border: 0; font-family: inherit; text-align: left; }
+.sidebar-btn.active { background: var(--accent-faint); color: var(--accent); }
+.s-icon { width: 22px; flex-shrink: 0; text-align: center; }
+.s-label { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; }

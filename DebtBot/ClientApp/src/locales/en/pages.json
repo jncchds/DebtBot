@@ -1,0 +1,16 @@
+{
+  "adminBills": { "subtitle": "Every bill in DebtBot, read-only. Open one to see it in full.", "title": "All bills" },
+  "adminMerge": { "subtitle": "Pairs that look like the same person: the same Telegram id, or the same username ignoring case. Merging moves everything onto the kept user.", "title": "Merge users" },
+  "adminUsers": { "subtitle": "Everyone DebtBot knows: people who started the bot, and placeholders made from @mentions.", "title": "Users" },
+  "bill": { "subtitle": "Lines, payments and ledger records.", "title": "Bill" },
+  "bills": { "subtitle": "Bills you take part in.", "title": "Bills" },
+  "contacts": { "subtitle": "People you share bills with. The names here are yours: only you see them.", "title": "Contacts" },
+  "debts": { "subtitle": "Balances with each person, per currency.", "title": "Debts" },
+  "exchange": { "subtitle": "Swap money in two currencies with someone.", "title": "Exchange" },
+  "newBill": { "subtitle": "Pick the people first, then add lines and who paid.", "title": "New bill" },
+  "password": { "subtitle": "An extra way to sign in to the web app, besides Telegram. Optional.", "title": "Login & password" },
+  "profile": { "subtitle": "How you appear to people you share bills with.", "title": "Profile" },
+  "spendings": { "subtitle": "Your share of every bill you take part in.", "title": "Spendings" },
+  "subscriptions": { "subtitle": "The bot can tell someone in Telegram about your new bills and debts, and tell you about theirs. Both sides have to agree.", "title": "Subscriptions" },
+  "telegram": { "subtitle": "Your account is your Telegram identity. It can't be changed here.", "title": "Telegram" }
+}

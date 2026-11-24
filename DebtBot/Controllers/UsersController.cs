@@ -1,9 +1,11 @@
 ﻿using DebtBot.Models.Enums;
 using DebtBot.Identity;
 using DebtBot.Interfaces.Services;
+using DebtBot.Models.Auth;
 using DebtBot.Models.User;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace DebtBot.Controllers;
 
@@ -13,32 +15,40 @@ namespace DebtBot.Controllers;
 public class UsersController : DebtBotControllerBase
 {
     private readonly IUserService _userService;
+    private readonly IAuthService _authService;
 
-    public UsersController(IUserService userService)
+    public UsersController(IUserService userService, IAuthService authService)
     {
        _userService = userService;
+       _authService = authService;
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("{id:guid}")]
     public IActionResult Get(Guid id)
     {
         var user = _userService.GetUserById(id);
 
         if (user == null)
-            return NotFound();
+            return ErrorResult(StatusCodes.Status404NotFound, "User not found.");
 
         return Ok(user);
     }
 
+    /// <summary>
+    /// The users list, ordered by display name. <paramref name="search"/> matches display name, Telegram username
+    /// or login, ignoring case.
+    /// </summary>
     [HttpGet()]
-    public IActionResult Get()
+    public IActionResult Get(string? search = null, UserRole? role = null, int pageNumber = 0, int? countPerPage = null)
     {
-        var users = _userService.GetUsers();
+        return Ok(_userService.GetAdminUsers(search, role, pageNumber, countPerPage));
+    }
 
-        if (users?.Any() ?? false)
-            return Ok(users);
-
-        return NotFound();
+    /// <summary>Pairs of users that look like the same person, with the suggested user to keep.</summary>
+    [HttpGet("merge/suggestions")]
+    public IActionResult GetMergeSuggestions()
+    {
+        return Ok(_userService.GetMergeSuggestions());
     }
 
     [HttpPost()]
@@ -49,43 +59,101 @@ public class UsersController : DebtBotControllerBase
         return Ok();
     }
 
+    /// <summary>
+    /// Deletes a user that has no bills, ledger records or spendings and is in nobody's contacts (a stray placeholder).
+    /// 409 when there is such data: merge the user into another one instead. 400 for an admin (make them Regular first)
+    /// and for your own account.
+    /// </summary>
     [HttpDelete("{id}")]
-    public ActionResult Delete(Guid id)
+    public IActionResult Delete(Guid id)
     {
-        _userService.DeleteUser(id);
+        if (id == UserId)
+        {
+            return ErrorResult(StatusCodes.Status400BadRequest, "You can't delete the account you're signed in with.");
+        }
 
-        return Ok();
+        return _userService.DeleteUser(id) switch
+        {
+            DeleteUserResult.Deleted => Ok(),
+            DeleteUserResult.IsAdmin => ErrorResult(StatusCodes.Status400BadRequest,
+                "Admins can't be deleted. Make them Regular first."),
+            DeleteUserResult.InUse => ErrorResult(StatusCodes.Status409Conflict,
+                "This user still has bills, debts or contacts. Merge them into another user instead."),
+            _ => ErrorResult(StatusCodes.Status404NotFound, "User not found."),
+        };
     }
 
+    /// <summary>
+    /// Updates a user's display name, Telegram username, phone and email. The Telegram id can't be changed:
+    /// a different <c>telegramId</c> in the body gives 400.
+    /// </summary>
     [HttpPut("{id}")]
-    public ActionResult Put(Guid id, UserCreationModel user)
+    public IActionResult Put(Guid id, UserCreationModel user)
     {
+        var existing = _userService.GetUserById(id);
+        if (existing is null)
+        {
+            return ErrorResult(StatusCodes.Status404NotFound, "User not found.");
+        }
+        if (user.TelegramId is not null && user.TelegramId != existing.TelegramId)
+        {
+            return ErrorResult(StatusCodes.Status400BadRequest, "The Telegram id can't be changed.");
+        }
+
         _userService.UpdateUser(id, user);
 
         return Ok();
     }
 
+    /// <summary>Makes a user an admin (<c>role=Admin</c>) or removes it (<c>role=Regular</c>). 400 for your own account.</summary>
     [HttpPost("{id}/Role")]
-    public ActionResult SetRole(Guid id, UserRole role)
+    public IActionResult SetRole(Guid id, UserRole role)
     {
-        var res = _userService.SetRole(id, role);
-        return res? Ok(): NotFound();
+        if (id == UserId)
+        {
+            return ErrorResult(StatusCodes.Status400BadRequest, "You can't change your own role.");
+        }
+
+        return _userService.SetRole(id, role)
+            ? Ok()
+            : ErrorResult(StatusCodes.Status404NotFound, "User not found.");
     }
 
+    /// <summary>
+    /// Sets a user's web sign-in login and password. Login may be left empty when the user already has one.
+    /// Signs the user out of all web sessions.
+    /// </summary>
+    [HttpPost("{id}/password")]
+    public async Task<IActionResult> SetPassword(Guid id, AdminSetPasswordModel model, CancellationToken cancellationToken)
+    {
+        var result = await _authService.AdminSetPasswordAsync(id, model, cancellationToken);
+        return result.ToActionResult(this);
+    }
+
+    /// <summary>
+    /// Merges <c>oldUserId</c> into <c>newUserId</c> and removes the old user. Takes a JSON body; the old query
+    /// parameters still work. Returns the kept user's row.
+    /// </summary>
     [HttpPost("merge")]
-    public ActionResult Merge([FromQuery] Guid oldUserId, [FromQuery] Guid newUserId)
+    public IActionResult Merge([FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] MergeUsersModel? model, [FromQuery] Guid? oldUserId = null, [FromQuery] Guid? newUserId = null)
     {
-        _userService.MergeUsers(oldUserId, newUserId);
+        var oldId = model is not null && model.OldUserId != Guid.Empty ? model.OldUserId : oldUserId ?? Guid.Empty;
+        var newId = model is not null && model.NewUserId != Guid.Empty ? model.NewUserId : newUserId ?? Guid.Empty;
 
-        return Ok();
-    }
+        if (oldId == Guid.Empty || newId == Guid.Empty)
+        {
+            return ErrorResult(StatusCodes.Status400BadRequest, "oldUserId and newUserId are required.");
+        }
+        if (oldId == UserId)
+        {
+            return ErrorResult(StatusCodes.Status400BadRequest, "You can't merge away the account you're signed in with.");
+        }
 
-    [HttpGet("own")]
-    public ActionResult Own()
-    {
-        var user = _userService.GetUserDisplayModelById(UserId!.Value);
-        if (user == null)
-            return NotFound();
-        return Ok(user);
+        return _userService.MergeUsers(oldId, newId) switch
+        {
+            MergeUsersResult.Merged => Ok(_userService.GetAdminUser(newId)),
+            MergeUsersResult.SameUser => ErrorResult(StatusCodes.Status400BadRequest, "Pick two different users."),
+            _ => ErrorResult(StatusCodes.Status404NotFound, "User not found."),
+        };
     }
 }

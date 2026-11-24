@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DebtBot Debts mockup</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .totals { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+  .phone .totals { grid-template-columns: 1fr; gap: .5rem; }
+  .total { padding: .75rem 1rem; }
+  .total .k { font-size: .72rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+  .total .v { margin-top: .25rem; display: flex; flex-wrap: wrap; gap: .25rem 1rem; font-size: 1.1rem; font-weight: 700; }
+  .amt { font-weight: 700; font-size: .95rem; }
+</style>
+</head>
+<body>
+<script>
+  // Debts/Own rows: one per person and currency. Default sort: person A–Z, then currency.
+  const ROWS = [
+    { name: 'Boris', user: '@boris_iv', n: +30, c: 'EUR' },
+    { name: 'Boris', user: '@boris_iv', n: -120, c: 'PLN' },
+    { name: 'Clara', user: '@clara_m', n: -12.5, c: 'USD' },
+    { name: 'Dmitry', user: '@dmitry_k', n: +215, c: 'PLN' },
+    { name: 'Mum', user: 'never started the bot', n: -40, c: 'EUR' },
+  ]
+  const f = (n) => Math.abs(n).toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  const word = (r) => r.n > 0 ? `<span class="pos">owes you</span>` : `<span class="neg">you owe</span>`
+  const amt = (r) => `<span class="amt num ${r.n > 0 ? 'pos' : 'neg'}">${f(r.n)} ${r.c}</span>`
+  const acts = (r) => `<a class="btn btn-secondary btn-sm">🧾 Bills</a> <a class="btn btn-secondary btn-sm">🔁 Exchange / settle</a>`
+  window.MOCK = {
+    page: 'debts',
+    ctxFor: (s) => s === 'empty'
+      ? ['S:Balances', { i: '✅', t: 'All settled', s: 'No open debts' }]
+      : ['S:Balances',
+         { i: '👤', t: 'Boris', s: '<span class="pos">owes you 30.00 EUR</span> · <span class="neg">you owe 120.00 PLN</span>' },
+         { i: '👤', t: 'Clara', s: '<span class="neg">you owe 12.50 USD</span>' },
+         { i: '👤', t: 'Dmitry', s: '<span class="pos">owes you 215.00 PLN</span>' },
+         { i: '👤', t: 'Mum', s: '<span class="neg">you owe 40.00 EUR</span>' }],
+    render(state, phone) {
+      const head = `<div class="title-row"><h1>Debts</h1></div>
+        <p class="sub muted">Balances with each person, per currency.</p>`
+      if (state === 'empty') return head + `<div class="card empty">
+          <div class="big">🤝</div>
+          <p style="font-weight:600">You’re all settled</p>
+          <p class="muted" style="font-size:.875rem">Nobody owes you and you owe nobody. Debts appear here once a bill is finalized.</p>
+                  </div>`
+      const filtered = state === 'filtered'
+      const rows = filtered ? ROWS.filter((r) => r.n < 0).sort((a, b) => a.n - b.n) : ROWS
+      const totals = `<div class="totals">
+          <div class="card total"><div class="k pos">Owed to you</div><div class="v pos num"><span>30.00 EUR</span><span>215.00 PLN</span></div></div>
+          <div class="card total"><div class="k neg">You owe</div><div class="v neg num"><span>40.00 EUR</span><span>120.00 PLN</span><span>12.50 USD</span></div></div>
+        </div>`
+      return head + totals + list({
+        phone, open: phone && filtered,
+        activeCount: filtered ? 1 : 0,
+        filters: [
+          { type: 'select', label: 'Person', value: 'Everyone' },
+          { type: 'select', label: 'Currency', value: 'Any currency' },
+          { type: 'seg', label: 'Direction', options: ['All', 'Owed to you', 'You owe'], value: filtered ? 'You owe' : 'All' },
+        ],
+        sort: filtered ? { field: 'Amount', dir: '↑ Largest debt first' } : { field: 'Person', dir: '↑ A–Z' },
+        columns: [
+          { label: 'Person', sorted: filtered ? '' : '↑', cell: (r) => `<b>${r.name}</b> <span class="muted" style="font-size:.8rem">${r.user}</span>` },
+          { label: 'Currency', w: '6rem', cell: (r) => r.c },
+          { label: '', w: '7rem', cell: word },
+          { label: 'Amount', cls: 'r', w: '9rem', sorted: filtered ? '↑' : '', cell: amt },
+          { label: '', cls: 'r', w: '17rem', cell: acts },
+        ],
+        rows,
+        card: (r) => `<div class="l1"><b style="flex:1">${r.name}</b>${amt(r)}</div>
+          <div class="l2 muted"><span>${r.user}</span><span class="spacer"></span>${word(r)}</div>
+          <div class="l2" style="margin-top:.5rem">${acts(r)}</div>`,
+        pager: { range: `1–${rows.length} of ${rows.length}`, pages: 1 },
+        empty: '',
+      })
+    },
+  }
+</script>
+<script src="../common/list.js"></script>
+<script src="../common/shell.js"></script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Layout and components follow nopds/abook (sidebar app shell, flat cards, pills);
+ * the palette is "Lime on graphite" (DebtBot.Doc/web-ui/notes/web-ui-palette.md).
+ * Danger = "you owe", success = "owed to you". Don't add colours outside these tokens.
+ */
+:root {
+  --bg: #f6f8f1;
+  --surface: #ffffff;
+  --surface-2: #eef2e6;
+  --border: #dfe5d3;
+  --text: #1c2416;
+  --text-muted: #5f6b55;
+  --input-bg: #fbfcf8;
+  --accent: #4d7c0f;
+  --accent-hover: #3f6a0b;
+  --accent-contrast: #f7fee7;
+  --accent-faint: #4d7c0f1a;
+  --danger: #b42318;
+  --success: #2f7a45;
+  font-family: 'Inter Variable', Inter, system-ui, sans-serif;
+}
+
+.dark {
+  --bg: #121510;
+  --surface: #1b2017;
+  --surface-2: #232a1e;
+  --border: #2c3424;
+  --text: #e6edd9;
+  --text-muted: #9aa68c;
+  --input-bg: #121510;
+  --accent: #a3e635;
+  --accent-hover: #bef264;
+  --accent-contrast: #14200a;
+  --accent-faint: #a3e63524;
+  --danger: #f07167;
+  --success: #6fcf8a;
+}
+
+@theme inline {
+  --font-sans: 'Inter Variable', Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--border);
+  --color-fg: var(--text);
+  --color-muted: var(--text-muted);
+  --color-input: var(--input-bg);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-contrast: var(--accent-contrast);
+  --color-accent-faint: var(--accent-faint);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-bg text-fg antialiased;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-accent;
+  }
+}
+
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-md px-3.5 py-1.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+@utility btn-primary {
+  @apply btn bg-accent text-accent-contrast hover:bg-accent-hover;
+}
+
+@utility btn-secondary {
+  @apply btn border border-line bg-transparent font-medium text-muted hover:border-accent hover:text-fg;
+}
+
+@utility btn-ghost {
+  @apply btn font-medium text-muted hover:bg-accent-faint hover:text-fg;
+}
+
+@utility btn-danger {
+  @apply btn border border-danger/30 bg-danger/10 text-danger hover:bg-danger/20;
+}
+
+@utility input {
+  @apply w-full rounded-md border border-line bg-input px-2.5 py-1.5 text-sm text-fg placeholder:text-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25;
+}
+
+/* The height of an .input (text-sm line, py-1.5 and a 1px border), for controls that sit in a row of inputs
+   (pill choices, a checkbox), so every caption in the row lines up and the controls are centred on the inputs. */
+@utility input-h {
+  min-height: calc(2rem + 2px);
+}
+
+@utility card {
+  @apply rounded-[10px] border border-line bg-surface;
+}
+
+@utility chip {
+  @apply inline-flex items-center rounded px-2 py-0.5 text-xs text-accent bg-accent-faint hover:bg-accent/20;
+}
+
+@utility pill-muted {
+  @apply inline-flex items-center rounded px-2 py-0.5 text-xs text-muted bg-muted/10;
+}
+
+@utility pill-accent {
+  @apply inline-flex items-center rounded px-2 py-0.5 text-xs text-accent bg-accent-faint;
+}
+
+/* "Owed to you" */
+@utility pill-success {
+  @apply inline-flex items-center rounded px-2 py-0.5 text-xs text-success bg-success/10;
+}
+
+/* "You owe" */
+@utility pill-danger {
+  @apply inline-flex items-center rounded px-2 py-0.5 text-xs text-danger bg-danger/10;
+}
+
+@utility alert-danger {
+  @apply rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger;
+}
+
+@utility alert-info {
+  @apply rounded-md border border-accent/30 bg-accent-faint px-3 py-2 text-sm text-fg;
+}
+
+@utility link {
+  @apply text-accent hover:underline;
+}
+
+@utility label {
+  @apply mb-1 block text-sm font-medium text-muted;
+}
+
+@utility muted {
+  @apply text-muted;
+}
+
+@utility sidebar-btn {
+  @apply flex w-full items-center gap-2 overflow-hidden rounded-md px-2 py-[0.42rem] text-left text-sm leading-snug whitespace-nowrap text-fg transition-colors hover:bg-accent-faint;
+}
+
+/* Page-specific entries below the sidebar divider (title + muted subtitle), as in abeat. */
+@utility sidebar-entry {
+  @apply flex w-full items-start gap-1.5 overflow-hidden rounded-md px-2 py-1.5 text-left text-[0.82rem] leading-snug hover:bg-accent-faint;
+}
+
+@utility sidebar-section {
+  @apply truncate px-2 pt-1.5 pb-0.5 text-[0.7rem] font-bold tracking-wider text-muted uppercase;
+}

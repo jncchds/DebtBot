@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DebtBot New bill mockup</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .grid-bill { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr); gap: .875rem 1rem; }
+  .grid-bill .wide { grid-column: 1 / -1; }
+  .phone .grid-bill { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .phone .grid-bill .wide, .phone .grid-bill .half { grid-column: 1 / -1; }
+  textarea.input { resize: vertical; line-height: 1.45; }
+  .hint { margin: .3rem 0 0; font-size: .76rem; color: var(--text-muted); }
+  .err { margin: .3rem 0 0; font-size: .76rem; color: var(--danger); }
+  .input.bad { border-color: var(--danger); }
+  .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+  .phone .two { grid-template-columns: 1fr; }
+  .two > *, .stack > * { min-width: 0; }
+  .card-head { flex-wrap: wrap; }
+  .lrow { display: flex; align-items: flex-start; gap: .75rem; padding: .75rem 1rem; border-top: 1px solid var(--border); }
+  .card-head + .lrow { border-top: 0; }
+  .lrow .grow { flex: 1; min-width: 0; }
+  .parts { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .35rem; }
+  .prow { display: flex; align-items: baseline; gap: .5rem; padding: .625rem 1rem; border-top: 1px solid var(--border); font-size: .9rem; }
+  .card-head + .prow { border-top: 0; }
+  .note { padding: .875rem 1rem; font-size: .875rem; }
+  .x-btn { color: var(--text-muted); font-size: .85rem; padding: 0 .25rem; }
+  .pchip { display: inline-flex; align-items: center; gap: .25rem; border-radius: 4px; padding: .125rem .25rem .125rem .5rem; font-size: .8rem; color: var(--accent); background: var(--accent-faint); }
+  .pchip .x { padding: 0 .25rem; opacity: .8; }
+  .pchip .lock { padding: 0 .25rem; opacity: .5; }
+  .sugg { margin-top: .25rem; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); box-shadow: 0 8px 20px -8px rgba(0,0,0,.25); }
+  .sugg .o { display: flex; align-items: baseline; gap: .5rem; padding: .4rem .75rem; font-size: .875rem; }
+  .sugg .o.on { background: var(--accent-faint); color: var(--accent); }
+  .editor { margin: 0 1rem 1rem; padding: 1rem; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); background: var(--surface-2); }
+  .editor .grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: .75rem; }
+  .phone .editor { margin: 0 .5rem .75rem; padding: .75rem; }
+  .phone .editor .grid { grid-template-columns: 1fr; }
+  .who { margin-top: .75rem; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); }
+  .who .w { display: flex; align-items: center; gap: .6rem; padding: .45rem .75rem; border-top: 1px solid var(--border); font-size: .875rem; }
+  .who .w:first-child { border-top: 0; }
+  .part { width: 4.5rem; text-align: right; }
+  .sum th, .sum td { padding: .5rem 1rem; }
+  .actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; padding: .875rem 1rem; }
+  .phone .actions .btn { flex: 1 1 100%; }
+  .phone .actions .spacer { display: none; }
+  .tabs { display: inline-flex; gap: .25rem; margin-bottom: 1rem; }
+  /* Paste mode */
+  .paste { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 1rem; align-items: start; }
+  .phone .paste { grid-template-columns: 1fr; }
+  .mono { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: .82rem; line-height: 1.5; }
+  pre.help { margin: 0; padding: .875rem 1rem; white-space: pre; overflow-x: auto; color: var(--text); }
+  .help-notes { padding: 0 1rem .875rem; font-size: .8rem; }
+  .help-notes li { margin-top: .2rem; }
+  .res { display: inline-flex; align-items: baseline; gap: .3rem; font-size: .8rem; }
+  .arrow { color: var(--text-muted); }
+  .newp { color: var(--text-muted); font-style: italic; }
+</style>
+</head>
+<body>
+<script>
+  // States: form, form-errors, form-addline, paste, paste-errors, paste-preview
+  const ME = 'Anna Petrova (you)'
+  const chip = (n, x) => `<span class="pchip">${n}${x === 'lock' ? '<span class="lock">•</span>' : '<span class="x">×</span>'}</span>`
+  const pchips = (xs) => `<div class="parts">${xs.map((n) => `<span class="chip">${n}</span>`).join('')}</div>`
+
+  function billCard(s, phone) {
+    const bad = s === 'form-errors'
+    return `<div class="card">
+      <div class="card-head"><h2 class="grow">Bill</h2></div>
+      <div class="card-body grid-bill">
+        <div class="wide"><label class="label">Description</label><textarea class="input" rows="2">Dinner at Molto
+Birthday of Boris</textarea><p class="hint">Several lines are fine; the first one is the bill’s title.</p></div>
+        <div class="half"><label class="label">Date and time</label><input class="input num" value="24.11.2026, 20:30"></div>
+        <div><label class="label">Bill currency</label><input class="input num${bad ? ' bad' : ''}" value="${bad ? 'EU' : 'EUR'}" style="text-transform:uppercase">${bad ? '<p class="err">Use a 3-letter code, like EUR.</p>' : '<p class="hint">Lines are in this currency.</p>'}</div>
+        <div><label class="label">Paid in</label><input class="input num" value="EUR" style="text-transform:uppercase"><p class="hint">What people paid with. Same as the bill if empty.</p></div>
+        <div class="half"><label class="label">Total with tips, ${bad ? 'EU' : 'EUR'}</label><input class="input num" value="84.00" style="text-align:right"><p class="hint">Lines 76.00 + tips <b>8.00</b>. Leave empty for no tips.</p></div>
+      </div>
+    </div>`
+  }
+
+  function peopleCard(s) {
+    const open = s === 'form'
+    return `<div class="card"><div class="card-body">
+      <label class="label">People on this bill</label>
+      <div class="row" style="gap:.375rem">${chip(ME, 'lock')}${chip('Boris', 'lock')}${chip('Dmitry', 'lock')}${s === 'form-addline' ? chip('Clara') : ''}</div>
+      <input class="input${open ? ' focus' : ''}" style="margin-top:.5rem" value="${open ? 'cl' : ''}" placeholder="Add a person: type a name or @username">
+      ${open ? `<div class="sugg"><div class="o on"><b>Clara</b><span class="muted" style="font-size:.8rem">Clara Weiss</span><span class="spacer"></span><span class="muted" style="font-size:.8rem">@clara_w</span></div><div class="o">Claudia<span class="spacer"></span><span class="muted" style="font-size:.8rem">@claudia_r</span></div></div>` : ''}
+      <p class="hint">Lines and payments offer only these people. Anyone on a line or a payment stays (•).</p>
+    </div></div>`
+  }
+
+  const LINES = [
+    ['Pasta', '48.00 EUR', [ME, 'Boris', 'Dmitry'], 'split equally'],
+    ['Tiramisu', '28.00 EUR', ['Boris ×1', 'Dmitry ×1'], 'by parts'],
+  ]
+  function linesCard(s) {
+    const ed = s === 'form-addline'
+    const lines = s === 'form-errors' ? LINES.slice(0, 1) : LINES
+    return `<div class="card">
+      <div class="card-head"><h2 class="grow">Lines</h2><span class="muted num" style="font-size:.85rem">${s === 'form-errors' ? '48.00' : '76.00'} EUR</span>${ed ? '' : '<a class="btn btn-secondary btn-sm">＋ Add line</a>'}</div>
+      ${lines.map(([n, a, ch, how]) => `<div class="lrow"><div class="grow"><b>${n}</b> <span class="muted" style="font-size:.8rem">${how}</span>${pchips(ch)}</div><span class="num" style="font-weight:600">${a}</span><a class="x-btn" title="Remove">✕</a></div>`).join('')}
+      ${ed ? `<div class="editor">
+        <div class="row" style="margin-bottom:.75rem"><h2>Add line</h2></div>
+        <div class="grid">
+          <div><label class="label">Item</label><input class="input focus" value="Lemonade"></div>
+          <div><label class="label">Subtotal, EUR</label><input class="input num" value="8.00" style="text-align:right"></div>
+        </div>
+        <div class="row" style="margin-top:.75rem"><span class="label" style="margin:0">Split</span><span class="seg"><span class="opt">Equally</span><span class="opt on">By parts</span></span></div>
+        <div class="who">
+          <div class="w"><span class="box on">✓</span><span style="flex:1">${ME}</span><input class="input part" value="1"></div>
+          <div class="w"><span class="box"></span><span style="flex:1" class="muted">Boris</span><input class="input part" value="" disabled></div>
+          <div class="w"><span class="box"></span><span style="flex:1" class="muted">Dmitry</span><input class="input part" value="" disabled></div>
+          <div class="w"><span class="box on">✓</span><span style="flex:1">Clara</span><input class="input part" value="2"></div>
+        </div>
+        <div class="row" style="margin-top:.875rem"><a class="btn btn-primary">Add line</a><a class="btn btn-ghost">Cancel</a><span class="spacer"></span><span class="muted" style="font-size:.8rem">The total stays 84.00 EUR: it includes tips</span></div>
+      </div>` : ''}
+    </div>`
+  }
+
+  function paymentsCard(s) {
+    const none = s === 'form-errors'
+    return `<div class="card">
+      <div class="card-head"><h2 class="grow">Payments</h2><span class="muted num" style="font-size:.85rem">${none ? '' : '84.00 EUR'}</span><a class="btn btn-secondary btn-sm">＋ Add payment</a></div>
+      ${none ? '<div class="note muted">No payments yet. Add who paid to finalize; a draft can do without.</div>'
+        : `<div class="prow"><span style="flex:1">${ME}</span><span class="num" style="font-weight:600">84.00 EUR</span><a class="x-btn">✕</a></div>`}
+    </div>`
+  }
+
+  // Per-person shares: a table when wide, stacked rows on a phone (nothing wider than the screen).
+  // heads: column labels after "Person" (the last one is the balance); rows: [name, ...values, balance].
+  function sumTable(heads, rows, phone) {
+    const cls = (c) => c.startsWith('+') ? 'pos' : c.startsWith('−') ? 'neg' : 'muted'
+    if (phone) return `<div style="border-top:1px solid var(--border)">${rows.map((r) => {
+      const bal = r[r.length - 1], vals = r.slice(1, -1)
+      return `<div class="item"><div class="l1"><span style="flex:1;min-width:0">${r[0]}</span><span class="num ${cls(bal)}" style="font-weight:700">${bal}</span></div>
+        <div class="l2 muted" style="flex-wrap:wrap;gap:.15rem .75rem">${vals.map((v, i) => `<span>${heads[i]} <span class="num" style="color:var(--text)">${v}</span></span>`).join('')}</div></div>`
+    }).join('')}</div>`
+    return `<table class="tbl sum" style="border-top:1px solid var(--border)"><thead><tr><th>Person</th>${heads.map((h) => `<th class="r" style="white-space:nowrap">${h}</th>`).join('')}</tr></thead>
+      <tbody>${rows.map((r) => `<tr><td>${r[0]}</td>${r.slice(1, -1).map((v) => `<td class="r num">${v}</td>`).join('')}<td class="r num ${cls(r[r.length - 1])}">${r[r.length - 1]}</td></tr>`).join('')}</tbody></table>`
+  }
+
+  function summaryCard(s, phone) {
+    if (s === 'form-errors') return `<div class="card"><div class="card-head"><h2 class="grow">Who owes whom</h2><span class="pill pill-muted">preview</span></div>
+      <div class="note muted">Shown once the bill has lines and payments.</div></div>`
+    const rows = s === 'form-addline'
+      ? [[ME, '17.68', '84.00', '+66.32'], ['Boris', '33.16', '—', '−33.16'], ['Dmitry', '33.16', '—', '−33.16'], ['Clara', '—', '—', '—']]
+      : [[ME, '17.68', '84.00', '+66.32'], ['Boris', '33.16', '—', '−33.16'], ['Dmitry', '33.16', '—', '−33.16']]
+    return `<div class="card">
+      <div class="card-head"><h2 class="grow">Who owes whom</h2><span class="pill pill-muted">preview</span></div>
+      <div class="prow"><span style="flex:1">Boris owes you</span><span class="num pos" style="font-weight:700">33.16 EUR</span></div>
+      <div class="prow"><span style="flex:1">Dmitry owes you</span><span class="num pos" style="font-weight:700">33.16 EUR</span></div>
+      ${sumTable(['Share', 'Paid', 'Balance'], rows, phone)}
+      <p class="hint" style="padding:0 1rem .75rem">Shares include the 8.00 EUR tips. DebtBot works out the real amounts when the bill is finalized.</p>
+    </div>`
+  }
+
+  function actions(s) {
+    const bad = s === 'form-errors'
+    return `<div class="card">
+      ${bad ? `<div style="padding:.875rem 1rem 0"><div class="alert-danger"><b>Can’t save yet:</b> fix the bill currency. <span style="opacity:.85">To finalize you also need at least one payment.</span></div></div>` : ''}
+      <div class="actions">
+        <span class="muted" style="font-size:.8rem">Kept in this tab until you create the bill.</span><a class="btn btn-ghost btn-sm">Clear form</a>
+        <span class="spacer"></span>
+        <a class="btn btn-secondary">Save as draft</a>
+        <a class="btn btn-primary"${bad ? ' style="opacity:.5"' : ''}>✓ Create and finalize</a>
+      </div></div>`
+  }
+
+  const HELP = `Description (several lines, no empty line)
+
+Total with tips
+Currency (3 letters)
+Payment currency (optional)
+
+Amount1 Payer1
+Amount2 Payer2
+
+Line 1 description
+Subtotal 1
+Part1 Person1
+Part2 Person2
+
+Line 2 description
+…`
+  const TEXT_OK = `Dinner at Molto
+Birthday of Boris
+
+84
+EUR
+
+84 @anna_p
+
+Pasta
+48
+1 @anna_p
+1 @boris_m
+1 @dmitry_k
+
+Tiramisu
+28
+1 @boris_m
+1 Dmitry`
+  const TEXT_BAD = TEXT_OK.replace('84 @anna_p', '84,5O @anna_p').replace('\n28\n', '\ntwenty eight\n')
+
+  function pasteView(s, phone) {
+    const preview = s === 'paste-preview', errors = s === 'paste-errors'
+    const text = s === 'paste' ? '' : errors ? TEXT_BAD : TEXT_OK
+    const help = `<div class="card">
+        <div class="card-head"><h2 class="grow">Format</h2><span class="muted" style="font-size:.8rem">same as the bot’s /AddBill</span></div>
+        <pre class="help mono">${HELP}</pre>
+        <ul class="help-notes muted">
+          <li>Sections are separated by one empty line.</li>
+          <li>People: @username, a contact’s name, a phone or an email.</li>
+          <li>Parts split a line: “2 @boris” pays twice as much as “1 @anna”.</li>
+        </ul>
+      </div>`
+    const area = `<div class="card">
+        <div class="card-head"><h2 class="grow">Bill text</h2>${phone ? '' : '<a class="btn btn-ghost btn-sm">Insert example</a>'}</div>
+        <div class="card-body">
+          <textarea class="input mono${s === 'paste' ? ' focus' : ''}" rows="${s === 'paste' ? 14 : phone ? 16 : 22}" placeholder="Paste the bill text here…">${text}</textarea>
+          <div class="row" style="margin-top:.75rem"><a class="btn ${preview ? 'btn-secondary' : 'btn-primary'}">👁 Preview</a><span class="muted" style="font-size:.8rem">Nothing is saved until you create the bill.</span></div>
+        </div>
+      </div>`
+    let result = ''
+    if (errors) result = `<div class="card"><div class="card-head"><h2 class="grow">Preview</h2><span class="pill pill-danger">2 problems</span></div>
+        <div class="card-body"><div class="alert-danger"><ul style="margin:0;padding-left:1.1rem">
+          <li>Failed to parse payment amount <code class="mono">84,5O @anna_p</code></li>
+          <li>Failed to parse line subtotal <code class="mono">twenty eight</code></li></ul></div>
+          <p class="hint">Fix the text and preview again.</p></div></div>`
+    if (preview) {
+      const who = (h, n) => n ? `<span class="res"><span class="mono">${h}</span><span class="arrow">→</span><b>${n}</b></span>` : `<span class="res"><span class="mono">${h}</span><span class="arrow">→</span><span class="newp">new person</span></span>`
+      result = `<div class="card">
+        <div class="card-head"><h2 class="grow">Preview</h2><span class="pill pill-success">Looks good</span></div>
+        <div class="card-body" style="padding-bottom:.5rem">
+          <div style="font-weight:700;font-size:1.05rem">Dinner at Molto</div><div class="muted" style="font-size:.85rem">Birthday of Boris</div>
+          <div class="row" style="margin-top:.5rem;gap:1.25rem;font-size:.875rem"><span><span class="muted">Total</span> <b class="num">84.00 EUR</b></span><span><span class="muted">Paid in</span> <b>EUR</b></span><span><span class="muted">Tips</span> <b class="num">8.00 EUR</b></span></div>
+        </div>
+        <div class="lrow"><div class="grow"><b>Pasta</b> <span class="muted" style="font-size:.8rem">split equally</span>
+          <div class="parts" style="gap:.3rem .9rem">${who('@anna_p', 'Anna Petrova (you)')}${who('@boris_m', 'Boris')}${who('@dmitry_k', 'Dmitry')}</div></div><span class="num" style="font-weight:600">48.00 EUR</span></div>
+        <div class="lrow"><div class="grow"><b>Tiramisu</b> <span class="muted" style="font-size:.8rem">split equally</span>
+          <div class="parts" style="gap:.3rem .9rem">${who('@boris_m', 'Boris')}${who('Dmitry', 'Dmitry')}</div></div><span class="num" style="font-weight:600">28.00 EUR</span></div>
+        <div class="prow"><span class="muted" style="width:5.5rem">Paid</span><span style="flex:1">${who('@anna_p', 'Anna Petrova (you)')}</span><span class="num" style="font-weight:600">84.00 EUR</span></div>
+        <div class="actions" style="border-top:1px solid var(--border)">
+          <span class="muted" style="font-size:.8rem">Names are matched when the bill is created; unknown ones become new people.</span>
+          <span class="spacer"></span><a class="btn btn-secondary">Save as draft</a><a class="btn btn-primary">✓ Create and finalize</a></div>
+      </div>`
+    }
+    if (phone) return area + (result ? `<div style="margin-top:1rem">${result}</div>` : '') + `<div style="margin-top:1rem">${help}</div>`
+    return `<div class="paste"><div class="stack">${area}${result}</div>${help}</div>`
+  }
+
+  // A bill in PLN that was paid in EUR (state=form-fx). Shares are converted at the rate the payments imply
+  // (225.00 EUR for 960.00 PLN), the same way the server does it when the bill is finalized.
+  function fxView(phone) {
+    const lines = [
+      ['Room, 2 nights', '840.00 PLN', [ME, 'Boris', 'Dmitry'], 'split equally'],
+      ['Breakfast', '120.00 PLN', [`${ME} ×1`, 'Boris ×2', 'Dmitry ×1'], 'by parts'],
+    ]
+    const rows = [[ME, '310.00', '72.66', '225.00', '+152.34'], ['Boris', '340.00', '79.69', '—', '−79.69'], ['Dmitry', '310.00', '72.66', '—', '−72.66']]
+    return `<div class="stack">
+      <div class="card">
+        <div class="card-head"><h2 class="grow">Bill</h2></div>
+        <div class="card-body grid-bill">
+          <div class="wide"><label class="label">Description</label><textarea class="input" rows="2">Hotel in Kraków
+Two nights, Stare Miasto</textarea></div>
+          <div class="half"><label class="label">Date and time</label><input class="input num" value="02.11.2026, 14:00"></div>
+          <div><label class="label">Bill currency</label><input class="input num" value="PLN"><p class="hint">Lines are in this currency.</p></div>
+          <div><label class="label">Paid in</label><input class="input num on" value="EUR"><p class="hint">Payments and debts are in EUR.</p></div>
+          <div class="half"><label class="label">Total with tips, PLN</label><input class="input num" value="" placeholder="960.00" style="text-align:right"><p class="hint">Empty: the lines’ total, 960.00 PLN.</p></div>
+        </div>
+      </div>
+      <div class="card"><div class="card-body">
+        <label class="label">People on this bill</label>
+        <div class="row" style="gap:.375rem">${chip(ME, 'lock')}${chip('Boris', 'lock')}${chip('Dmitry', 'lock')}</div>
+        <input class="input" style="margin-top:.5rem" placeholder="Add a person: type a name or @username">
+      </div></div>
+      <div class="card">
+        <div class="card-head"><h2 class="grow">Lines</h2><span class="muted num" style="font-size:.85rem">960.00 PLN</span><a class="btn btn-secondary btn-sm">＋ Add line</a></div>
+        ${lines.map(([n, a, ch, how]) => `<div class="lrow"><div class="grow"><b>${n}</b> <span class="muted" style="font-size:.8rem">${how}</span>${pchips(ch)}</div><span class="num" style="font-weight:600">${a}</span><a class="x-btn">✕</a></div>`).join('')}
+      </div>
+      <div class="two">
+        <div class="card">
+          <div class="card-head"><h2 class="grow">Payments</h2><span class="muted num" style="font-size:.85rem">225.00 EUR</span><a class="btn btn-secondary btn-sm">＋ Add payment</a></div>
+          <div class="prow"><span style="flex:1">${ME}</span><span class="num" style="font-weight:600">225.00 EUR</span><a class="x-btn">✕</a></div>
+          <div class="note" style="padding-top:.25rem"><div class="alert-info" style="font-size:.82rem;display:block">💱 960.00 PLN paid as 225.00 EUR<br><b class="num">1 EUR = 4.2667 PLN</b> · <b class="num">1 PLN = 0.2344 EUR</b></div></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2 class="grow">Who owes whom</h2><span class="pill pill-muted">preview</span></div>
+          <div class="prow"><span style="flex:1">Boris owes you</span><span class="num pos" style="font-weight:700">79.69 EUR</span></div>
+          <div class="prow"><span style="flex:1">Dmitry owes you</span><span class="num pos" style="font-weight:700">72.66 EUR</span></div>
+          ${sumTable(['Share, PLN', 'In EUR', 'Paid, EUR', 'Balance, EUR'], rows, phone)}
+          <p class="hint" style="padding:0 1rem .75rem">Shares are in PLN, converted at the payments’ rate. Debts are in EUR, the currency people paid in.</p>
+        </div>
+      </div>
+      ${actions('form')}
+    </div>`
+  }
+
+  window.MOCK = {
+    page: 'new',
+    ctxFor: (s) => ['S:Mode',
+      { i: '📝', t: 'Form', s: 'Lines, people and payments', a: s.startsWith('form') },
+      { i: '📋', t: 'Paste text', s: 'The bot’s bill format', a: s.startsWith('paste') },
+      'S:Continue a draft',
+      { i: '✏️', t: 'Bowling night', s: '23 Nov · 36.00 EUR' },
+      { i: '✏️', t: 'Groceries Auchan', s: '20 Nov · 112.30 PLN' },
+      { i: '✏️', t: 'Ski pass', s: '14 Nov · no lines yet' }],
+    render(s, phone) {
+      const paste = s.startsWith('paste')
+      const head = `<div class="title-row"><h1>New bill</h1></div>
+        <p class="sub muted">${paste ? 'Paste a bill in the bot’s text format, check the preview, then create it.' : 'Pick the people first, then add lines and who paid.'}</p>`
+      if (paste) return head + pasteView(s, phone)
+      if (s === 'form-fx') return head + fxView(phone)
+      return head + `<div class="stack">
+        ${billCard(s, phone)}
+        ${peopleCard(s)}
+        ${linesCard(s)}
+        <div class="two">${paymentsCard(s)}${summaryCard(s, phone)}</div>
+        ${actions(s)}
+      </div>`
+    },
+  }
+</script>
+<script src="../common/shell.js"></script>
+</body>
+</html>

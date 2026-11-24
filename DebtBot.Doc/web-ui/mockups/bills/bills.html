@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DebtBot Bills mockup</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .desc { font-weight: 600; }
+  .by { font-size: .8rem; }
+</style>
+</head>
+<body>
+<script>
+  const ROWS = [
+    { x: true, date: '22 Nov', desc: 'Exchange with Boris', by: 'you', total: '100.00 EUR ⇄ 430.00 PLN', st: 'Draft' },
+    { date: '21 Nov', desc: 'Dinner at Molto', by: 'you', total: '84.00 EUR', st: 'Draft' },
+    { date: '18 Nov', desc: 'Pizza night', by: 'you', total: '50.00 EUR', st: 'Processed', bal: [+1, '30.00 EUR'] },
+    { date: '15 Nov', desc: 'Taxi to the airport', by: 'Boris', total: '30.00 EUR', st: 'Processed', bal: [-1, '10.00 EUR'] },
+    { date: '12 Nov', desc: 'Groceries Lidl', by: 'Dmitry', total: '63.40 PLN', st: 'Processed', bal: [-1, '31.70 PLN'] },
+    { date: '8 Nov', desc: 'Cinema', by: 'Clara', total: '24.00 EUR', st: 'Cancelled' },
+    { date: '2 Nov', desc: 'Hotel in Kraków', by: 'you', total: '960.00 PLN', pay: 'paid in EUR', st: 'Processed', bal: [+1, '111.65 EUR'] },
+    { date: '28 Oct', desc: 'Birthday gift for Mum', by: 'Boris', total: '120.00 PLN', st: 'Processed', bal: [-1, '40.00 PLN'] },
+  ]
+  const PILL = { Draft: ['pill-accent', 'Draft'], Ready: ['pill-muted', 'Processing…'], Processed: ['pill-muted', 'Finalized'], Cancelled: ['pill-danger', 'Cancelled'] }
+  const pill = (s) => `<span class="pill ${PILL[s][0]}">${PILL[s][1]}</span>`
+  const bal = (r) => r.bal ? `<span class="num ${r.bal[0] > 0 ? 'pos' : 'neg'}">${r.bal[0] > 0 ? 'owed to you' : 'you owe'} ${r.bal[1]}</span>` : '<span class="muted">—</span>'
+  const accept = (r) => r.x ? '<a class="btn btn-primary btn-sm">✓ Accept</a>' : ''
+  const icon = (r) => r.x ? '🔁 ' : ''
+  window.MOCK = {
+    page: 'bills',
+    ctx: ['S:Drafts',
+      { i: '🔁', t: 'Exchange with Boris', s: '22 Nov · 100.00 EUR ⇄ 430.00 PLN' },
+      { i: '✏️', t: 'Dinner at Molto', s: '21 Nov · 84.00 EUR' },
+      'S:Recent bills',
+      { i: '🧾', t: 'Pizza night', s: '18 Nov · 50.00 EUR' },
+      { i: '🧾', t: 'Taxi to the airport', s: '15 Nov · 30.00 EUR' },
+      { i: '🧾', t: 'Groceries Lidl', s: '12 Nov · 63.40 PLN' },
+      { i: '🧾', t: 'Cinema', s: '8 Nov · cancelled' },
+      { i: '🧾', t: 'Hotel in Kraków', s: '2 Nov · 960.00 PLN' },
+      'A:All bills'],
+    render(state, phone) {
+      const filtered = state === 'filtered-empty'
+      const head = `<div class="title-row"><h1>Bills</h1></div>
+        <p class="sub muted">${filtered ? 'Drafts with Clara in USD, created by you.' : 'Bills you take part in.'}</p>`
+      if (state === 'empty') return head + `<div class="card empty">
+          <div class="big">🧾</div><p style="font-weight:600">No bills yet</p>
+          <p class="muted" style="font-size:.875rem">Bills you create or take part in show up here.</p></div>`
+      return head + list({
+        phone, open: phone && (filtered || state === 'open'),
+        activeCount: filtered ? 4 : 0,
+        filters: [
+          { type: 'text', label: 'Search', placeholder: 'Description contains…' },
+          { type: 'select', label: 'Person', value: filtered ? 'Clara' : 'Everyone', on: filtered },
+          { type: 'select', label: 'Currency', value: filtered ? 'USD' : 'Any currency', on: filtered },
+          { type: 'date', label: 'From' },
+          { type: 'date', label: 'To' },
+          { type: 'seg', label: 'Status', options: ['All', 'Draft', 'Processing', 'Finalized', 'Cancelled'], value: filtered ? 'Draft' : 'All' },
+          { type: 'check', label: 'Created by me', on: filtered },
+        ],
+        sort: { field: 'Date', dir: '↓ Newest first' },
+        columns: [
+          { label: 'Date', w: '5.5rem', sorted: '↓', cell: (r) => `<span class="muted num">${r.date}</span>` },
+          { label: 'Bill', cell: (r) => `<div class="desc">${icon(r)}${r.desc}</div><div class="by muted">by ${r.by}${r.x ? ' · <span class="pill pill-accent" style="padding:0 .4rem">Exchange pair</span>' : ''}</div>` },
+          { label: 'Total', cls: 'r', cell: (r) => `<span class="num">${r.total}</span>${r.pay ? `<div class="by muted">${r.pay}</div>` : ''}` },
+          { label: 'Your balance', cls: 'r', cell: bal },
+          { label: 'Status', cell: (r) => pill(r.st) },
+          { label: '', cls: 'r', w: '6rem', cell: accept },
+        ],
+        rows: filtered ? [] : ROWS.map((r) => ({ ...r, hl: r.x })),
+        card: (r) => `<div class="l1"><span class="desc" style="flex:1;min-width:0">${icon(r)}${r.desc}</span>${pill(r.st)}</div>
+          <div class="l2 muted"><span>${r.date} · by ${r.by}</span><span class="spacer"></span><span class="num" style="color:var(--text)">${r.total}</span></div>
+          ${r.x ? `<div class="l2"><span class="pill pill-accent">Exchange pair</span><span class="spacer"></span>${accept(r)}</div>` : r.bal ? `<div class="l2"><span class="spacer"></span>${bal(r)}</div>` : ''}`,
+        pager: { range: '1–8 of 57', pages: 8 },
+        empty: `<div class="card empty">
+          <div class="big">🔍</div><p style="font-weight:600">No bills match these filters</p>
+          <p class="muted" style="font-size:.875rem">Try another person, currency or status.</p>
+          <div class="row" style="justify-content:center"><a class="btn btn-secondary">✕ Clear filters</a></div></div>`,
+      })
+    },
+  }
+</script>
+<script src="../common/list.js"></script>
+<script src="../common/shell.js"></script>
+</body>
+</html>

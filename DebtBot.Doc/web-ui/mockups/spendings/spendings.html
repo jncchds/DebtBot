@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DebtBot Spendings mockup</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .desc { font-weight: 600; }
+  .by { font-size: .8rem; }
+  .amt { font-weight: 700; }
+  tr.cx td, .item.cx { opacity: .6; }
+  tr.cx .amt, .item.cx .amt { text-decoration: line-through; }
+</style>
+</head>
+<body>
+<script>
+  // Spendings/Own rows: your share of each bill. amount/currency = bill currency; paid = payment currency when it differs.
+  const ROWS = [
+    { date: '21 Nov', desc: 'Dinner at Molto', amt: '28.00 EUR', share: '33 %' },
+    { date: '18 Nov', desc: 'Pizza night', amt: '20.00 EUR', share: '40 %' },
+    { date: '15 Nov', desc: 'Taxi to the airport', amt: '10.00 EUR', share: '33 %' },
+    { date: '12 Nov', desc: 'Groceries Lidl', amt: '31.70 PLN', share: '50 %' },
+    { date: '8 Nov', desc: 'Cinema', amt: '12.00 EUR', share: '50 %', cx: true },
+    { date: '2 Nov', desc: 'Hotel in Kraków', amt: '320.00 PLN', paid: '74.42 EUR', share: '33 %' },
+    { date: '28 Oct', desc: 'Birthday gift for Mum', amt: '40.00 PLN', share: '33 %' },
+    { date: '19 Oct', desc: 'Coffee #18', amt: '4.75 USD', share: '50 %' },
+  ]
+  const cx = '<span class="pill pill-danger">Cancelled</span>'
+  window.MOCK = {
+    page: 'spendings',
+    ctxFor: (s) => s === 'empty'
+      ? ['S:This month', { i: '📊', t: 'Nothing yet', s: 'November · no spendings' }, 'A:All spendings']
+      : ['S:This month',
+         { i: '📊', t: '58.00 EUR', s: 'November · 3 spendings' },
+         { i: '📊', t: '351.70 PLN', s: 'November · 2 spendings' },
+         'A:All spendings'],
+    render(state, phone) {
+      const filtered = state === 'filtered' || state === 'filtered-empty'
+      const fe = state === 'filtered-empty'
+      const head = `<div class="title-row"><h1>Spendings</h1></div>
+        <p class="sub muted">${fe ? 'USD, 1–24 Nov, cancelled shown.' : filtered ? 'EUR, 1–24 Nov, cancelled shown.' : 'Your share of every bill you take part in.'}</p>`
+      if (state === 'empty') return head + `<div class="card empty">
+          <div class="big">📊</div><p style="font-weight:600">No spendings yet</p>
+          <p class="muted" style="font-size:.875rem">Once a bill you're on is finalized, your share of it shows up here.</p></div>`
+      const rows = fe ? [] : filtered
+        ? ROWS.filter((r) => r.amt.endsWith('EUR') && !r.date.endsWith('Oct'))
+        : ROWS.filter((r) => !r.cx)
+      return head + list({
+        phone, open: phone && (filtered || state === 'open'),
+        activeCount: filtered ? 3 : 0,
+        filters: [
+          { type: 'select', label: 'Currency', value: fe ? 'USD' : filtered ? 'EUR' : 'Any currency', on: filtered },
+          { type: 'date', label: 'From', value: filtered ? '01.11.2026' : '', on: filtered },
+          { type: 'date', label: 'To', value: filtered ? '24.11.2026' : '', on: filtered },
+          { type: 'check', label: 'Show cancelled', on: filtered },
+        ],
+        sort: { field: 'Date', dir: '↓ Newest first' },
+        columns: [
+          { label: 'Date', w: '5.5rem', sorted: '↓', cell: (r) => `<span class="muted num">${r.date}</span>` },
+          { label: 'Bill', cell: (r) => `<div class="desc"><a class="link">${r.desc}</a></div><div class="by muted">${r.share} of the bill</div>` },
+          { label: 'Amount', cls: 'r', cell: (r) => `<span class="amt num">${r.amt}</span>${r.paid ? `<div class="by muted">paid as ${r.paid}</div>` : ''}` },
+          { label: '', w: '7rem', cell: (r) => r.cx ? cx : '' },
+        ],
+        rows: rows.map((r) => ({ ...r })),
+        card: (r) => `<div class="l1"><a class="desc link" style="flex:1;min-width:0">${r.desc}</a><span class="amt num">${r.amt}</span></div>
+          <div class="l2 muted"><span>${r.date} · ${r.share} of the bill</span><span class="spacer"></span>${r.cx ? cx : ''}</div>${r.paid ? `<div class="l2 muted"><span class="spacer"></span><span>paid as ${r.paid}</span></div>` : ''}`,
+        pager: filtered ? { range: `1–${rows.length} of ${rows.length}`, pages: 1 } : { range: '1–20 of 41', pages: 3 },
+        empty: `<div class="card empty">
+          <div class="big">🔍</div><p style="font-weight:600">No spendings match these filters</p>
+          <p class="muted" style="font-size:.875rem">Try another currency or date range.</p>
+          <div class="row" style="justify-content:center"><a class="btn btn-secondary">✕ Clear filters</a></div></div>`,
+      })
+    },
+  }
+</script>
+<script src="../common/list.js"></script>
+<script src="../common/shell.js"></script>
+<script>
+  // Dim cancelled rows (the shared list() has no row class hook besides hl).
+  document.querySelectorAll('tbody tr, .item').forEach((el) => { if (el.innerHTML.includes('pill-danger')) el.classList.add('cx') })
+</script>
+</body>
+</html>

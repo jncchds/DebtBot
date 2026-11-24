@@ -17,6 +17,7 @@ public class DebtContext : DbContext
     public DbSet<Spending> Spendings { get; set; }
     public DbSet<BillParticipant> BillParticipants { get; set; }
     public DbSet<NotificationSubscription> NotificationSubscriptions { get; set; }
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
 
     public DebtContext(DbContextOptions<DebtContext> options) : base(options)
     {
@@ -34,5 +35,16 @@ public class DebtContext : DbContext
                 t.DebtorUserId, 
                 t.CurrencyCode
             });
+
+        // Unique among users that have a login; Postgres allows many NULLs in a unique index.
+        modelBuilder
+            .Entity<User>()
+            .HasIndex(u => u.Login)
+            .IsUnique();
+
+        modelBuilder
+            .Entity<RefreshToken>()
+            .HasIndex(t => t.TokenHash)
+            .IsUnique();
     }
 }

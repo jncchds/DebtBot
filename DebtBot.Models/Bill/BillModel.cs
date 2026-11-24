@@ -1,6 +1,7 @@
 ﻿using DebtBot.Models.Enums;
 using DebtBot.Models.BillLine;
 using DebtBot.Models.User;
+using DebtBot.Models.LedgerRecord;
 using System.Text;
 
 namespace DebtBot.Models.Bill;
@@ -15,11 +16,14 @@ public class BillModel
     public DateTime Date { get; set; }
     public ProcessingState Status { get; set; }
     public decimal TotalWithTips { get; set; }
+    /// <summary>For the two bills of an exchange: the id of the other bill of the pair.</summary>
+    public Guid? ExchangeBillId { get; set; }
 
     public List<BillLineModel> Lines { get; set; }
     public List<BillPaymentModel> Payments { get; set; }
 
     public List<SpendingModel> Spendings { get; set; }
+    public List<LedgerRecordModel> LedgerRecords { get; set; }
 
     public override string ToString()
     {

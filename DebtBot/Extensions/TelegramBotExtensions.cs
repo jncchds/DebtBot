@@ -1,5 +1,6 @@
 ﻿using DebtBot.Messages;
 using Telegram.Bot;
+using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace DebtBot.Extensions;
@@ -29,23 +30,25 @@ public static class TelegramBotExtensions
 
         if (message.MessageId.HasValue)
         {
-            await botClient.EditMessageTextAsync(
+            await botClient.EditMessageText(
                 message.ChatId,
                 message.MessageId.Value,
                 message.Text,
-                message.ParseMode,
+                parseMode: message.ParseMode,
                 replyMarkup: inlineMarkup,
                 cancellationToken: cancellationToken);
         }
         else
         {
-            await botClient.SendTextMessageAsync(
+            await botClient.SendMessage(
                 message.ChatId,
                 message.Text,
-                message.ThreadId,
-                message.ParseMode,
-                replyToMessageId: message.ReplyToMessageId,
-                replyMarkup: (IReplyMarkup?)inlineMarkup ?? replyMarkup,
+                parseMode: message.ParseMode,
+                replyParameters: message.ReplyToMessageId is int replyToMessageId
+                    ? new ReplyParameters { MessageId = replyToMessageId }
+                    : null,
+                replyMarkup: (ReplyMarkup?)inlineMarkup ?? replyMarkup,
+                messageThreadId: message.ThreadId,
                 cancellationToken: cancellationToken);
         }
     }

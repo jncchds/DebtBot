@@ -35,7 +35,7 @@ public class TelegramLogger : ILogger
         }
         try
         {
-            _botClient.SendTextMessageAsync(_chatId, entry, parseMode: ParseMode.Html).Wait();
+            _botClient.SendMessage(_chatId, entry, parseMode: ParseMode.Html).Wait();
         }
         catch (Exception e)
         {
