@@ -12,6 +12,7 @@ using DebtBot.Repositories;
 using DebtBot.Services;
 using DebtBot.Telegram;
 using MassTransit;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
@@ -49,6 +50,7 @@ builder.Services.AddScoped<IBudgetService, BudgetService>();
 builder.Services.AddScoped<IExcelService, ExcelService>();
 builder.Services.AddScoped<IIdentityService, IdentityService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IApiTokenService, ApiTokenService>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddSingleton<LoginThrottle>();
 builder.Services.AddSingleton(TimeProvider.System);
@@ -141,21 +143,8 @@ if (forwarded.Enabled)
     });
 }
 
-// Basic brute-force protection for the sign-in endpoints, per client IP.
-// Behind a reverse proxy all clients share the proxy's IP unless forwarded headers are enabled (above).
-builder.Services.AddRateLimiter(options =>
-{
-    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    options.AddPolicy(AuthController.RateLimitPolicy, httpContext =>
-        RateLimitPartition.GetFixedWindowLimiter(
-            httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-            _ => new FixedWindowRateLimiterOptions
-            {
-                PermitLimit = 10,
-                Window = TimeSpan.FromMinutes(1),
-                QueueLimit = 0,
-            }));
-});
+builder.Services.AddDebtBotRateLimiter(builder.Configuration);
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -172,11 +161,12 @@ builder.Services.AddSwaggerGen(c =>
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         In = ParameterLocation.Header,
-        Description = "Paste the access token (without the \"Bearer \" prefix)",
+        Description = "Paste a web session access token (JWT) or a personal API token (dbt_…), without the \"Bearer \" prefix. " +
+            "Both work the same way. Create an API token on your Profile, under API tokens.",
         Name = "Authorization",
         Type = SecuritySchemeType.Http,
         Scheme = "bearer",
-        BearerFormat = "JWT"
+        BearerFormat = "JWT or dbt_ API token"
     });
     c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
     {
@@ -194,30 +184,7 @@ builder.Services.AddDbContext<DebtContext>(options =>
 builder.Services.Configure<DebtBotConfiguration>(
     builder.Configuration.GetSection(DebtBotConfiguration.SectionName));
 
-builder.Services
-    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(x =>
-    {
-        x.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
-        {
-            ValidIssuer = builder.Configuration[$"{DebtBotConfiguration.SectionName}:JwtConfiguration:Issuer"],
-            ValidAudience = builder.Configuration[$"{DebtBotConfiguration.SectionName}:JwtConfiguration:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(
-                    builder.Configuration[$"{DebtBotConfiguration.SectionName}:JwtConfiguration:Key"]!)),
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-        };
-    });
-
-
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy(IdentityData.AdminUserPolicyName,
-        policy => policy.RequireClaim(IdentityData.AdminUserClaimName));
-});
+builder.Services.AddDebtBotAuthentication(builder.Configuration);
 
 var app = builder.Build();
 
@@ -234,21 +201,15 @@ if (forwarded.Enabled)
     app.UseForwardedHeaders();
 }
 
-// Configure the HTTP request pipeline.
-//if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Swagger is served in every environment, production included (user decision, series 2).
+app.UseSwagger();
+app.UseSwaggerUI();
 
 // The web UI is built into wwwroot (see DebtBot/Dockerfile).
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-app.UseRateLimiter();
-
-app.UseAuthentication();
-app.UseAuthorization();
+app.UseDebtBotAuth();
 
 app.MapControllers();
 

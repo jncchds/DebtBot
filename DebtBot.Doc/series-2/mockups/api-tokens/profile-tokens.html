@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DebtBot Profile API tokens mockup</title>
+<link rel="stylesheet" href="../../../web-ui/mockups/common/mock.css">
+<style>
+  .form { max-width: 34rem; }
+  .field + .field { margin-top: 1rem; }
+  .field .help { margin-top: .3rem; font-size: .8rem; color: var(--text-muted); }
+  .foot { display: flex; align-items: center; gap: .75rem; margin-top: 1.25rem; flex-wrap: wrap; }
+  .mb { margin-bottom: 1rem; }
+  .small { font-size: .78rem; }
+  .name { font-weight: 600; }
+  code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .85em; }
+  code { background: var(--surface-2); border-radius: 4px; padding: .05rem .35rem; }
+  tr.off td, .item.off { opacity: .6; }
+  tr.new td, .item.new { background: var(--accent-faint); }
+  .exp-btn { width: 1.9rem; justify-content: center; padding-left: 0; padding-right: 0; color: var(--text-muted); }
+  tr.open td, .item.open { background: var(--accent-faint); }
+  tr.open td { border-bottom: 0; }
+  tr.panel td { background: var(--accent-faint); padding: .25rem 1rem .75rem; }
+  tr.open.danger td, tr.panel.danger td, .item.open.danger { background: color-mix(in srgb, var(--danger) 6%, transparent); }
+  .panel-box { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+  .item .panel-box, .item .confirm-box { margin-top: .6rem; padding-top: .6rem; border-top: 1px dashed var(--border); }
+  .confirm-box { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; }
+  .choices { display: grid; gap: .5rem; }
+  .choice { display: flex; gap: .6rem; align-items: flex-start; border: 1px solid var(--border); border-radius: 8px; padding: .6rem .75rem; }
+  .choice.on { border-color: color-mix(in srgb, var(--accent) 45%, transparent); background: var(--accent-faint); }
+  .choice .dot { flex: none; width: .95rem; height: .95rem; margin-top: .15rem; border-radius: 999px; border: 1.5px solid var(--text-muted); }
+  .choice.on .dot { border: 4.5px solid var(--accent); }
+  .choice b { display: block; font-size: .9rem; }
+  .choice span { font-size: .8rem; color: var(--text-muted); }
+  .secret { display: flex; gap: .5rem; align-items: stretch; }
+  .phone .secret { flex-direction: column; }
+  .secret .box { flex: 1; min-width: 0; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-2); padding: .5rem .65rem; font-family: ui-monospace, monospace; font-size: .82rem; overflow-wrap: anywhere; }
+  pre.curl { margin: 0; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-2); padding: .6rem .75rem; font-size: .78rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .lbl { font-size: .8rem; color: var(--text-muted); margin: 1rem 0 .35rem; }
+</style>
+</head>
+<body>
+<script>
+  // GET profile/tokens → [{ id, name, prefix, scope, createdAt, lastUsedAt, expiresAt, revokedAt, status }]
+  // Active first (newest first), then expired, then revoked.
+  const T = [
+    { id: 5, name: 'Budget spreadsheet', prefix: 'Hk3sQ0tY', scope: 'ReadWrite', created: '24 Nov 2026', used: null, expires: '22 Feb 2027', status: 'active', fresh: true },
+    { id: 4, name: 'Home Assistant', prefix: 'q7Rk2fXa', scope: 'Read', created: '2 Oct 2026', used: 'today 14:32', expires: '31 Dec 2026', status: 'active' },
+    { id: 3, name: 'Monthly report script', prefix: 'M3vT9bLc', scope: 'ReadWrite', created: '14 Sep 2026', used: 'yesterday', expires: 'Never', status: 'active' },
+    { id: 2, name: 'Old laptop', prefix: 'Zp0wE4hN', scope: 'Read', created: '12 Jul 2026', used: '20 Aug 2026', expires: '10 Oct 2026', status: 'expired' },
+    { id: 1, name: 'CI test', prefix: 'a1b2c3d4', scope: 'ReadWrite', created: '1 Sep 2026', used: null, expires: '30 Nov 2026', status: 'revoked', revoked: '3 Sep 2026' },
+  ]
+  const scope = (t) => t.scope === 'Read' ? '<span class="pill pill-muted">Read only</span>' : '<span class="pill pill-accent">Read and write</span>'
+  const status = (t) => t.status === 'active' ? '<span class="pill pill-success">Active</span>'
+    : t.status === 'expired' ? '<span class="pill pill-muted">Expired</span>' : `<span class="pill pill-danger">Revoked</span>`
+  const tok = (t) => `<span class="mono">dbt_${t.prefix}…</span>`
+  const used = (t) => t.used ?? '<span class="muted">never</span>'
+  const exp = (t) => t.expires === 'Never' ? '<span class="muted">Never</span>' : t.expires
+  // ?open=<id>: the expanded row with its actions (▾ at the end of the row; only active tokens have one).
+  const expBtn = (t, open) => t.status === 'active' ? `<a class="btn btn-ghost btn-sm exp-btn" title="${open ? 'Hide actions' : 'Actions'}">${open ? '▴' : '▾'}</a>` : ''
+  const panelHtml = (t, confirm) => confirm
+    ? `<div class="confirm-box"><span class="neg" style="flex:1;min-width:12rem">Revoke <b>${t.name}</b> (<span class="mono">dbt_${t.prefix}…</span>)? Anything using it stops working at once. This can't be undone.</span><a class="btn btn-danger btn-sm">🚫 Revoke</a><a class="btn btn-ghost btn-sm">Keep</a></div>`
+    : `<div class="panel-box"><a class="btn btn-secondary btn-sm" style="color:var(--danger)">🚫 Revoke</a></div>`
+
+  function list(state, phone) {
+    const rows = T.filter((t) => state === 'created' || !t.fresh)
+    // tokens: Monthly report script is open with the revoke confirmation; new: Home Assistant is open.
+    const openId = state === 'tokens' ? 3 : state === 'new' ? 4 : null
+    const confirm = state === 'tokens'
+    const active = rows.filter((t) => t.status === 'active').length
+    const cls = (t) => t.id === openId ? `open${confirm ? ' danger' : ''}` : t.status !== 'active' ? 'off' : t.fresh ? 'new' : ''
+    const head = `<div class="card-head"><h2>🗝️ Your tokens</h2><span class="grow"></span><span class="muted small">${active} active · up to 20</span></div>`
+    if (phone) return `<div class="card">${head}${rows.map((t) => `<div class="item ${cls(t)}">
+      <div class="l1"><span class="name" style="flex:1;min-width:0">${t.name}</span>${status(t)}${expBtn(t, t.id === openId)}</div>
+      <div class="l2 muted">${tok(t)}<span class="spacer"></span>${scope(t)}</div>
+      <div class="l2 muted"><span>Created ${t.created} · last used ${t.used ?? 'never'}</span></div>
+      <div class="l2 muted"><span>${t.status === 'revoked' ? `Revoked ${t.revoked}` : t.status === 'expired' ? `Expired ${t.expires}` : t.expires === 'Never' ? 'Never expires' : `Expires ${t.expires}`}</span></div>
+      ${t.id === openId ? panelHtml(t, confirm) : ''}</div>`).join('')}</div>`
+    return `<div class="card">${head}<table class="tbl"><thead><tr><th>Name</th><th>Token</th><th>Scope</th><th>Created</th><th>Last used</th><th>Expires</th><th>Status</th><th style="width:2.5rem"></th></tr></thead><tbody>
+      ${rows.map((t) => `<tr class="${cls(t)}">
+        <td class="name">${t.name}</td><td>${tok(t)}</td><td>${scope(t)}</td><td class="num">${t.created}</td><td class="num">${used(t)}</td>
+        <td class="num">${exp(t)}</td><td>${status(t)}${t.status === 'revoked' ? `<div class="muted small">${t.revoked}</div>` : ''}</td><td class="r">${expBtn(t, t.id === openId)}</td></tr>
+        ${t.id === openId ? `<tr class="panel${confirm ? ' danger' : ''}"><td colspan="8">${panelHtml(t, confirm)}</td></tr>` : ''}`).join('')}
+      </tbody></table></div>`
+  }
+
+  function newForm() {
+    const choice = (on, title, text) => `<div class="choice${on ? ' on' : ''}"><span class="dot"></span><div><b>${title}</b><span>${text}</span></div></div>`
+    return `<div class="card form mb"><div class="card-head"><h2>＋ New token</h2></div><div class="card-body">
+      <div class="field"><label class="label">Name</label><input class="input focus" value="Budget spreadsheet"><div class="help">So you can tell your tokens apart, such as the app or script that uses it.</div></div>
+      <div class="field"><label class="label">Scope</label><div class="choices">
+        ${choice(false, 'Read only', 'See your bills, debts, spendings and contacts.')}
+        ${choice(true, 'Read and write', 'Also create, change, finalize and cancel bills as you.')}
+      </div></div>
+      <div class="field"><label class="label">Expires</label><div class="seg"><span class="opt">30 days</span><span class="opt on">90 days</span><span class="opt">365 days</span><span class="opt">Never</span></div><div class="help">On 22 Feb 2027.</div></div>
+      <div class="foot"><a class="btn btn-primary">Create token</a><a class="btn btn-ghost">Cancel</a></div>
+    </div></div>`
+  }
+
+  function created() {
+    const secret = 'dbt_Hk3sQ0tYv8LmZ2pW9cRbX5nJ7aEu4gTqD1sFoKyHw6M'
+    return `<div class="card form mb"><div class="card-head"><h2>✅ Token created · Budget spreadsheet</h2></div><div class="card-body">
+      <div class="alert-info">⚠️ <span><b>Copy it now. You won't see it again.</b> Keep it secret: it works as you until it expires or you revoke it.</span></div>
+      <div class="lbl">Your token</div>
+      <div class="secret"><div class="box">${secret}</div><a class="btn btn-primary">📋 Copy</a></div>
+      <div class="lbl">Try it</div>
+      <pre class="curl mono">curl -H "Authorization: Bearer ${secret}" \\
+  https://debtbot.example.com/api/v1/Debts/Own</pre>
+      <div class="help" style="margin-top:.4rem;font-size:.8rem;color:var(--text-muted)">Every API call works the same way. The API reference is at <a class="link">/swagger</a>.</div>
+      <div class="foot"><a class="btn btn-secondary">Done</a></div>
+    </div></div>`
+  }
+
+  window.MOCK = {
+    page: 'profile',
+    ctxFor: () => ['S:Sections',
+      { i: '🪪', t: 'Details', s: 'Name, phone, email' },
+      { i: '🔑', t: 'Login &amp; password', s: 'Web sign-in' },
+      { i: '✈️', t: 'Telegram', s: 'Account and bot' },
+      { i: '🗝️', t: 'API tokens', s: 'Scripts and apps', a: true }],
+    render(state, phone) {
+      if (state === 'main') state = 'tokens'
+      const head = `<div class="title-row"><h1>API tokens</h1><span class="spacer"></span>${state === 'tokens' ? '<a class="btn btn-primary">＋ New token</a>' : ''}</div>
+        <p class="sub muted">Let your scripts and apps call the DebtBot API as you. Treat a token like a password.</p>`
+      return head + (state === 'new' ? newForm() : state === 'created' ? created() : '') + list(state, phone)
+    },
+  }
+</script>
+<script src="../../../web-ui/mockups/common/shell.js"></script>
+</body>
+</html>

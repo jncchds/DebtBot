@@ -30,6 +30,7 @@ const user = (id: string, extra: Partial<AdminUser> = {}): AdminUser => ({
   hasPassword: false,
   billCount: 0,
   contactCount: 0,
+  apiTokenCount: 0,
   firstBillDate: null,
   ...extra,
 })

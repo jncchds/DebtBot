@@ -47,6 +47,18 @@ There is no open sign-up: every web user is someone DebtBot knows from Telegram.
 More: [`DebtBot.Doc/web-ui/web-sign-in.md`](DebtBot.Doc/web-ui/web-sign-in.md) (sessions, the proxy setting, the
 widget) and [`DebtBot.Doc/web-ui/api.md`](DebtBot.Doc/web-ui/api.md) (the REST API).
 
+## Calling the API
+Scripts and apps call the REST API with a personal API token. Make one on 👤 Profile › API tokens: give it a name,
+choose **Read only** or **Read and write**, and an expiry (30, 90 or 365 days, or never). The token (`dbt_…`) is shown
+once; copy it then. Send it as a bearer token:
+```sh
+curl -H "Authorization: Bearer dbt_…" https://<your host>/api/v1/Debts/Own
+```
+A token acts as you, with your access. A read-only token gets 403 on anything but GET; no token can manage tokens,
+change passwords or refresh web sessions. Each token is limited to 120 requests a minute. Revoke a token on the same
+page; an admin can revoke all of a user's tokens on 🛠 Admin › Users. The API reference is at `/swagger` (Authorize
+takes a token too), and [`api.md`](DebtBot.Doc/web-ui/api.md) has the details ("API tokens").
+
 ## Local development
 - **.NET SDK 11** (the projects target `net11.0`) and **Node 22**.
 - Start Postgres and RabbitMQ: `docker compose up -d db rabbit` (the override publishes Postgres on 5432 and the

@@ -5,6 +5,8 @@ import { ApiError } from '../api/client'
 import { useAuthConfig, useProfile } from '../api/hooks'
 import { useSaveProfile, useSetPassword } from '../api/people'
 import type { ApiErrorBody, Profile as ProfileData } from '../api/types'
+import { Card, Field } from '../components/profile/bits'
+import { inputProps } from '../components/profile/inputProps'
 import { ErrorBox, Loading, PageTitle } from '../components/ui'
 import { handle } from '../lib/bills'
 import {
@@ -48,47 +50,6 @@ export default function Profile({ section }: { section: ProfileSection }) {
     </>
   )
 }
-
-function Card({ title, badge, children }: { title: ReactNode; badge?: ReactNode; children: ReactNode }) {
-  return (
-    <section className="card overflow-hidden">
-      <header className="flex items-center gap-2 border-b border-line px-4 py-3">
-        <h2 className="min-w-0 flex-1 font-bold">{title}</h2>
-        {badge}
-      </header>
-      <div className="p-4">{children}</div>
-    </section>
-  )
-}
-
-function Field({ id, label, help, error, children }: { id: string; label: string; help?: string; error?: string; children: ReactNode }) {
-  return (
-    <div className="mb-4">
-      <label htmlFor={id} className="label">
-        {label}
-      </label>
-      {children}
-      {error ? (
-        <p id={`${id}-msg`} className="mt-1 text-[0.8rem] text-danger">
-          {error}
-        </p>
-      ) : (
-        help && (
-          <p id={`${id}-msg`} className="mt-1 text-[0.8rem] muted">
-            {help}
-          </p>
-        )
-      )}
-    </div>
-  )
-}
-
-const inputProps = (id: string, error?: string) => ({
-  id,
-  className: clsx('input', error && 'border-danger focus:border-danger focus:ring-danger/25'),
-  'aria-invalid': !!error,
-  'aria-describedby': `${id}-msg`,
-})
 
 function Details({ profile }: { profile: ProfileData }) {
   const { t } = useTranslation()

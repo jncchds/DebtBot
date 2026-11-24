@@ -16,7 +16,7 @@ partial class DebtContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261124093738_LinkOldExchanges";
+    public override string LastMigrationId => "20261124165718_ApiTokens";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -26,6 +26,55 @@ partial class DebtContextModelSnapshot : ModelSnapshot
             .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
         NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+        modelBuilder.Entity("DebtBot.DB.Entities.ApiToken", b =>
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uuid");
+
+                b.Property<DateTime>("CreatedAt")
+                    .HasColumnType("timestamp with time zone");
+
+                b.Property<DateTime?>("ExpiresAt")
+                    .HasColumnType("timestamp with time zone");
+
+                b.Property<string>("Hash")
+                    .IsRequired()
+                    .HasMaxLength(128)
+                    .HasColumnType("character varying(128)");
+
+                b.Property<DateTime?>("LastUsedAt")
+                    .HasColumnType("timestamp with time zone");
+
+                b.Property<string>("Name")
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .HasColumnType("character varying(100)");
+
+                b.Property<string>("Prefix")
+                    .IsRequired()
+                    .HasMaxLength(16)
+                    .HasColumnType("character varying(16)");
+
+                b.Property<DateTime?>("RevokedAt")
+                    .HasColumnType("timestamp with time zone");
+
+                b.Property<byte>("Scope")
+                    .HasColumnType("smallint");
+
+                b.Property<Guid>("UserId")
+                    .HasColumnType("uuid");
+
+                b.HasKey("Id");
+
+                b.HasIndex("Hash")
+                    .IsUnique();
+
+                b.HasIndex("UserId");
+
+                b.ToTable("ApiTokens");
+            });
 
         modelBuilder.Entity("DebtBot.DB.Entities.Bill", b =>
             {
@@ -379,6 +428,17 @@ partial class DebtContextModelSnapshot : ModelSnapshot
                 b.HasIndex("ContactUserId");
 
                 b.ToTable("UserContactsLinks");
+            });
+
+        modelBuilder.Entity("DebtBot.DB.Entities.ApiToken", b =>
+            {
+                b.HasOne("DebtBot.DB.Entities.User", "User")
+                    .WithMany()
+                    .HasForeignKey("UserId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
+
+                b.Navigation("User");
             });
 
         modelBuilder.Entity("DebtBot.DB.Entities.Bill", b =>

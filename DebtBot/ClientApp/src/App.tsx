@@ -17,6 +17,7 @@ const Spendings = lazy(() => import('./pages/Spendings'))
 const Contacts = lazy(() => import('./pages/Contacts'))
 const Subscriptions = lazy(() => import('./pages/Subscriptions'))
 const Profile = lazy(() => import('./pages/Profile'))
+const ProfileTokens = lazy(() => import('./pages/ProfileTokens'))
 const AdminUsers = lazy(() => import('./pages/AdminUsers'))
 const AdminMerge = lazy(() => import('./pages/AdminMerge'))
 const AdminBills = lazy(() => import('./pages/AdminBills'))
@@ -61,6 +62,10 @@ export default function App() {
         <Route path="profile" element={page(<Profile key="details" section="details" />)} />
         <Route path="profile/password" element={page(<Profile key="password" section="password" />)} />
         <Route path="profile/telegram" element={page(<Profile key="telegram" section="telegram" />)} />
+        {/* One component for the three, so the shown-once secret survives the move from /new to /created. */}
+        <Route path="profile/tokens" element={page(<ProfileTokens key="tokens" mode="list" />)} />
+        <Route path="profile/tokens/new" element={page(<ProfileTokens key="tokens" mode="new" />)} />
+        <Route path="profile/tokens/created" element={page(<ProfileTokens key="tokens" mode="created" />)} />
         <Route
           path="admin"
           element={

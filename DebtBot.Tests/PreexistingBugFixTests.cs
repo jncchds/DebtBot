@@ -206,7 +206,7 @@ public class UserEndpointFixesTests
         return controller;
     }
 
-    private UsersController Users() => WithUser(new UsersController(_users, Substitute.For<IAuthService>()));
+    private UsersController Users() => WithUser(new UsersController(_users, Substitute.For<IAuthService>(), Substitute.For<DebtBot.Services.IApiTokenService>()));
     private UserContactsController Contacts() => WithUser(new UserContactsController(_contacts, _users));
 
     private static int? Status(IActionResult result) => (result as IStatusCodeActionResult)?.StatusCode;

@@ -23,16 +23,7 @@ public class IdentityService : IIdentityService
 
     public AccessToken GenerateAccessToken(UserModel userModel)
     {
-        var claims = new List<Claim>
-        {
-            new Claim(ClaimTypes.NameIdentifier, userModel.Id.ToString()),
-            new Claim(ClaimTypes.Name, userModel.DisplayName),
-        };
-
-        if (userModel.Role == UserRole.Admin)
-        {
-            claims.Add(new Claim(IdentityData.AdminUserClaimName, "true"));
-        }
+        var claims = UserClaims(userModel.Id, userModel.DisplayName, userModel.Role);
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtConfig.Key));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -46,6 +37,23 @@ public class IdentityService : IIdentityService
             signingCredentials: creds);
 
         return new AccessToken(new JwtSecurityTokenHandler().WriteToken(token), expiresAt);
+    }
+
+    /// <summary>The user's claims, the same for a JWT and an API token: id, name and (for admins) the admin claim.</summary>
+    public static List<Claim> UserClaims(Guid id, string displayName, UserRole role)
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, id.ToString()),
+            new Claim(ClaimTypes.Name, displayName ?? ""),
+        };
+
+        if (role == UserRole.Admin)
+        {
+            claims.Add(new Claim(IdentityData.AdminUserClaimName, "true"));
+        }
+
+        return claims;
     }
 
 }

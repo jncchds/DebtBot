@@ -15,7 +15,7 @@ The HTML and PNGs here are the spec for the app shell. `sections.html` shows the
 | Spendings | This month (one entry per bill currency, opening that month's spendings in it), … All spendings. Then **Following** | T7, T7b |
 | Contacts | Recently added (the 3 newest), … All contacts | T7 |
 | Subscriptions | Summary: Requests, Get your bills and debts, Your subscriptions (each scrolls to its card; none highlighted) | T7 |
-| Profile | Sections: Details, Login & password, Telegram | T4, pages T7 |
+| Profile | Sections: Details, Login & password, Telegram, API tokens | T4, pages T7, API tokens series 2 T2 |
 | Admin | Users, Merge users (badge with the suggestion count, `GET Users/merge/suggestions`; none at 0), All bills | T4 (links), T8 (badge) |
 
 - **Following (T7b, `mockups/following/`)** on Debts, Bills and Spendings: up to 5 people you have a confirmed subscription to (🔔, your name for them, "see <Name>'s debts|bills|spendings", or "showing now" highlighted for the one you're viewing), then "… All subscriptions" → `/subscriptions`. Hidden when you have none. While you view someone (`?of=`), the page's own section shows their data instead ("<Name>'s balances", "<Name>'s drafts" / "<Name>'s recent bills", "<Name> this month"), without its "… All x".
@@ -32,8 +32,8 @@ The HTML and PNGs here are the spec for the app shell. `sections.html` shows the
 | Spendings | `/spendings?of=&currency=&from=&to=&cancelled=1&sort=date\|amount&order=asc\|desc&page=` |
 | Contacts | `/contacts?q=` (the search; typing replaces the history entry) |
 | Subscriptions | `/subscriptions` (`#requests`, `#theirs`, `#yours` scroll to a card); the old `/contacts/requests` redirects here |
-| Profile | `/profile`, `/profile/password`, `/profile/telegram` |
-| Admin | `/admin/users?search=&role=admin\|regular&page=`, `/admin/users/<id>/password` (the Login & password dialog over the list, keeping its query), `/admin/merge?swap=<mergeId>,…&keep=<id>&merge=<id>`, `/admin/bills?q=&by=&with=&currency=&from=&to=&status=&sort=&order=&page=` (T8). Non-admins get the 404 page on all of them. |
+| Profile | `/profile`, `/profile/password`, `/profile/telegram`, `/profile/tokens?open=<id>` (the open row's actions), `/profile/tokens/new`, `/profile/tokens/created` (the shown-once secret, in memory only: a reload goes to `/profile/tokens`) (series 2, T2) |
+| Admin | `/admin/users?search=&role=admin\|regular&page=&open=<id>` (`open`: the row whose ▾ actions are shown, series 2 T2), `/admin/users/<id>/password` (the Login & password dialog over the list, keeping its query), `/admin/merge?swap=<mergeId>,…&keep=<id>&merge=<id>`, `/admin/bills?q=&by=&with=&currency=&from=&to=&status=&sort=&order=&page=` (T8). Non-admins get the 404 page on all of them. |
 | Login | `/login` (it returns you to the page you came from) |
 
 `of=<userId>` (T7b) on Debts, Bills and Spendings shows someone you have a confirmed subscription to, read-only (`mockups/following/`). It isn't a list filter: filters, sort and paging keep it, and changing it (the "Whose" dropdown, Back to mine, a Following entry) drops the filters and goes to page 1, as a new history entry. Links from someone's list carry it on (`/bills?of=&with=&currency=` from their Debts). A bill opened from their list is `/bills/<id>`, read-only unless you're its creator or an admin.
