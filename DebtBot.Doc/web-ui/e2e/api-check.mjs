@@ -181,19 +181,20 @@ const jwtOnly = [
   ['PUT', '/auth/password', { currentPassword: 'x', newPassword: 'whatever-123' }],
   ['GET', '/profile/tokens'],
   ['POST', '/profile/tokens', { name: 'x', scope: 'Read', expiresInDays: 30 }],
-  ['DELETE', `/profile/tokens/${ro.id}`],
+  ['DELETE', `/profile/tokens/${ro.id}`], // Grisha's, but JWT-only comes first
   ['POST', '/auth/refresh'],
   ['POST', '/auth/logout'],
   ['POST', `/Users/${ids.lena}/password`, { login: 'lena', password: 'lena-pass-123' }],
   ['POST', `/Users/${ids.boris}/tokens/revoke-all`],
 ]
+// An admin's read-and-write token, so the admin endpoints get past the admin policy to the JWT-only filter.
+const dmitryTok = await newTok('dmitry', 'e2e admin', 'ReadWrite')
 const notJwt = []
 for (const [m, p, body] of jwtOnly) {
-  const r = await raw(rw.token, m, p, body)
+  const r = await raw(dmitryTok.token, m, p, body)
   if (r.status !== 403 || !/API tokens can't be used here/.test(r.body?.message ?? '')) notJwt.push(`${m} ${p} ${r.status}`)
 }
-check(`a token gets 403 on all ${jwtOnly.length} JWT-only endpoints`, notJwt.length === 0, notJwt.join(', '))
-const dmitryTok = await newTok('dmitry', 'e2e admin', 'Read')
+check(`an admin’s read-and-write token gets 403 on all ${jwtOnly.length} JWT-only endpoints`, notJwt.length === 0, notJwt.join(', '))
 check('an admin’s token is admin (GET Users 200), a regular one isn’t (403)', (await tokStatus(dmitryTok.token, 'GET', '/Users')) === 200 && (await tokStatus(ro.token, 'GET', '/Users')) === 403)
 await call(t.dmitry, 'DELETE', `/profile/tokens/${dmitryTok.id}`)
 const del = await raw(t.grisha, 'DELETE', `/profile/tokens/${rw.id}`)
