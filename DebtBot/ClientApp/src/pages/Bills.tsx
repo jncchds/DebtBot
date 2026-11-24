@@ -19,6 +19,7 @@ import { useFormat } from '../lib/useFormat'
 import { POLL_MS, usePollWindow } from '../lib/usePollWindow'
 import { useListState } from '../lib/useListState'
 import { useNameOf, usePeople } from '../lib/usePeople'
+import { useOrigin } from '../lib/useOrigin'
 
 /** A row's status; an exchange uses the Exchange page's words ("Waiting to accept", "Accepted"). */
 function RowStatus({ r }: { r: BillRow }) {
@@ -31,6 +32,7 @@ function RowStatus({ r }: { r: BillRow }) {
  */
 export default function Bills() {
   const { t } = useTranslation()
+  const origin = useOrigin()
   const f = useFormat()
   const { user, isAdmin } = useAuth()
   const names = useNameOf()
@@ -93,7 +95,7 @@ export default function Bills() {
     )
 
   const title = (r: BillRow) => (
-    <Link to={`/bills/${r.bill.id}`} className="font-semibold hover:underline">
+    <Link to={`/bills/${r.bill.id}`} state={origin} className="font-semibold hover:underline">
       {r.bill.exchangeBillId && <span aria-hidden>🔁 </span>}
       {firstLine(r.bill.description) || t('bill.untitled')}
     </Link>

@@ -5,6 +5,7 @@ import clsx from 'clsx'
 import { activeFilterCount, withOrderToggled, withoutFilters, withPage, withSort, type ListSpec, type ListState, type Order } from '../../lib/listState'
 import { ErrorBox, Spinner } from '../ui'
 import { Pager } from './Pager'
+import { useOrigin } from '../../lib/useOrigin'
 
 /**
  * The shared list pattern for Bills, Debts, Spendings and Exchanges (mockups/shell/README.md, "List views"):
@@ -85,6 +86,7 @@ const isInteractive = (e: MouseEvent) => !!(e.target as HTMLElement).closest('a,
 export function ListView<T>(p: ListViewProps<T>) {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const origin = useOrigin()
   const [ref, width] = useWidth<HTMLDivElement>()
   const [filtersOpen, setFiltersOpen] = useState(false)
   const wide = width >= (p.tableMinWidth ?? 720)
@@ -97,7 +99,7 @@ export function ListView<T>(p: ListViewProps<T>) {
 
   const open = (item: T) => (e: MouseEvent) => {
     const href = p.rowHref?.(item)
-    if (href && !isInteractive(e)) navigate(href)
+    if (href && !isInteractive(e)) navigate(href, { state: origin })
   }
 
   const sortControl = (

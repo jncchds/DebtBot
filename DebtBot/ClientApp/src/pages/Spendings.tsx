@@ -14,6 +14,7 @@ import { withFilter } from '../lib/listState'
 import { PAGE_SIZE, spendingsQuery, spendingsSpec } from '../lib/lists'
 import { useFormat } from '../lib/useFormat'
 import { useListState } from '../lib/useListState'
+import { useOrigin } from '../lib/useOrigin'
 
 /** "33 % of the bill": always a whole percentage of the bill (user, round 1). */
 const sharePercent = (portion: number) => Math.round(portion * 100)
@@ -24,6 +25,7 @@ const sharePercent = (portion: number) => Math.round(portion * 100)
  */
 export default function Spendings() {
   const { t } = useTranslation()
+  const origin = useOrigin()
   const f = useFormat()
   const { of, viewing } = useFollowing()
   const name = viewing.kind === 'of' ? viewing.name : ''
@@ -38,7 +40,7 @@ export default function Spendings() {
   const faded = (s: Spending, el: ReactNode) => <div className={clsx(s.isCanceled && 'opacity-60')}>{el}</div>
 
   const billLink = (s: Spending) => (
-    <Link to={`/bills/${s.billId}`} className="font-semibold text-accent hover:underline">
+    <Link to={`/bills/${s.billId}`} state={origin} className="font-semibold text-accent hover:underline">
       {firstLine(s.description) || t('bill.untitled')}
     </Link>
   )

@@ -13,6 +13,7 @@ import { withFilter } from '../lib/listState'
 import { adminBillsQuery, adminBillsSpec, PAGE_SIZE } from '../lib/lists'
 import { useFormat } from '../lib/useFormat'
 import { useListState } from '../lib/useListState'
+import { useOrigin } from '../lib/useOrigin'
 
 function RowStatus({ r }: { r: BillRow }) {
   return r.bill.exchangeBillId ? <ExchangeStatusPill status={r.bill.status} /> : <StatusPill status={r.bill.status} />
@@ -24,6 +25,7 @@ function RowStatus({ r }: { r: BillRow }) {
  */
 export default function AdminBills() {
   const { t } = useTranslation()
+  const origin = useOrigin()
   const f = useFormat()
   const [state, setState] = useListState(adminBillsSpec)
   const query = useMemo(() => adminBillsQuery(state), [state])
@@ -56,7 +58,7 @@ export default function AdminBills() {
     )
 
   const title = (r: BillRow) => (
-    <Link to={`/bills/${r.bill.id}`} className="font-semibold hover:underline">
+    <Link to={`/bills/${r.bill.id}`} state={origin} className="font-semibold hover:underline">
       {r.bill.exchangeBillId && <span aria-hidden>🔁 </span>}
       {firstLine(r.bill.description) || t('bill.untitled')}
     </Link>

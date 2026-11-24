@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useAcceptExchange, useAddLines, useAddPayments, useBill, useBillAction } from '../api/bills'
 import { ApiError } from '../api/client'
@@ -16,6 +16,8 @@ import { PeoplePicker } from '../components/people/PeoplePicker'
 import { ExchangeBanner, ExchangeStatusPill } from '../components/exchange/ExchangeBits'
 import { dealFromBill, orientDeal } from '../lib/exchange'
 import { POLL_MS, usePollWindow } from '../lib/usePollWindow'
+import { backTarget } from '../lib/backToList'
+import { useOrigin } from '../lib/useOrigin'
 
 /** What the page is waiting for after an action that finishes in the background. */
 type Waiting = { action: 'finalize' | 'cancel' | 'accept'; until: number }
@@ -66,6 +68,8 @@ export default function Bill({ mode }: { mode?: 'add-line' | 'add-payment' }) {
   const addPayments = useAddPayments(id)
   const { people } = usePeople()
   const [search, setSearch] = useSearchParams()
+  // The list this bill was opened from; kept on the add-line/add-payment steps so "← Bills" still goes back to it.
+  const origin = useOrigin()
 
   if (first.isLoading) return <Loading />
   if (first.error) {
@@ -88,7 +92,7 @@ export default function Bill({ mode }: { mode?: 'add-line' | 'add-payment' }) {
   // People added to the bill but not on a line or payment yet live in the URL (?people=a,b), so reload keeps them.
   const extraIds = (search.get('people') ?? '').split(',').filter(Boolean)
   const qs = search.toString() ? `?${search}` : ''
-  const backToBill = () => navigate(`${base}${qs}`, { replace: true })
+  const backToBill = () => navigate(`${base}${qs}`, { replace: true, state: origin })
   const onBill = billPeople(bill, user?.id)
   const byId = new Map(people.map((p) => [p.id, p]))
   const billPeopleList: Person[] = [...new Set([...onBill, ...extraIds])].map(
@@ -102,7 +106,7 @@ export default function Bill({ mode }: { mode?: 'add-line' | 'add-payment' }) {
         else next.delete('people')
         return next
       },
-      { replace: true },
+      { replace: true, state: origin },
     )
 
   const run = (kind: Waiting['action'], p: Promise<unknown>) => {
@@ -140,9 +144,7 @@ export default function Bill({ mode }: { mode?: 'add-line' | 'add-payment' }) {
 
   return (
     <>
-      <Link to="/bills" className="mb-3 inline-flex gap-1 text-sm muted hover:text-fg">
-        ← {t('pages.bills.title')}
-      </Link>
+      <BackToList />
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="min-w-0 text-[1.4rem] font-bold break-words">{title}</h1>
         {isExchange ? <ExchangeStatusPill status={bill.status} /> : <StatusPill status={bill.status} />}
@@ -246,7 +248,7 @@ export default function Bill({ mode }: { mode?: 'add-line' | 'add-payment' }) {
           <div className="flex items-center gap-2 border-b border-line px-4 py-3">
             <h2 className="flex-1 font-bold">{t('bill.lines')}</h2>
             {editable && mode !== 'add-line' && (
-              <Link to={`${base}/add-line${qs}`} className="btn-secondary px-2.5 py-1 text-[0.8rem]">
+              <Link to={`${base}/add-line${qs}`} state={origin} className="btn-secondary px-2.5 py-1 text-[0.8rem]">
                 ＋ {t('editor.addLine')}
               </Link>
             )}
@@ -295,7 +297,7 @@ export default function Bill({ mode }: { mode?: 'add-line' | 'add-payment' }) {
             <div className="flex items-center gap-2 border-b border-line px-4 py-3">
               <h2 className="flex-1 font-bold">{t('bill.payments')}</h2>
               {editable && mode !== 'add-payment' && (
-                <Link to={`${base}/add-payment${qs}`} className="btn-secondary px-2.5 py-1 text-[0.8rem]">
+                <Link to={`${base}/add-payment${qs}`} state={origin} className="btn-secondary px-2.5 py-1 text-[0.8rem]">
                   ＋ {t('editor.addPayment')}
                 </Link>
               )}
@@ -358,13 +360,22 @@ export default function Bill({ mode }: { mode?: 'add-line' | 'add-payment' }) {
   )
 }
 
+/** "← Bills": back to the list the bill was opened from, with its filters and `?of=`, else your own bills. */
+function BackToList() {
+  const { t } = useTranslation()
+  const back = backTarget(useLocation().state)
+  return (
+    <Link to={back.to} className="mb-3 inline-flex gap-1 text-sm muted hover:text-fg">
+      ← {t(back.label)}
+    </Link>
+  )
+}
+
 function NotFoundBill() {
   const { t } = useTranslation()
   return (
     <>
-      <Link to="/bills" className="mb-3 inline-flex gap-1 text-sm muted hover:text-fg">
-        ← {t('pages.bills.title')}
-      </Link>
+      <BackToList />
       <div className="card mt-2 px-5 py-10 text-center">
         <div className="mb-2 text-[2rem]" aria-hidden>
           🔍
