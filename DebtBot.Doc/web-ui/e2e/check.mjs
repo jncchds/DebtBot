@@ -111,11 +111,6 @@ const clickIn = (row, label) =>
       expect(r === 'ok', `${row} / ${label}: ${r}`)
       await sleep(300)
     })
-const hasIn = (row, label) =>
-  b.eval(
-    `(() => { const r = [...document.querySelectorAll('main tbody tr, main li')].find(e => e.innerText.includes(${JSON.stringify(row)})); if (!r) return null;
-    return [...r.querySelectorAll('a,button')].some(e => (e.innerText + ' ' + (e.title || '') + ' ' + (e.getAttribute('aria-label') || '')).includes(${JSON.stringify(label)})) })()`,
-  )
 async function pick(inputSelector, typed, name) {
   await b.eval(`document.querySelector(${JSON.stringify(inputSelector)}).focus()`)
   await b.fill(inputSelector, typed)
@@ -366,9 +361,17 @@ if (FLOWS) {
   await step('Admin › Users: no delete for admins, delete a stray placeholder', async () => {
     await b.goto(`${URL0}/admin/users`)
     await loaded('Clara Müller')
-    expect((await hasIn('Dmitry K.', 'Delete')) === false, 'Dmitry (admin) has a delete button')
-    expect((await hasIn('@grandpa_vlad', 'Delete')) === true, 'no delete for the stray placeholder')
-    await clickIn('@grandpa_vlad', 'Delete')
+    // Rows show values only; ▾ opens the row's action strip (series 2, T2), the next table row.
+    const strip = `document.querySelector("main tbody tr td[colspan]")`
+    const stripHas = (label) => b.eval(`!![...(${strip}?.querySelectorAll('a,button') ?? [])].some(e => e.innerText.includes(${JSON.stringify(label)}))`)
+    await clickIn('Dmitry K.', 'Actions')
+    await b.waitFor(`location.search.includes("open=") && ${strip}`)
+    expect((await stripHas('Remove admin')) === true, 'Dmitry’s strip has Remove admin')
+    expect((await stripHas('Delete')) === false, 'Dmitry (admin) has a delete button')
+    await clickIn('@grandpa_vlad', 'Actions')
+    await b.waitFor(`${strip}?.innerText.includes("Set login and password")`)
+    expect((await stripHas('Delete')) === true, 'no delete for the stray placeholder')
+    await b.click('main tbody td[colspan] button', 'Delete')
     await b.waitText('Only stray placeholders can be deleted')
     await b.click('main button.btn-danger', 'Delete')
     await b.waitFor('![...document.querySelectorAll("main tbody tr")].some(r => r.innerText.includes("@grandpa_vlad"))')

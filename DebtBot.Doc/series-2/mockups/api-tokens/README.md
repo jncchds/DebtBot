@@ -24,6 +24,14 @@ A fourth Profile section: 🗝️ API tokens "Scripts and apps".
 - URL: `/admin/users?…&open=<id>`; the password dialog stays `/admin/users/<id>/password`.
 - Phone cards: values only ("N bills · N contacts · N API tokens"), ▾ next to the role pill, the strip inside the card.
 
+## Built (T2)
+- `pages/ProfileTokens.tsx` (the three routes share one component, so the secret lives only in its state), `lib/apiTokens.ts`, `components/list/ExpandButton.tsx`, `ListView`'s `rowExpand`, and `pages/AdminUsers.tsx`.
+- Built as specified. Smaller points:
+  - after Revoke, the row closes (`open` is removed from the URL, replacing the entry);
+  - "Copy" changes to "Copied"; if the clipboard is refused, a note asks to copy by hand (the token is `select-all`);
+  - the tokens table switches to cards below 1024 px (`lg`), like Contacts;
+  - Admin › Users keeps `open` when the filters or page change; a row that isn't on the page simply isn't open.
+
 | PNG | What |
 |---|---|
 | `tokens-*` | the list, Monthly report script open with the revoke confirmation |
