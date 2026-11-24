@@ -69,6 +69,8 @@ On 2026-11-23 the user set up how the DebtBot API + auth + web UI work is run.
 - 2026-11-24: T7b merged into web-ui (7b15eff): ofUserId on Debts/Own, Bills and Spendings (confirmed subscription in your direction, else 403), and IBillService.CanRead for GET Bills/{id} and lines only. 181 .NET tests, 87 vitest. Open: the bill page's "← Bills" goes to your own /bills (for T9).
 - 2026-11-24: T8 (Admin) started as worker "DebtBot T8 admin", id 140a0d2e.
 - 2026-11-24: T8 merged into web-ui (1535d71): Role refuses your own (400), GET Bills/All with filters, and the Admin Users, Merge and All bills pages. 187 .NET tests, 108 vitest. Open: deleting an admin with no data is allowed (moved to T9).
+- 2026-11-24: T9 (e2e, polish, docs, PR description) started as worker "DebtBot T9 e2e", id 138418ab. It doesn't mark the PR ready; that's for the orchestrator with the user.
+- 2026-11-24: T9 hit the usage limit (reset 14:00) and was resumed. The user added a polish fix: in every filter row and form that mixes text boxes with rounded (pill) selects, the captions aren't vertically aligned (for example "Search" and "Role" on Admin Users). Fix it in the shared filter and field components.
 
 **Why:** the user wants a clean context per task, control over how each view looks, and a durable record of the work.
 **How to apply:** follow this for every task in the series. Related: [[web-ui-palette]].
