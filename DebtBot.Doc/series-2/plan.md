@@ -53,6 +53,7 @@ Free OpenRouter models that read images and support structured output, checked 2
 
 ## User decisions (2026-11-24)
 - **Creator removal:** the same lock as everyone else. Your chip shows • while you are on a line or a payment; once you are off them all it gets ×. No "remove from everything".
+  - Amended by the user, during T1: **equal-split lines don't count for the lock.** Removing a person takes them off every equal-split line, and the split recalculates. Payments, by-parts lines and lines where they're the only participant still lock. The rule is the same for everyone.
 - **Token scopes:** chosen per token, "Read only" or "Read and write". A read-only token gets 403 on anything but GET (and HEAD/OPTIONS).
 - **Admin and tokens:** Admin Users shows each user's active token count and a "Revoke all tokens" action. Admins never see individual tokens.
 - **Receipt parse:** plan only in this series. The orchestrator writes `receipt-parse.md` (design, settings, schema, errors, tests, open questions) and agrees it with the user; building it, including mockups and any bot support, is a later series.

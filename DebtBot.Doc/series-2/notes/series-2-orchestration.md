@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: 645e1162-a1e5-44ec-8c96-df03ffb46bbe
-  modified: 2026-11-24T15:56:10.722Z
+  modified: 2026-11-24T15:57:20.158Z
 ---
 
 Series 2 of DebtBot, started 2026-11-24 after the web-ui series (PR #34) was merged to main. Run like [[web-ui-orchestration]] with the `orchestrate-tasks` skill.
@@ -23,6 +23,7 @@ Series 2 of DebtBot, started 2026-11-24 after the web-ui series (PR #34) was mer
 
 **Decisions**
 - 2026-11-24 (user): creator chip locked like others while on a line/payment; tokens have a per-token scope (Read only / Read and write); admins get "Revoke all tokens" per user plus a count, never see tokens; receipt parse is **plan only** this series (orchestrator writes `receipt-parse.md` with the user, build later).
+- 2026-11-24 (user, during T1): equal-split lines don't lock. Removing someone drops them from those lines; payments, by-parts lines and sole-participant lines still lock. The rule is the same for everyone.
 - Defaults I picked: expiry 30/90/365/never (90 preselected); PATs can't manage tokens, passwords or Telegram linking.
 - Tasks: T1 creator, T2 API tokens, T3 e2e + docs + PR description.
 
