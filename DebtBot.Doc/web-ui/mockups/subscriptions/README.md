@@ -35,3 +35,7 @@ Title "Subscriptions", subtitle "The bot can tell someone in Telegram about your
 ## Backend needs (T7)
 - New `POST UserContacts/subscription/cancel?contactId=` (see `../contacts/README.md`).
 - Check the wording against what the bot really sends to subscribers (bills, and debts via `/Debts` with subscriptions); adjust the subtitle if it differs.
+
+## Built (T7)
+- Wording checked: the bot sends subscribers new bills (`BillProcessedConsumer`) and includes their debts in `/Debts`, so "bills and debts" stays.
+- The Summary entries link to `/subscriptions#requests`, `#theirs` and `#yours`.

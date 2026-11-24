@@ -2,7 +2,8 @@
 
 The HTML and PNGs here are the spec for the app shell. `sections.html` shows the sidebar on each page.
 
-- **Above the divider:** every page, in this order: 💸 Debts, 🧾 Bills, ➕ New bill, 🔁 Exchange, 📊 Spendings, 👥 Contacts, 👤 Profile, 🛠 Admin. Admin is shown to admins only. New bill stays up here because it's used often.
+- **Above the divider:** every page, in this order: 💸 Debts, 🧾 Bills, ➕ New bill, 🔁 Exchange, 📊 Spendings, 👥 Contacts, 🔔 Subscriptions, 👤 Profile, 🛠 Admin. Admin is shown to admins only. New bill stays up here because it's used often.
+- **Badges:** 🔔 Subscriptions shows a count badge (accent pill) with the number of people waiting for you to confirm (T7; none at 0). Badges are hidden on the collapsed rail and shown in the open sidebar or drawer.
 - **Below the divider:** each page has its own sub-section, in the style of abeat's song list (section title, then entries with a title and a muted subtitle, then "… All x"):
 
 | Page | Sub-section | Built in |
@@ -11,9 +12,10 @@ The HTML and PNGs here are the spec for the app shell. `sections.html` shows the
 | Bills / a bill | Drafts, Recent bills (last 5), … All bills | T5 |
 | New bill | Mode: Form / Paste text; Continue a draft | T4 (modes), T6 (drafts) |
 | Exchange | Waiting to accept, Recent exchanges | T6 |
-| Spendings | This month, … All spendings | T7 |
-| Contacts | Requests, Recently added | T7 |
-| Profile | Details, Login & password, Telegram | T4 |
+| Spendings | This month (one entry per bill currency, opening that month's spendings in it), … All spendings | T7 |
+| Contacts | Recently added (the 3 newest), … All contacts | T7 |
+| Subscriptions | Summary: Requests, Get your bills and debts, Your subscriptions (each scrolls to its card; none highlighted) | T7 |
+| Profile | Sections: Details, Login & password, Telegram | T4, pages T7 |
 | Admin | Users, Merge users (badge with the suggestion count), All bills | T4 (links), T8 (badge) |
 
 - **Phone:** a 48 px icon rail. ☰ opens the full sidebar, sub-section included, as an overlay drawer with a backdrop. It closes after navigating.
@@ -26,8 +28,9 @@ The HTML and PNGs here are the spec for the app shell. `sections.html` shows the
 | Bill | `/bills/<id>`, `/bills/<id>/add-line`, `/bills/<id>/add-payment`, each with `?people=<id>,<id>` for people added to a draft |
 | New bill | `/bills/new`, `/bills/new/add-line`, `/bills/new/add-payment` (the form itself is kept in sessionStorage), `/bills/new/paste` (`?preview=1` once previewed) |
 | Exchange | `/exchange?with=<id>&rate=give\|get&draft=<billId>&person=&currency=&status=waiting\|accepted\|cancelled&sort=date\|amount&order=&page=` (`with`, `rate` and `draft` are the form; the rest is the list) |
-| Spendings | `/spendings?page=` |
-| Contacts | `/contacts`, `/contacts/requests` |
+| Spendings | `/spendings?currency=&from=&to=&cancelled=1&sort=date\|amount&order=asc\|desc&page=` |
+| Contacts | `/contacts?q=` (the search; typing replaces the history entry) |
+| Subscriptions | `/subscriptions` (`#requests`, `#theirs`, `#yours` scroll to a card); the old `/contacts/requests` redirects here |
 | Profile | `/profile`, `/profile/password`, `/profile/telegram` |
 | Admin | `/admin/users?search=`, `/admin/merge`, `/admin/bills` |
 | Login | `/login` (it returns you to the page you came from) |
@@ -54,7 +57,7 @@ The user's rule (T5, mockup round 2): every paged list has the same shape and lo
 **Code** (`DebtBot/ClientApp/src`):
 - `lib/listState.ts`: `ListSpec` (`filters: { name: { kind: 'text'|'id'|'currency'|'date'|'flag'|'choice', values? } }`, `sorts: { field: 'asc'|'desc' }`, the first sort is the default), `parseListState`, `listSearch`, `withFilter`, `withoutFilters`, `withSort`, `withOrderToggled`, `withPage`, `activeFilterCount`, `pageWindow`. Unit-tested.
 - `lib/useListState.ts`: `const [state, setState] = useListState(spec)` reads and writes the URL.
-- `lib/lists.ts`: each list's spec and its `xxxQuery(state)` that maps URL state to the API query (`PAGE_SIZE` = 20). Add `spendingsSpec`/`exchangesSpec` here.
+- `lib/lists.ts`: each list's spec and its `xxxQuery(state)` that maps URL state to the API query (`PAGE_SIZE` = 20): debts, bills, exchanges (T6) and spendings (T7).
 - `components/list/ListView.tsx`: `<ListView spec state onChange filters sorts columns card rowKey rowHref? rowHighlight? items total pageSize loading fetching error empty filteredEmpty tableMinWidth? />`. `columns` are `{ key, header, sort?, align?, width?, cell }`; `sorts` are `{ value, label, asc, desc }` (the direction labels).
 - `components/list/filters.tsx`: `FilterPerson` (type to search; use it for people, never a select of all contacts), `FilterSelect`, `FilterChoice` (pills, first option `''` = all), `FilterFlag`, `FilterText` (commits after a pause, on Enter or blur), `FilterDate`, `FilterCurrency` (3 letters, suggestions).
 - `components/people/PersonSearch.tsx` (an autocomplete combobox over `usePeople()`) and `PeoplePicker.tsx` (chips, plus the search box on its own line).

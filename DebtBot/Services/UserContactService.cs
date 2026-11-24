@@ -64,6 +64,7 @@ public class UserContactService : IUserContactService
         var link = new UserContactLink()
         {
             DisplayName = contact.DisplayName,
+            AddedAt = DateTime.UtcNow,
             User = user,
             ContactUser = contactUser
         };
@@ -115,6 +116,19 @@ public class UserContactService : IUserContactService
         return subscription != null;
     }
 
+    public bool CancelSubscription(Guid userId, Guid contactId)
+    {
+        // I'm the subscriber: my request for, or subscription to, the contact's bills
+        var subscription = _debtContext.NotificationSubscriptions.FirstOrDefault(t => t.UserId == contactId && t.SubscriberId == userId);
+        if (subscription != null)
+        {
+            _debtContext.NotificationSubscriptions.Remove(subscription);
+
+            _debtContext.SaveChanges();
+        }
+        return subscription != null;
+    }
+
     public List<ContactModel> GetContacts(Guid userId)
     {
         return getContacts(userId, null);
@@ -136,7 +150,8 @@ public class UserContactService : IUserContactService
                 UserDisplayName = l.ContactUser.DisplayName,
                 TelegramId = l.ContactUser.TelegramId,
                 TelegramUserName = l.ContactUser.TelegramUserName,
-                TelegramBotEnabled = l.ContactUser.TelegramBotEnabled
+                TelegramBotEnabled = l.ContactUser.TelegramBotEnabled,
+                AddedAt = l.AddedAt
             })
             .ToList();
 
@@ -175,7 +190,8 @@ public class UserContactService : IUserContactService
             {
                 UserId = userId,
                 ContactUserId = contactUserId,
-                DisplayName = displayName
+                DisplayName = displayName,
+                AddedAt = DateTime.UtcNow
             };
             _debtContext.UserContactsLinks.Add(contact);
             _debtContext.SaveChanges();

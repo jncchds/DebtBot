@@ -13,6 +13,8 @@ public interface IUserContactService
     bool ConfirmSubscription(Guid userId, Guid contactId);
     /// <summary>Removes <paramref name="contactId"/>'s request or subscription to <paramref name="userId"/>; false when there is none.</summary>
     bool DeclineSubscription(Guid userId, Guid contactId);
+    /// <summary>Removes <paramref name="userId"/>'s own request or subscription to <paramref name="contactId"/>; false when there is none.</summary>
+    bool CancelSubscription(Guid userId, Guid contactId);
     /// <summary>The user's contacts with subscription states, ordered by name.</summary>
     List<ContactModel> GetContacts(Guid userId);
     ContactModel? GetContact(Guid userId, Guid contactUserId);

@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
+import { useContacts } from '../api/bills'
 import { useAuth } from '../auth/AuthContext'
+import { pendingRequestCount } from '../lib/contacts'
 import { THEMES, useTheme } from '../hooks/useTheme'
 import { Icon, Label, SidebarDivider } from './Sidebar'
 import { subNavFor } from './subnav'
@@ -28,6 +30,8 @@ interface NavItem {
   /** Extra check for prefixes another item owns (Bills vs New bill). */
   isActive?: (pathname: string) => boolean
   adminOnly?: boolean
+  /** Shows a count badge (accent pill) when above 0. */
+  badge?: 'requests'
 }
 
 const NAV: NavItem[] = [
@@ -37,6 +41,7 @@ const NAV: NavItem[] = [
   { to: '/exchange', icon: '🔁', labelKey: 'nav.exchange' },
   { to: '/spendings', icon: '📊', labelKey: 'nav.spendings' },
   { to: '/contacts', icon: '👥', labelKey: 'nav.contacts' },
+  { to: '/subscriptions', icon: '🔔', labelKey: 'nav.subscriptions', badge: 'requests' },
   { to: '/profile', icon: '👤', labelKey: 'nav.profile' },
   { to: '/admin', icon: '🛠', labelKey: 'nav.admin', adminOnly: true },
 ]
@@ -50,6 +55,8 @@ export function Layout() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const subNav = subNavFor(pathname)
+  // People waiting for you to confirm a subscription (the 🔔 Subscriptions badge).
+  const requests = pendingRequestCount(useContacts().data)
   const [shownPath, setShownPath] = useState(pathname)
 
   useEffect(() => {
@@ -113,6 +120,11 @@ export function Layout() {
               >
                 <Icon>{n.icon}</Icon>
                 <Label collapsed={collapsed}>{label}</Label>
+                {n.badge === 'requests' && requests > 0 && !collapsed && (
+                  <span className="ml-auto shrink-0 rounded-full bg-accent px-1.5 text-[0.68rem] leading-normal font-bold text-accent-contrast" aria-label={t('nav.requestsBadge', { count: requests })}>
+                    {requests}
+                  </span>
+                )}
               </NavLink>
             )
           })}

@@ -39,3 +39,9 @@ Not a paged list: `GET UserContacts/Own` returns every contact, so search, sort 
 ## Backend needs (T7)
 - **`Contact.addedAt`** (`string`, ISO UTC): when the contact link was created. Needs a column on the user-contact link (a migration via `dotnet ef`; existing rows get the migration time or null — if null, sort them last and show no date).
 - **New `POST UserContacts/subscription/cancel?contactId=`** (used on `/subscriptions`): removes *your own* subscription to `contactId`, pending or confirmed (the mirror of `decline`, which removes theirs to you). 200; 404 `{ message }` when there is none; acts for the signed-in user only.
+
+## Built (T7)
+- `addedAt` is null for contacts that existed before the migration (`ContactAddedAt`): their real date is unknown, and the migration time would make every old contact look added today. They sort last in Recently added and show no date.
+- `by-telegram` matches the stored `@name` ignoring case, with or without the `@` (tests).
+- A Recently added entry opens `/contacts?q=<name>`. The username is checked in the browser before sending (the mockup's message); other 400s show the API's message.
+- The table shows from 1024 px of window width, cards below.

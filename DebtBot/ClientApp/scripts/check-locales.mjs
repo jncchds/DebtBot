@@ -28,6 +28,8 @@ for (const f of files) {
   const src = readFileSync(f, 'utf8')
   for (const m of src.matchAll(/\bt\(\s*['"`]([a-zA-Z0-9_.]+)['"`]/g)) used.add(m[1])
   for (const m of src.matchAll(/\bt\(\s*`([a-zA-Z0-9_.]+)\.\$\{/g)) used.add(`${m[1]}.*`)
+  // <Trans i18nKey="group.key" … />
+  for (const m of src.matchAll(/\bi18nKey=["']([a-zA-Z0-9_.]+)["']/g)) used.add(m[1])
   // Keys passed around as data, e.g. labelKey: 'nav.debts'
   for (const m of src.matchAll(/\b\w*Key:\s*['"]([a-zA-Z0-9_]+\.[a-zA-Z0-9_.]+)['"]/g)) used.add(m[1])
 }

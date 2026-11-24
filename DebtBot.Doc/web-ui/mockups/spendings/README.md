@@ -44,3 +44,6 @@ The shared list pattern (`ListView`, see `mockups/shell/README.md`), with `spend
 ## Backend needs (T7)
 - `GET Spendings/Own` takes `[FromQuery] SpendingListQuery`: `currencyCode?` (bill currency, any case, normalised to upper), `dateFrom?`, `dateTo?` (`yyyy-mm-dd`, whole days, UTC, as Bills), `includeCancelled?` (default false), `sortBy?` (`SpendingSortField`: `Date` default, `Amount`), `sortOrder?` (`Desc` default), paging. Order by the field, then a unique key; decimals through a `(double)` cast, as the other lists.
 - New `GET Spendings/Own/summary?dateFrom=&dateTo=` → `{ currencyCode: string; amount: number; count: number }[]` over non-cancelled spendings, ordered by currency. (Paging all of the month's spendings to the client would also work, but a summary keeps the sidebar to one small call.)
+
+## Built (T7)
+Built as specified, with backend sort, filters and the summary (`api.md`). The "This month" entries open `/spendings?currency=<code>&from=<first day>&to=<last day>`. The currency suggestions come from the all-time summary.

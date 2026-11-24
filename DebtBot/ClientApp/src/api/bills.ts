@@ -15,6 +15,9 @@ import type {
   ExchangeListItem,
   ExchangeListQuery,
   PagingResult,
+  Spending,
+  SpendingListQuery,
+  SpendingSummary,
   TextPreview,
 } from './types'
 
@@ -25,6 +28,8 @@ export const keys = {
   exchanges: (q: ExchangeListQuery) => ['bills', 'exchanges', q] as const,
   debts: (q?: DebtListQuery | 'all') => (q ? (['debts', q] as const) : (['debts'] as const)),
   contacts: ['contacts'] as const,
+  spendings: (q?: SpendingListQuery) => (q ? (['spendings', 'list', q] as const) : (['spendings'] as const)),
+  spendingSummary: (from?: string, to?: string) => ['spendings', 'summary', from ?? '', to ?? ''] as const,
 }
 
 /** A page of bills. `poll` refetches every second while it's true (e.g. right after accepting an exchange). */
@@ -64,13 +69,31 @@ export function useAllOwnDebts() {
   })
 }
 
+/** A page of your spendings (your share of finalized bills). */
+export function useSpendings(q: SpendingListQuery) {
+  return useQuery({
+    queryKey: keys.spendings(q),
+    queryFn: () => api<PagingResult<Spending>>('/Spendings/Own', { query: q as Query }),
+    placeholderData: keepPreviousData,
+  })
+}
+
+/** Non-cancelled totals per bill currency between two days (yyyy-mm-dd, both optional). */
+export function useSpendingSummary(from?: string, to?: string) {
+  return useQuery({
+    queryKey: keys.spendingSummary(from, to),
+    queryFn: () => api<SpendingSummary[]>('/Spendings/Own/summary', { query: { dateFrom: from, dateTo: to } }),
+  })
+}
+
 export function useContacts() {
   return useQuery({ queryKey: keys.contacts, queryFn: () => api<Contact[]>('/UserContacts/Own'), staleTime: 60_000 })
 }
 
 function useInvalidateMoney() {
   const qc = useQueryClient()
-  return () => Promise.all([qc.invalidateQueries({ queryKey: keys.bills() }), qc.invalidateQueries({ queryKey: keys.debts() })])
+  return () =>
+    Promise.all([qc.invalidateQueries({ queryKey: keys.bills() }), qc.invalidateQueries({ queryKey: keys.debts() }), qc.invalidateQueries({ queryKey: keys.spendings() })])
 }
 
 export function useAddLines(billId: string) {
