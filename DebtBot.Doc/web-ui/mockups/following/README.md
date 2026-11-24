@@ -38,3 +38,12 @@ Under the title (and its subtitle), before any totals or the list header card: l
 - **Bill read access for subscribers:** `IBillService.HasAccess` (or a read-only variant used by `GET Bills/{id}` and `GET Bills/lines/{lineId}`) also allows a confirmed subscriber of any participant. Changes stay creator-or-admin.
 - Names in someone else's lists: return each counterpart's own display name (the viewer has no contact name for them), and flag the viewer (`user.id == me`) in the UI.
 - Tests: access allowed with a confirmed subscription, denied with pending/none, and nothing changes for own lists.
+
+## Built (T7b)
+- **API:** `ofUserId` on `GET Debts/Own`, `GET Bills`, `GET Spendings/Own` and `GET Spendings/Own/summary` (`api.md`). Your own id is the same as leaving it out; pending, none or the other direction give 403; admins aren't special. Bill reads (`GET Bills/{id}`, `GET Bills/lines/{lineId}`) are open to confirmed subscribers of anyone on the bill (creator, payer, line participant or its participants list); every change still needs creator or admin, and a subscriber gets 404 there.
+- **Names:** the viewed person is shown by your name for them (the dropdown, title, banner, Following). On their Debts, people come back from the API under their own display names (not their contact names, nor yours), and you show as "<your name> (you)". On their Bills, "by …" uses the same names as your own Bills ("by you", your contact names, else their own name), as in the mockup.
+- **"you're on it"** comes from a new `participantIds` on `GET Bills` items (the bill's participants list), so it's right for drafts too.
+- **The person filter** on their Bills searches their counterparts (from their balances), and the currency suggestions are theirs.
+- **The dropdown's list scrolls** (about 18rem) instead of the mockup's "… 3 more" line, as the spec says. Enter in its search box picks the first match; Esc or a click outside closes it.
+- **No access:** a 403 or 404 for `of` shows the title of your own page, the dropdown (if you have subscriptions) and the error box with Back to mine; nothing else.
+- **Sidebar:** while viewing someone, "… All bills" and "… All spendings" are left out of the page's own section, as in the mockup; "… All subscriptions" ends Following.

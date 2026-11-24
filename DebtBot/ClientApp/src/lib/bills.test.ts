@@ -41,7 +41,7 @@ describe('bill facts', () => {
 
 describe('pairExchanges', () => {
   const item = (id: string, exchangeBillId: string | null = null): BillListItem => ({
-    id, exchangeBillId, currencyCode: 'EUR', paymentCurrencyCode: 'EUR', description: id, date: '', status: 'Draft', totalWithTips: 1, creator: u('me'), ledgerRecords: [],
+    id, exchangeBillId, currencyCode: 'EUR', paymentCurrencyCode: 'EUR', description: id, date: '', status: 'Draft', totalWithTips: 1, creator: u('me'), ledgerRecords: [], participantIds: [],
   })
 
   it('folds a pair into one row at the first one’s place', () => {

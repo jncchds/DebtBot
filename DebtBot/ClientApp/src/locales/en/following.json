@@ -1,0 +1,60 @@
+{
+  "backToMine": "Back to mine",
+  "banner": {
+    "bills": "You’re seeing <b>{{name}}’s bills</b> because you’re subscribed to {{name}}. Read-only.",
+    "debts": "You’re seeing <b>{{name}}’s debts</b> because you’re subscribed to {{name}}. Read-only.",
+    "spendings": "You’re seeing <b>{{name}}’s spendings</b> because you’re subscribed to {{name}}. Read-only."
+  },
+  "bills": {
+    "balance": "{{name}}’s balance",
+    "empty": "No bills yet",
+    "emptyHint": "{{name}} takes part in no bills yet.",
+    "mine": "Created by {{name}}",
+    "onIt": "you’re on it",
+    "owedTo": "owed to {{name}} {{amount}}",
+    "owes": "{{name}} owes {{amount}}"
+  },
+  "debts": {
+    "owesThem": "owes {{name}}",
+    "settled": "{{name}} is all settled",
+    "settledHint": "Nobody owes {{name}} and {{name}} owes nobody.",
+    "theyOwe": "{{name}} owes",
+    "totalOwe": "{{name}} owes",
+    "totalOwed": "Owed to {{name}}"
+  },
+  "mine": "Mine",
+  "noAccess": "You can only see the debts, bills and spendings of people who confirmed your subscription to their bills and debts.",
+  "noMatch": "Nobody matches",
+  "search": "Search…",
+  "spendings": {
+    "emptyHint": "Once a bill {{name}} is on is finalized, {{name}}’s share of it shows up here."
+  },
+  "subnav": {
+    "all": "All subscriptions",
+    "balances": "{{name}}’s balances",
+    "drafts": "{{name}}’s drafts",
+    "owesThem": "owes {{name}} {{amount}}",
+    "recent": "{{name}}’s recent bills",
+    "see": {
+      "bills": "see {{name}}’s bills",
+      "debts": "see {{name}}’s debts",
+      "spendings": "see {{name}}’s spendings"
+    },
+    "showingNow": "showing now",
+    "theyOwe": "{{name}} owes {{amount}}",
+    "thisMonth": "{{name}} this month",
+    "title": "Following"
+  },
+  "subscribedTo": "Subscribed to",
+  "subtitle": {
+    "bills": "Bills {{name}} takes part in.",
+    "debts": "{{name}}’s balances with each person, per currency.",
+    "spendings": "{{name}}’s share of every bill {{name}} takes part in."
+  },
+  "title": {
+    "bills": "{{name}}’s bills",
+    "debts": "{{name}}’s debts",
+    "spendings": "{{name}}’s spendings"
+  },
+  "whose": "Whose"
+}

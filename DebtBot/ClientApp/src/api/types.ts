@@ -153,6 +153,8 @@ export interface Spending {
 
 /** GET Spendings/Own query. Dates are yyyy-mm-dd, whole days (UTC). */
 export interface SpendingListQuery extends Paging {
+  /** Someone you have a confirmed subscription to (T7b); left out = yours. */
+  ofUserId?: string
   currencyCode?: string
   dateFrom?: string
   dateTo?: string
@@ -198,10 +200,14 @@ export interface BillListItem {
   creator: UserDisplay
   exchangeBillId: string | null
   ledgerRecords: LedgerRecord[]
+  /** Everyone in the bill's participants list (T7b), to mark bills you're on in someone else's list. */
+  participantIds: string[]
 }
 
 /** GET Bills query. Dates are `yyyy-mm-dd` (whole days, UTC). */
 export interface BillListQuery extends Paging {
+  /** Someone you have a confirmed subscription to (T7b); `withUserId` and `createdByMe` are then from their side. */
+  ofUserId?: string
   withUserId?: string
   currencyCode?: string
   status?: ProcessingState
@@ -329,6 +335,8 @@ export interface Debt {
 
 /** GET Debts/Own query. */
 export interface DebtListQuery extends Paging {
+  /** Someone you have a confirmed subscription to (T7b): their balances, people under their own names. */
+  ofUserId?: string
   withUserId?: string
   currencyCode?: string
   direction?: DebtDirection

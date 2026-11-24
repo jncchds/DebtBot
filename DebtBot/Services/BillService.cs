@@ -182,6 +182,32 @@ public class BillService : IBillService
         return false;
     }
 
+    public bool CanRead(Guid userId, BillModel? bill)
+    {
+        if (bill is null)
+        {
+            return false;
+        }
+
+        if (HasAccess(userId, bill))
+        {
+            return true;
+        }
+
+        // Everyone on the bill: the creator, payers, line participants, and the participants the list (GET Bills) uses.
+        var billId = bill.Id;
+        var people = bill.Payments.Select(p => p.User.Id)
+            .Concat(bill.Lines.SelectMany(l => l.Participants.Select(p => p.User.Id)))
+            .Append(bill.Creator.Id)
+            .Distinct()
+            .ToList();
+
+        return _debtContext.NotificationSubscriptions
+            .Where(s => s.SubscriberId == userId && s.IsConfirmed)
+            .Any(s => people.Contains(s.UserId)
+                || _debtContext.BillParticipants.Any(p => p.BillId == billId && p.UserId == s.UserId));
+    }
+
     public async Task<BillModel?> GetAsync(Guid id, CancellationToken cancellationToken)
     {
         return await _billRepository.GetAsync(id, cancellationToken);
@@ -407,7 +433,7 @@ public class BillService : IBillService
         }
 
         var bill = await _billRepository.GetAsync(line.BillId, cancellationToken);
-        if (bill is null || (!isAdmin && !HasAccess(userId, bill)))
+        if (bill is null || (!isAdmin && !CanRead(userId, bill)))
         {
             return BillActionResult<BillLineModel>.NotFound();
         }

@@ -2,25 +2,35 @@ import { useMemo } from 'react'
 import { Link } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useAllOwnDebts, useOwnDebts } from '../api/bills'
+import { useAuth } from '../auth/AuthContext'
+import { FollowingBanner, NoAccess, WhoseSelect } from '../components/following/Following'
+import { isNoAccess, useFollowing } from '../lib/useFollowing'
 import type { Debt } from '../api/types'
 import { FilterChoice, FilterCurrency, FilterPerson } from '../components/list/filters'
 import { ListView, type Column } from '../components/list/ListView'
 import { PageTitle } from '../components/ui'
 import { withFilter } from '../lib/listState'
+import { withOf } from '../lib/following'
 import { debtsQuery, debtsSpec, PAGE_SIZE } from '../lib/lists'
 import { handle } from '../lib/bills'
 import { toUnits } from '../lib/money'
 import { useFormat } from '../lib/useFormat'
 import { useListState } from '../lib/useListState'
 
-/** 💸 Debts (home): your balance with each person per currency, as the shared list (mockups/debts). */
+/**
+ * 💸 Debts (home): your balance with each person per currency, as the shared list (mockups/debts).
+ * With `?of=<userId>`, the balances of someone you're subscribed to, read-only (mockups/following).
+ */
 export default function Debts() {
   const { t } = useTranslation()
   const f = useFormat()
+  const { user } = useAuth()
+  const { of, viewing } = useFollowing()
+  const name = viewing.kind === 'of' ? viewing.name : ''
   const [state, setState] = useListState(debtsSpec)
-  const query = useMemo(() => debtsQuery(state), [state])
+  const query = useMemo(() => ({ ...debtsQuery(state), ofUserId: of }), [state, of])
   const page = useOwnDebts(query)
-  const all = useAllOwnDebts()
+  const all = useAllOwnDebts(of)
 
   // Totals and filter options come from all balances, not just this page.
   const { owed, owe, people, currencies } = useMemo(() => {
@@ -33,29 +43,39 @@ export default function Debts() {
       if (u !== 0n) m.set(d.currencyCode, (m.get(d.currencyCode) ?? 0n) + u)
       people.set(d.debtorUser.id, d.debtorUser.displayName)
     }
+    const isMe = (id: string) => id === user?.id
     const sorted = (m: Map<string, bigint>) => [...m].sort(([a], [b]) => a.localeCompare(b))
     return {
       owed: sorted(owed),
       owe: sorted(owe),
-      people: [...people].map(([id, name]) => ({ id, name, isMe: false })).sort((a, b) => a.name.localeCompare(b.name)),
+      people: [...people]
+        .map(([id, name]) => ({ id, name: isMe(id) ? t('common.youNamed', { name }) : name, isMe: isMe(id) }))
+        .sort((a, b) => a.name.localeCompare(b.name)),
       currencies: [...new Set((all.data ?? []).map((d) => d.currencyCode))].sort(),
     }
-  }, [all.data])
+  }, [all.data, user?.id, t])
 
   const settled = all.isSuccess && all.data.length === 0
 
+  // Someone else's list: "owes Boris" / "Boris owes" instead of "owes you" / "you owe".
   const direction = (d: Debt) =>
-    d.amount > 0 ? <span className="text-success">{t('debts.owesYou')}</span> : <span className="text-danger">{t('debts.youOwe')}</span>
+    d.amount > 0 ? (
+      <span className="text-success">{of ? t('following.debts.owesThem', { name }) : t('debts.owesYou')}</span>
+    ) : (
+      <span className="text-danger">{of ? t('following.debts.theyOwe', { name }) : t('debts.youOwe')}</span>
+    )
+  const you = (d: Debt) => of && d.debtorUser.id === user?.id && <span className="ml-1 text-[0.8rem] muted">({t('common.you')})</span>
   const amount = (d: Debt) => <span className={`font-bold tabular-nums whitespace-nowrap ${d.amount > 0 ? 'text-success' : 'text-danger'}`}>{f.money(d.amount, d.currencyCode)}</span>
   const who = (d: Debt) => (
     <>
       <span className="font-semibold">{d.debtorUser.displayName}</span>
+      {you(d)}
       {d.debtorUser.telegramUserName && <span className="ml-1.5 text-[0.8rem] muted">{handle(d.debtorUser.telegramUserName)}</span>}
     </>
   )
   const actions = (d: Debt) => (
     <span className="inline-flex flex-wrap gap-2">
-      <Link className="btn-secondary px-2.5 py-1 text-[0.8rem]" to={`/bills?with=${d.debtorUser.id}&currency=${d.currencyCode}`}>
+      <Link className="btn-secondary px-2.5 py-1 text-[0.8rem]" to={withOf(`/bills?with=${d.debtorUser.id}&currency=${d.currencyCode}`, of)}>
         🧾 {t('debts.bills')}
       </Link>
     </span>
@@ -69,24 +89,39 @@ export default function Debts() {
     { key: 'actions', header: <span className="sr-only">{t('debts.actions')}</span>, align: 'right', width: '7rem', cell: actions },
   ]
 
+  if (of && (isNoAccess(all.error) || isNoAccess(page.error)))
+    return (
+      <>
+        <PageTitle subtitle={t('pages.debts.subtitle')}>{t('pages.debts.title')}</PageTitle>
+        <WhoseSelect />
+        <NoAccess error={all.error ?? page.error} />
+      </>
+    )
+
   return (
     <>
-      <PageTitle subtitle={t('pages.debts.subtitle')}>{t('pages.debts.title')}</PageTitle>
+      {of ? (
+        <PageTitle subtitle={t('following.subtitle.debts', { name })}>{t('following.title.debts', { name })}</PageTitle>
+      ) : (
+        <PageTitle subtitle={t('pages.debts.subtitle')}>{t('pages.debts.title')}</PageTitle>
+      )}
+      <WhoseSelect />
+      {of && <FollowingBanner page="debts" name={name} />}
 
       {settled ? (
         <div className="card px-5 py-10 text-center">
           <div className="mb-2 text-[2rem]" aria-hidden>
             🤝
           </div>
-          <p className="font-semibold">{t('debts.settled')}</p>
-          <p className="mt-1 text-sm muted">{t('debts.settledHint')}</p>
+          <p className="font-semibold">{of ? t('following.debts.settled', { name }) : t('debts.settled')}</p>
+          <p className="mt-1 text-sm muted">{of ? t('following.debts.settledHint', { name }) : t('debts.settledHint')}</p>
         </div>
       ) : (
         <>
           <div className="mb-4 grid gap-2 md:grid-cols-2 md:gap-4">
             {[
-              { key: 'owed', label: t('debts.totalOwed'), items: owed, cls: 'text-success' },
-              { key: 'owe', label: t('debts.totalOwe'), items: owe, cls: 'text-danger' },
+              { key: 'owed', label: of ? t('following.debts.totalOwed', { name }) : t('debts.totalOwed'), items: owed, cls: 'text-success' },
+              { key: 'owe', label: of ? t('following.debts.totalOwe', { name }) : t('debts.totalOwe'), items: owe, cls: 'text-danger' },
             ].map((box) => (
               <div key={box.key} className="card px-4 py-3">
                 <div className={`text-[0.72rem] font-semibold tracking-wide uppercase ${box.cls}`}>{box.label}</div>
@@ -110,8 +145,8 @@ export default function Debts() {
                   value={state.filters.dir}
                   options={[
                     { value: '', label: t('list.all') },
-                    { value: 'owed', label: t('debts.dirOwed') },
-                    { value: 'owe', label: t('debts.dirOwe') },
+                    { value: 'owed', label: of ? t('following.debts.totalOwed', { name }) : t('debts.dirOwed') },
+                    { value: 'owe', label: of ? t('following.debts.totalOwe', { name }) : t('debts.dirOwe') },
                   ]}
                   onChange={(v) => setState(withFilter(state, 'dir', v))}
                 />
@@ -126,7 +161,10 @@ export default function Debts() {
             card={(d) => (
               <>
                 <div className="flex items-baseline gap-2">
-                  <span className="min-w-0 flex-1 truncate font-semibold">{d.debtorUser.displayName}</span>
+                  <span className="min-w-0 flex-1 truncate font-semibold">
+                    {d.debtorUser.displayName}
+                    {you(d)}
+                  </span>
                   {amount(d)}
                 </div>
                 <div className="mt-0.5 flex items-baseline gap-2 text-[0.8rem]">
@@ -143,7 +181,7 @@ export default function Debts() {
             loading={page.isLoading}
             fetching={page.isFetching && page.isPlaceholderData}
             error={page.error}
-            empty={<p className="font-semibold">{t('debts.settled')}</p>}
+            empty={<p className="font-semibold">{of ? t('following.debts.settled', { name }) : t('debts.settled')}</p>}
             filteredEmpty={<p className="font-semibold">{t('debts.noMatch')}</p>}
             tableMinWidth={760}
           />

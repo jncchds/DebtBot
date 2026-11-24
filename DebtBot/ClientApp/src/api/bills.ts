@@ -61,11 +61,11 @@ export function useOwnDebts(q: DebtListQuery) {
   })
 }
 
-/** All your balances at once (totals, sidebar, filter options). */
-export function useAllOwnDebts() {
+/** All your balances at once (totals, sidebar, filter options); with `of`, that person's (T7b). */
+export function useAllOwnDebts(of?: string) {
   return useQuery({
-    queryKey: keys.debts('all'),
-    queryFn: () => api<PagingResult<Debt>>('/Debts/Own').then((r) => r.items),
+    queryKey: of ? (['debts', 'all', of] as const) : keys.debts('all'),
+    queryFn: () => api<PagingResult<Debt>>('/Debts/Own', { query: { ofUserId: of } }).then((r) => r.items),
   })
 }
 
@@ -78,11 +78,11 @@ export function useSpendings(q: SpendingListQuery) {
   })
 }
 
-/** Non-cancelled totals per bill currency between two days (yyyy-mm-dd, both optional). */
-export function useSpendingSummary(from?: string, to?: string) {
+/** Non-cancelled totals per bill currency between two days (yyyy-mm-dd, both optional); with `of`, that person's (T7b). */
+export function useSpendingSummary(from?: string, to?: string, of?: string) {
   return useQuery({
-    queryKey: keys.spendingSummary(from, to),
-    queryFn: () => api<SpendingSummary[]>('/Spendings/Own/summary', { query: { dateFrom: from, dateTo: to } }),
+    queryKey: [...keys.spendingSummary(from, to), of ?? ''],
+    queryFn: () => api<SpendingSummary[]>('/Spendings/Own/summary', { query: { dateFrom: from, dateTo: to, ofUserId: of } }),
   })
 }
 

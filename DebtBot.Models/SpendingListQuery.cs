@@ -5,6 +5,9 @@ namespace DebtBot.Models;
 /// <summary>Filters, sort and paging for your own spendings (<c>GET Spendings/Own</c>).</summary>
 public class SpendingListQuery
 {
+    /// <summary>Whose list: a user you have a confirmed subscription to, or yourself. Left out = yours.</summary>
+    public Guid? OfUserId { get; set; }
+
     /// <summary>Only spendings in this bill currency (upper case).</summary>
     public string? CurrencyCode { get; set; }
     /// <summary>Only spendings on or after this date (UTC).</summary>

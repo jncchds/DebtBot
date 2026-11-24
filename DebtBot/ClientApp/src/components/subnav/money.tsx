@@ -6,44 +6,62 @@ import type { ExchangeListItem } from '../../api/types'
 import { useAuth } from '../../auth/AuthContext'
 import { firstLine, pairExchanges } from '../../lib/bills'
 import { dealFromListItem } from '../../lib/exchange'
+import { withOf } from '../../lib/following'
 import { useFormat } from '../../lib/useFormat'
+import { FollowingSubNav } from '../following/Following'
+import { isNoAccess, useFollowing } from '../../lib/useFollowing'
 import { useNameOf } from '../../lib/usePeople'
 import { SidebarEntry, SidebarMore, SidebarSection } from '../Sidebar'
 
-/** 💸 Debts: Balances, one entry per person (green "owes you", red "you owe"), each opening their bills. */
+/**
+ * 💸 Debts: Balances, one entry per person (green "owes you", red "you owe"), each opening their bills, then Following.
+ * With `?of=`, "Boris's balances" ("owes Boris", "Boris owes"), people under their own names (mockups/following).
+ */
 export function DebtsSubNav() {
   const { t } = useTranslation()
   const f = useFormat()
-  const debts = useAllOwnDebts()
+  const { user } = useAuth()
+  const { of, viewing } = useFollowing()
+  const name = viewing.kind === 'of' ? viewing.name : ''
+  const debts = useAllOwnDebts(of)
   const people = useMemo(() => {
     const byPerson = new Map<string, { name: string; items: { amount: number; currency: string }[] }>()
     for (const d of debts.data ?? []) {
       if (d.amount === 0) continue
-      const p = byPerson.get(d.debtorUser.id) ?? { name: d.debtorUser.displayName, items: [] }
+      const own = d.debtorUser.displayName
+      const p = byPerson.get(d.debtorUser.id) ?? { name: of && d.debtorUser.id === user?.id ? t('common.youNamed', { name: own }) : own, items: [] }
       p.items.push({ amount: d.amount, currency: d.currencyCode })
       byPerson.set(d.debtorUser.id, p)
     }
     return [...byPerson].sort(([, a], [, b]) => a.name.localeCompare(b.name))
-  }, [debts.data])
+  }, [debts.data, of, user?.id, t])
+  const words = (amount: number, money: string) =>
+    of
+      ? t(amount > 0 ? 'following.subnav.owesThem' : 'following.subnav.theyOwe', { amount: money, name })
+      : t(amount > 0 ? 'subnav.debts.owesYou' : 'subnav.debts.youOwe', { amount: money })
+
+  // Someone you may not see: no section of theirs, only Following.
+  if (of && isNoAccess(debts.error)) return <FollowingSubNav page="debts" path="/" />
 
   return (
     <>
-      <SidebarSection>{t('subnav.debts.title')}</SidebarSection>
-      {debts.isSuccess && people.length === 0 && <SidebarEntry to="/" icon="✅" title={t('subnav.debts.settled')} subtitle={t('subnav.debts.settledHint')} />}
+      <SidebarSection>{of ? t('following.subnav.balances', { name }) : t('subnav.debts.title')}</SidebarSection>
+      {debts.isSuccess && people.length === 0 && <SidebarEntry to={withOf('/', of)} icon="✅" title={t('subnav.debts.settled')} subtitle={t('subnav.debts.settledHint')} />}
       {people.map(([id, p]) => (
         <SidebarEntry
           key={id}
-          to={`/bills?with=${id}`}
+          to={withOf(`/bills?with=${id}`, of)}
           icon="👤"
           title={p.name}
           subtitle={p.items.map((x, i) => (
             <Fragment key={x.currency}>
               {i > 0 && ' · '}
-              <span className={x.amount > 0 ? 'text-success' : 'text-danger'}>{t(x.amount > 0 ? 'subnav.debts.owesYou' : 'subnav.debts.youOwe', { amount: f.money(x.amount, x.currency) })}</span>
+              <span className={x.amount > 0 ? 'text-success' : 'text-danger'}>{words(x.amount, f.money(x.amount, x.currency))}</span>
             </Fragment>
           ))}
         />
       ))}
+      <FollowingSubNav page="debts" path="/" />
     </>
   )
 }
@@ -110,18 +128,24 @@ export function ExchangeSubNav() {
   )
 }
 
-/** 🧾 Bills and a bill: Drafts (an exchange once), Recent bills (last 5), … All bills. */
+/**
+ * 🧾 Bills and a bill: Drafts (an exchange once), Recent bills (last 5), … All bills, then Following.
+ * With `?of=`, "Boris's drafts" and "Boris's recent bills" without … All bills (mockups/following).
+ */
 export function BillsSubNav() {
   const { t } = useTranslation()
   const f = useFormat()
-  const drafts = useBills({ status: 'Draft', countPerPage: 10 })
-  const recent = useBills({ countPerPage: 15 })
+  const { of, viewing } = useFollowing()
+  const name = viewing.kind === 'of' ? viewing.name : ''
+  const drafts = useBills({ status: 'Draft', countPerPage: 10, ofUserId: of })
+  const recent = useBills({ countPerPage: 15, ofUserId: of })
   const draftRows = pairExchanges(drafts.data?.items ?? [])
   const recentRows = pairExchanges((recent.data?.items ?? []).filter((b) => b.status !== 'Draft')).slice(0, 5)
+  if (of && isNoAccess(recent.error)) return <FollowingSubNav page="bills" path="/bills" />
 
   return (
     <>
-      {draftRows.length > 0 && <SidebarSection>{t('subnav.bills.drafts')}</SidebarSection>}
+      {draftRows.length > 0 && <SidebarSection>{of ? t('following.subnav.drafts', { name }) : t('subnav.bills.drafts')}</SidebarSection>}
       {draftRows.map(({ bill: b, pair }) => (
         <SidebarEntry
           key={b.id}
@@ -132,7 +156,7 @@ export function BillsSubNav() {
           subtitle={`${f.date(b.date)} · ${f.money(b.totalWithTips, b.currencyCode)}${pair ? ` ⇄ ${f.money(pair.totalWithTips, pair.currencyCode)}` : ''}`}
         />
       ))}
-      <SidebarSection>{t('subnav.bills.recent')}</SidebarSection>
+      <SidebarSection>{of ? t('following.subnav.recent', { name }) : t('subnav.bills.recent')}</SidebarSection>
       {recent.isSuccess && recentRows.length === 0 && <p className="px-2 py-1 text-[0.8rem] muted">{t('subnav.bills.none')}</p>}
       {recentRows.map(({ bill: b, pair }) => (
         <SidebarEntry
@@ -144,7 +168,8 @@ export function BillsSubNav() {
           subtitle={`${f.date(b.date)} · ${b.status === 'Cancelled' ? t('subnav.bills.cancelled') : f.money(b.totalWithTips, b.currencyCode)}${pair && b.status !== 'Cancelled' ? ` ⇄ ${f.money(pair.totalWithTips, pair.currencyCode)}` : ''}`}
         />
       ))}
-      <SidebarMore to="/bills" label={t('subnav.bills.all')} />
+      {!of && <SidebarMore to="/bills" label={t('subnav.bills.all')} />}
+      <FollowingSubNav page="bills" path="/bills" />
     </>
   )
 }

@@ -21,6 +21,11 @@ public interface IBillService
     Task CancelAsync(Guid id, CancellationToken cancelationToken);
     PagingResult<BillModel> GetCreatedByUser(Guid userId, int pageNumber = 0, int? countPerPage = null);
     bool HasAccess(Guid userId, BillModel? bill);
+    /// <summary>
+    /// Read access (<c>GET Bills/{id}</c>, its lines): <see cref="HasAccess"/>, or a confirmed subscription to anyone who takes
+    /// part in the bill. Changes still need <see cref="HasAccess"/> and <see cref="CanChange"/>.
+    /// </summary>
+    bool CanRead(Guid userId, BillModel? bill);
     /// <summary>Changes to a bill are for its creator or an admin.</summary>
     bool CanChange(Guid userId, bool isAdmin, BillModel bill);
     /// <summary>

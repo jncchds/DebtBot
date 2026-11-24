@@ -24,13 +24,15 @@ public class BillsController : DebtBotControllerBase
     private readonly IExcelService _excelService;
     private readonly IUserService _userService;
     private readonly IParserService _parserService;
+    private readonly IUserContactService _contacts;
 
-    public BillsController(IBillService billService, IExcelService excelService, IUserService userService, IParserService parserService)
+    public BillsController(IBillService billService, IExcelService excelService, IUserService userService, IParserService parserService, IUserContactService contacts)
     {
         _billService = billService;
         _excelService = excelService;
         _userService = userService;
         _parserService = parserService;
+        _contacts = contacts;
     }
 
     [HttpGet("{id:guid}")]
@@ -38,7 +40,7 @@ public class BillsController : DebtBotControllerBase
 	{
 		var bill = await _billService.GetAsync(id, cancellationToken);
 
-		if (bill is null || (!IsAdmin && !_billService.HasAccess(UserId!.Value, bill)))
+		if (bill is null || (!IsAdmin && !_billService.CanRead(UserId!.Value, bill)))
 		{
 			return ErrorResult(StatusCodes.Status404NotFound, "Not found.");
 		}
@@ -51,14 +53,22 @@ public class BillsController : DebtBotControllerBase
     /// Query: <c>withUserId</c>, <c>currencyCode</c> (payment currency, any case), <c>status</c>, <c>createdByMe</c>,
     /// <c>dateFrom</c>, <c>dateTo</c> (whole day, UTC), <c>search</c> (description contains, ignoring case),
     /// <c>sortBy</c> (Date, Description, Total, Status), <c>sortOrder</c> (Asc, Desc), <c>pageNumber</c>, <c>countPerPage</c>.
+    /// <c>ofUserId</c>: someone you have a confirmed subscription to (else 403); the bills they take part in, with
+    /// <c>createdByMe</c> and <c>withUserId</c> meant from their side.
     /// </summary>
     [HttpGet]
     public IActionResult Get([FromQuery] BillListQuery query)
     {
+        var owner = ListOwner(_contacts, query.OfUserId, out var denied);
+        if (denied is not null)
+        {
+            return denied;
+        }
+
         query.CurrencyCode = string.IsNullOrWhiteSpace(query.CurrencyCode) ? null : query.CurrencyCode.Trim().ToUpperInvariant();
         query.WithIncludesUnfinalized = true;
 
-        return Ok(_billService.GetForUser(UserId!.Value, query));
+        return Ok(_billService.GetForUser(owner, query));
     }
 
     [HttpGet("Own")]

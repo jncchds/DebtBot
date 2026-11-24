@@ -4,10 +4,16 @@ import { useTranslation } from 'react-i18next'
 import { useContacts, useSpendingSummary } from '../../api/bills'
 import { handle } from '../../lib/bills'
 import { groupSubscriptions, isPlaceholder, isoDay, monthRange, recentContacts } from '../../lib/contacts'
+import { withOf } from '../../lib/following'
 import { useFormat } from '../../lib/useFormat'
+import { FollowingSubNav } from '../following/Following'
+import { isNoAccess, useFollowing } from '../../lib/useFollowing'
 import { SidebarEntry, SidebarMore, SidebarSection } from '../Sidebar'
 
-/** 📊 Spendings: This month (non-cancelled totals per bill currency, local calendar month), … All spendings. */
+/**
+ * 📊 Spendings: This month (non-cancelled totals per bill currency, local calendar month), … All spendings, then Following.
+ * With `?of=`, "Boris this month" without … All spendings (mockups/following).
+ */
 export function SpendingsSubNav() {
   const { t, i18n } = useTranslation()
   const f = useFormat()
@@ -15,17 +21,19 @@ export function SpendingsSubNav() {
   // Taken once per mount; the sidebar remounts when you move between pages.
   const [now] = useState(() => new Date())
   const { from, to } = monthRange(now)
-  const summary = useSpendingSummary(from, to)
+  const { of, viewing } = useFollowing()
+  const summary = useSpendingSummary(from, to, of)
   const month = new Intl.DateTimeFormat(i18n.language === 'en' ? 'en-GB' : i18n.language, { month: 'long' }).format(now)
   const items = summary.data ?? []
+  if (of && isNoAccess(summary.error)) return <FollowingSubNav page="spendings" path="/spendings" />
   return (
     <>
-      <SidebarSection>{t('subnav.spendings.thisMonth')}</SidebarSection>
+      <SidebarSection>{viewing.kind === 'of' ? t('following.subnav.thisMonth', { name: viewing.name }) : t('subnav.spendings.thisMonth')}</SidebarSection>
       {summary.isSuccess && items.length === 0 && (
-        <SidebarEntry to="/spendings" icon="📊" title={t('subnav.spendings.nothing')} subtitle={t('subnav.spendings.none', { month })} active={false} />
+        <SidebarEntry to={withOf('/spendings', of)} icon="📊" title={t('subnav.spendings.nothing')} subtitle={t('subnav.spendings.none', { month })} active={false} />
       )}
       {items.map((s) => {
-        const to_ = `/spendings?currency=${s.currencyCode}&from=${from}&to=${to}`
+        const to_ = withOf(`/spendings?currency=${s.currencyCode}&from=${from}&to=${to}`, of)
         return (
           <SidebarEntry
             key={s.currencyCode}
@@ -38,7 +46,8 @@ export function SpendingsSubNav() {
           />
         )
       })}
-      <SidebarMore to="/spendings" label={t('subnav.spendings.all')} />
+      {!of && <SidebarMore to="/spendings" label={t('subnav.spendings.all')} />}
+      <FollowingSubNav page="spendings" path="/spendings" />
     </>
   )
 }

@@ -11,7 +11,8 @@ public class BillProfile : Profile
 {
 	public BillProfile()
     {
-        CreateProjection<Bill, BillListModel>();
+        CreateProjection<Bill, BillListModel>()
+            .ForMember(b => b.ParticipantIds, opt => opt.MapFrom(b => b.BillParticipants.Select(p => p.UserId)));
 
         CreateProjection<Bill, BillModel>();
 
