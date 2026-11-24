@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DebtBot Admin Users tokens mockup</title>
+<link rel="stylesheet" href="../../../web-ui/mockups/common/mock.css">
+<style>
+  .name { font-weight: 600; }
+  .small { font-size: .78rem; }
+  .tbl td { padding: .55rem .5rem; } .tbl th { padding: .5rem .5rem; } .tbl td:first-child, .tbl th:first-child { padding-left: 1rem; }
+  .exp-btn { width: 1.9rem; justify-content: center; padding-left: 0; padding-right: 0; color: var(--text-muted); }
+  tr.open td, .item.open { background: var(--accent-faint); }
+  tr.open td { border-bottom: 0; }
+  tr.panel td { background: var(--accent-faint); padding: .25rem 1rem .75rem; }
+  tr.panel.danger td, .item.open.danger { background: color-mix(in srgb, var(--danger) 6%, transparent); }
+  tr.open.danger td { background: color-mix(in srgb, var(--danger) 6%, transparent); }
+  .panel-box { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+  .item .panel-box { margin-top: .6rem; padding-top: .6rem; border-top: 1px dashed var(--border); }
+  .confirm-box { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; }
+  .item .confirm-box { margin-top: .6rem; padding-top: .6rem; border-top: 1px dashed var(--border); }
+  .note { font-size: .78rem; color: var(--text-muted); }
+  .modal-back { position: fixed; inset: 0; z-index: 40; background: rgba(0,0,0,.45); display: flex; align-items: flex-start; justify-content: center; padding: 6rem 1rem 1rem; }
+  .modal { width: 100%; max-width: 26rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,.45); }
+  .field + .field { margin-top: .9rem; }
+  .help { margin-top: .3rem; font-size: .8rem; color: var(--text-muted); }
+  .input.bad { border-color: var(--danger); }
+  .mfoot { display: flex; justify-content: flex-end; gap: .5rem; padding: .75rem 1rem; border-top: 1px solid var(--border); }
+  .mb { margin-bottom: .9rem; }
+</style>
+</head>
+<body>
+<script>
+  // GET Users?search=&role=&pageNumber=&countPerPage=20 → PagingResult<AdminUser>, ordered by display name; now with apiTokenCount.
+  const U = [
+    { id: 'a', tokens: 2, name: 'Anna Petrova', tg: '@anna_petrova', tid: 184220911, login: 'anna.p', pw: true, role: 'Admin', bot: true, bills: 57, contacts: 6, me: true },
+    { id: 'b', tokens: 3, name: 'Boris Ivanov', tg: '@boris_iv', tid: 201554870, login: 'boris', pw: true, role: 'Regular', bot: true, bills: 31, contacts: 4 },
+    { id: 'b2', tokens: 0, name: '@Boris_Iv', tg: '@Boris_Iv', tid: null, login: null, pw: false, role: 'Regular', bot: false, bills: 2, contacts: 0, dup: true },
+    { id: 'c', tokens: 0, name: 'Clara Müller', tg: '@clara_m', tid: 377120045, login: 'clara', pw: true, role: 'Regular', bot: true, bills: 12, contacts: 3 },
+    { id: 'd', tokens: 1, name: 'Dmitry K.', tg: '@dmitry_k', tid: 499812003, login: null, pw: false, role: 'Admin', bot: true, bills: 22, contacts: 5 },
+    { id: 'g', tokens: 0, name: '@grandpa_vlad', tg: '@grandpa_vlad', tid: null, login: null, pw: false, role: 'Regular', bot: false, bills: 0, contacts: 0 },
+    { id: 'l', tokens: 0, name: 'Lena', tg: '@lena_s', tid: 512004781, login: null, pw: false, role: 'Regular', bot: true, bills: 3, contacts: 1 },
+    { id: 'o', tokens: 0, name: '@olga_petrova', tg: '@olga_petrova', tid: null, login: null, pw: false, role: 'Regular', bot: false, bills: 4, contacts: 0 },
+  ]
+  // ?open=<id> in the URL: the expanded row. Only one row is open at a time.
+  const OPEN = 'b'
+  const tgCell = (u) => `<span class="num">${u.tg ?? '—'}</span><div class="muted small num">${u.tid ?? 'no Telegram id'}</div>`
+  const has = (u) => u.login || u.pw
+  const loginCell = (u) => has(u) ? `<span class="num">${u.login ?? '—'}</span>${u.pw ? '<div><span class="pill pill-muted">🔑 password set</span></div>' : ''}` : '<span class="muted">—</span>'
+  const role = (u) => u.role === 'Admin' ? '<span class="pill pill-accent">Admin</span>' : '<span class="muted small">Regular</span>'
+  const bot = (u) => u.bot ? '<span class="pill pill-success">started</span>' : '<span class="pill pill-muted">placeholder</span>'
+  const canDelete = (u) => !u.bot && !u.me
+  const expBtn = (u) => `<a class="btn btn-ghost btn-sm exp-btn" data-uid="${u.id}" title="${u.id === OPEN ? 'Hide actions' : 'Actions'}">${u.id === OPEN ? '▴' : '▾'}</a>`
+
+  // The action panel under an open row.
+  function panel(u, state) {
+    if (state === 'revoke') return ['danger', `<div class="confirm-box"><span class="neg" style="flex:1;min-width:12rem">Revoke all <b>${u.tokens}</b> API tokens of <b>${u.name}</b>? Scripts and apps using them stop working at once.</span><a class="btn btn-danger btn-sm">🚫 Revoke all</a><a class="btn btn-ghost btn-sm">Cancel</a></div>`]
+    const roleBtn = u.me ? `<a class="btn btn-secondary btn-sm" disabled title="You can't change your own role">${u.role === 'Admin' ? 'Remove admin' : 'Make admin'}</a>`
+      : `<a class="btn btn-secondary btn-sm">${u.role === 'Admin' ? 'Remove admin' : 'Make admin'}</a>`
+    return ['', `<div class="panel-box">
+      <a class="btn btn-secondary btn-sm">${has(u) ? '✏️ Change login or password' : '＋ Set login and password'}</a>
+      ${roleBtn}
+      ${u.tokens ? `<a class="btn btn-secondary btn-sm" style="color:var(--danger)">🚫 Revoke all ${u.tokens} API tokens</a>` : ''}
+      ${canDelete(u) ? '<a class="btn btn-secondary btn-sm" style="color:var(--danger)">🗑 Delete</a>' : ''}
+    </div>`]
+  }
+
+  function modal() {
+    return `<div class="modal-back"><div class="card modal">
+      <div class="card-head"><h2 style="flex:1">🔑 Login &amp; password · Boris Ivanov</h2><a class="btn btn-ghost btn-sm">✕</a></div>
+      <div class="card-body">
+        <div class="field"><label class="label">Login</label><input class="input" value="boris"></div>
+        <div class="field"><label class="label">New password</label><input class="input" type="password" value="••••••••••"><div class="help">At least 8 characters. Send it to Boris yourself.</div></div>
+        <div class="field"><label class="label">Repeat password</label><input class="input" type="password" value="••••••••••"></div>
+        <div class="alert-info" style="margin-top:1rem">ℹ️ <span>Saving signs Boris out of the web app everywhere.</span></div>
+      </div>
+      <div class="mfoot"><a class="btn btn-ghost">Cancel</a><a class="btn btn-primary">Save</a></div>
+    </div></div>`
+  }
+
+  window.MOCK = {
+    page: 'admin',
+    ctx: ['S:Admin',
+      { i: '👥', t: 'Users', s: 'Search, roles, passwords', a: true },
+      { i: '🔀', t: 'Merge users <span class="count" style="margin-left:.25rem">2</span>', s: 'Duplicate suggestions' },
+      { i: '🧾', t: 'All bills', s: 'read-only' }],
+    render(state, phone) {
+      window.PANEL = panel(U.find((u) => u.id === OPEN), state)
+      const head = `<div class="title-row"><h1>Users</h1></div><p class="sub muted">Everyone DebtBot knows: people who started the bot, and placeholders made from @mentions.</p>`
+      const html = list({
+        phone, open: false, activeCount: 0,
+        filters: [
+          { type: 'text', label: 'Search', placeholder: 'Name, @username or login', value: '', on: false },
+          { type: 'seg', label: 'Role', options: ['All', 'Admin', 'Regular'], value: 'All' },
+        ],
+        sort: { field: 'Name', dir: '↑ A–Z' },
+        columns: [
+          { label: 'Name', sorted: '↑', cell: (u) => `<div class="name">${u.name}${u.me ? ' <span class="muted small">(you)</span>' : ''}</div>${u.dup ? '<div class="small" style="color:var(--accent)">🔀 possible duplicate</div>' : ''}` },
+          { label: 'Telegram', cell: tgCell },
+          { label: 'Login &amp; password', cell: loginCell },
+          { label: 'Role', cell: role },
+          { label: 'Bot', cell: bot },
+          { label: 'Bills', cls: 'r', cell: (u) => `<span class="num">${u.bills}</span>` },
+          { label: 'Contacts', cls: 'r', cell: (u) => `<span class="num">${u.contacts}</span>` },
+          { label: 'API tokens', cls: 'r', cell: (u) => `<span class="num${u.tokens ? '' : ' muted'}">${u.tokens}</span>` },
+          { label: '', cls: 'r', w: '2.5rem', cell: expBtn },
+        ],
+        rows: U,
+        card: (u) => `<div class="l1"><span class="name" style="flex:1;min-width:0">${u.name}${u.me ? ' <span class="muted small">(you)</span>' : ''}</span>${role(u)}${expBtn(u)}</div>
+          <div class="l2 muted"><span class="num">${u.tg}${u.tid ? ' · ' + u.tid : ''}</span><span class="spacer"></span>${bot(u)}</div>
+          <div class="l2 muted"><span>${has(u) ? `login <span class="num" style="color:var(--text)">${u.login ?? '—'}</span>${u.pw ? ' · 🔑 password set' : ''}` : 'no login or password'}</span></div>
+          <div class="l2 muted"><span>${u.bills} bills · ${u.contacts} contacts · ${u.tokens} API token${u.tokens === 1 ? '' : 's'}</span></div>`,
+        pager: { range: '1–8 of 8', pages: 1 },
+        empty: '',
+      })
+      return head + html + (state === 'password' ? modal() : '')
+    },
+  }
+</script>
+<script src="../../../web-ui/mockups/common/list.js"></script>
+<script src="../../../web-ui/mockups/common/shell.js"></script>
+<script>
+  // Put the action panel under the open row (table) or inside the open card (phone).
+  const [kind, box] = window.PANEL
+  const btn = document.querySelector(`.exp-btn[data-uid="${OPEN}"]`)
+  const tr = btn.closest('tr')
+  if (tr) {
+    tr.classList.add('open'); if (kind) tr.classList.add(kind)
+    tr.insertAdjacentHTML('afterend', `<tr class="panel ${kind}"><td colspan="9">${box}</td></tr>`)
+  } else {
+    const item = btn.closest('.item')
+    item.classList.add('open'); if (kind) item.classList.add(kind)
+    item.insertAdjacentHTML('beforeend', box)
+  }
+</script>
+</body>
+</html>
