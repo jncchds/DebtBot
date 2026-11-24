@@ -27,10 +27,13 @@ function diff(a, b, path = '') {
   if (b === null || typeof b !== 'object') return `${path}: ${JSON.stringify(b)}`
   if (Array.isArray(a)) {
     if (!Array.isArray(b) || a.length !== b.length) return `${path}: ${a.length} items → ${Array.isArray(b) ? b.length : typeof b}`
-    // Lists may come in another order when sort keys tie: match each item by its id, else by position.
-    const key = (x) => x?.id ?? x?.user?.id ?? x?.userId ?? null
+    // Lists may come in another order when sort keys tie: match items by a key when it's unique in the list (an id,
+    // a bill id, a person), else by position.
+    const key = (x) => x?.id ?? x?.billId ?? x?.user?.id ?? x?.userId ?? null
+    const keys = a.map(key)
+    const unique = keys.every((k) => k !== null) && new Set(keys).size === keys.length
     for (let i = 0; i < a.length; i++) {
-      const other = key(a[i]) !== null ? b.find((x) => key(x) === key(a[i])) : b[i]
+      const other = unique ? b.find((x) => key(x) === keys[i]) : b[i]
       const d = diff(a[i], other, `${path}[${key(a[i]) ?? i}]`)
       if (d) return d
     }

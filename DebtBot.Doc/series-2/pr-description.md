@@ -79,7 +79,7 @@ Details are in [`api.md`](https://github.com/jncchds/DebtBot/blob/series-2/DebtB
   - The token tests run on a TestServer with the real auth pipeline: the handler, scopes, JWT-only endpoints, the
     rate limit, revoke and revoke-all, merge, and `LastUsedAt`.
 - **End to end in Docker** (`DebtBot.Doc/web-ui/e2e/`, extended for this series; `run.sh` on a fresh database):
-  E2E_NUMBERS
+  - three fresh runs in a row, each **API 75/75** and **browser 91/91**. The browser check has 67 tour steps (32 pages × 2 widths, each in light and dark, plus 3 sign-ins) and 24 flows;
   - The API check adds series 2: `PUT Bills/{id}` and its status codes, a bill its creator isn't on, and the token
     rules (scopes, JWT-only, revoke, the 429 with a low limit on the e2e stack, revoke-all).
   - The browser check adds: you leave and rejoin a bill (the payer and by-parts locks, ✎ Edit line on New bill and
@@ -87,12 +87,12 @@ Details are in [`api.md`](https://github.com/jncchds/DebtBot/blob/series-2/DebtB
     Users ▾ Revoke all; Swagger with a token. The tour now includes the new pages at 1280 and 390 px, light and
     dark.
 - **Upgrade from `main`** (e7a93a3, the web-ui merge): main's image is seeded through its own API with the e2e data,
-  then this branch runs on the same database. UPGRADE_NUMBERS
+  then this branch runs on the same database. **25/25:** only the `ApiTokens` migration applies; every list main showed is the same for three people (debts, bills, spendings, spending summary, contacts, exchanges) and for Admin › Users; the old draft opens as the form and saves with PUT; a new token works.
 - **e2e stability:**
   - `run.sh` waits until the app's message bus is connected before it seeds;
   - finalize and accept checks poll the API for the status;
   - the Chrome driver now removes its profile. Leftover profiles had filled the small `/tmp`, and that stalled
-    requests (FLAKE_NOTE).
+    requests. That was most likely behind the "Loading…" flake seen in earlier tasks.
 
 ## Planned, not built
 - **Receipt parse and prefill:** a photo or the text of a receipt goes to an LLM through OpenRouter, and New bill is
