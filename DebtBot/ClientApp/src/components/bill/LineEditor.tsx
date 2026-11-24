@@ -2,6 +2,7 @@ import { useId, useState, type FormEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import type { BillLineCreation } from '../../api/types'
+import { lineStart } from '../../lib/editors'
 import { parseAmount, parsePart } from '../../lib/money'
 import type { Person } from '../../lib/usePeople'
 
@@ -19,6 +20,8 @@ export interface LineEditorProps {
   hint?: ReactNode
   title?: string
   submitLabel?: string
+  /** ✎ Edit line: the line to start from. People on the bill but not on it start unticked. */
+  initial?: BillLineCreation
 }
 
 type Mode = 'equal' | 'parts'
@@ -28,15 +31,16 @@ type Mode = 'equal' | 'parts'
  * to a draft with it, and the New bill form (T6) builds its lines with it. It only builds a BillLineCreation;
  * the caller sends it. Amounts are sent as typed (parsed decimals, never computed).
  */
-export function LineEditor({ people, currency, onSubmit, onCancel, busy, error, hint, title, submitLabel }: LineEditorProps) {
+export function LineEditor({ people, currency, onSubmit, onCancel, busy, error, hint, title, submitLabel, initial }: LineEditorProps) {
   const { t } = useTranslation()
   const id = useId()
-  const [item, setItem] = useState('')
-  const [subtotal, setSubtotal] = useState('')
-  const [mode, setMode] = useState<Mode>('equal')
+  const [start] = useState(() => lineStart(people, initial))
+  const [item, setItem] = useState(start.item)
+  const [subtotal, setSubtotal] = useState(start.subtotal)
+  const [mode, setMode] = useState<Mode>(start.mode)
   // Unticked people and parts, so people added to the bill later start ticked with part 1.
-  const [off, setOff] = useState<Set<string>>(() => new Set())
-  const [parts, setParts] = useState<Record<string, string>>({})
+  const [off, setOff] = useState<Set<string>>(() => new Set(start.off))
+  const [parts, setParts] = useState<Record<string, string>>(start.parts)
   const partOf = (pid: string) => parts[pid] ?? '1'
   const [tried, setTried] = useState(false)
 

@@ -1,4 +1,4 @@
-import type { BillCreation, BillLineCreation, BillPaymentCreation } from '../api/types'
+import type { Bill, BillCreation, BillLineCreation, BillPaymentCreation } from '../api/types'
 import { fromUnits, parseAmount, sumUnits, toUnits } from './money'
 
 /**
@@ -38,12 +38,116 @@ const isCurrency = (c: string) => /^[A-Za-z]{3}$/.test(c.trim())
 export const billCurrency = (f: NewBillForm) => f.currency.trim().toUpperCase()
 export const paymentCurrency = (f: NewBillForm) => (f.paymentCurrency.trim() ? f.paymentCurrency.trim().toUpperCase() : billCurrency(f))
 
-/** Everyone on a line or a payment (they can't be taken off the bill), plus you. */
-export function lockedPeople(f: NewBillForm, meId: string | undefined): Set<string> {
-  const ids = new Set<string>(meId ? [meId] : [])
-  f.lines.forEach((l) => l.participants.forEach((p) => ids.add(p.userId)))
+const isEqualLine = (l: BillLineCreation) => l.participants.every((p) => (p.part ?? 1) === (l.participants[0].part ?? 1))
+
+/**
+ * Who can't be taken off the bill (series 2, user decision): anyone who paid, is on a by-parts line or is the only
+ * person on a line. The same for everyone, the creator included. Equal-split lines don't lock: removing someone
+ * takes them off those lines (removePerson).
+ */
+export function lockedPeople(f: Pick<NewBillForm, 'lines' | 'payments'>): Set<string> {
+  const ids = new Set<string>()
   f.payments.forEach((p) => ids.add(p.userId))
+  f.lines.forEach((l) => {
+    if (l.participants.length === 1 || !isEqualLine(l)) l.participants.forEach((p) => ids.add(p.userId))
+  })
   return ids
+}
+
+/** Takes someone off the bill and off every equal-split line; those lines are then split among the people left. */
+export function removePerson(f: NewBillForm, userId: string): NewBillForm {
+  return {
+    ...f,
+    people: f.people.filter((x) => x !== userId),
+    lines: f.lines.map((l) => (l.participants.length > 1 && isEqualLine(l) ? { ...l, participants: l.participants.filter((p) => p.userId !== userId) } : l)),
+  }
+}
+
+/** Which editor is open, from the URL: <base>/add-line, <base>/add-payment, <base>/edit-line/<n> (1-based). */
+export type FormEditor = { kind: 'add-line' } | { kind: 'add-payment' } | { kind: 'edit-line'; index: number }
+
+/** The editor named by a route's `mode` and its `:n` (edit-line), or none. */
+export function formEditor(mode: 'add-line' | 'add-payment' | 'edit-line' | undefined, n: string | undefined): FormEditor | undefined {
+  if (mode === 'edit-line') {
+    const index = Number(n) - 1
+    return Number.isInteger(index) && index >= 0 ? { kind: 'edit-line', index } : undefined
+  }
+  return mode ? { kind: mode } : undefined
+}
+
+/** Replaces line `index` (✎ Edit line). */
+export function withLine(f: NewBillForm, index: number, line: BillLineCreation): NewBillForm {
+  return { ...f, lines: f.lines.map((l, i) => (i === index ? line : l)) }
+}
+
+/**
+ * A saved draft as the form (the draft page is the New bill form, prefilled). People are the creator, then everyone
+ * on a line or a payment; the creator only while they're on one, or while the draft has no lines or payments yet
+ * (they took themselves off otherwise). Equal splits leave `part` out; an empty total and payment currency stand
+ * for "the lines' total" and "the bill currency", as on New bill.
+ */
+export function fromBill(bill: Bill): NewBillForm {
+  const lines: BillLineCreation[] = bill.lines.map((l) => {
+    const equal = l.participants.every((p) => p.part === l.participants[0].part)
+    return {
+      itemDescription: l.itemDescription,
+      subtotal: l.subtotal,
+      participants: l.participants.map((p) => (equal ? { userId: p.user.id } : { userId: p.user.id, part: p.part })),
+    }
+  })
+  const payments: BillPaymentCreation[] = bill.payments.map((p) => ({ userId: p.user.id, amount: p.amount }))
+  const taking = new Set([...lines.flatMap((l) => l.participants.map((p) => p.userId)), ...payments.map((p) => p.userId)])
+  const people = [...new Set([...(taking.size === 0 || taking.has(bill.creator.id) ? [bill.creator.id] : []), ...taking])]
+  const sameTotal = toUnits(bill.totalWithTips) === linesUnits({ lines })
+  return {
+    description: bill.description,
+    date: localDateTime(new Date(bill.date)),
+    currency: bill.currencyCode,
+    paymentCurrency: bill.paymentCurrencyCode === bill.currencyCode ? '' : bill.paymentCurrencyCode,
+    total: sameTotal ? '' : String(bill.totalWithTips),
+    people,
+    lines,
+    payments,
+  }
+}
+
+/** The request for comparing: order doesn't matter, and an equal split is the same whatever its parts. */
+function comparable(f: NewBillForm): string {
+  const body = toBillCreation(f)
+  const lines = body.lines!.map((l) =>
+    JSON.stringify({
+      ...l,
+      participants: l.participants.map((p) => (isEqualLine(l) ? { userId: p.userId } : { userId: p.userId, part: p.part ?? 1 })).sort((a, b) => a.userId.localeCompare(b.userId)),
+    }),
+  )
+  const payments = [...body.payments!].sort((a, b) => a.userId.localeCompare(b.userId))
+  return JSON.stringify({ ...body, lines: lines.sort(), payments })
+}
+
+/** Whether the form would change the saved draft (people who are on no line or payment aren't saved). */
+export function draftChanged(f: NewBillForm, bill: Bill): boolean {
+  return comparable(f) !== comparable(fromBill(bill))
+}
+
+/** What's kept in the tab for a draft: the form and the saved draft it was based on (fromBill, as JSON). */
+export interface StoredDraft {
+  base: string
+  form: NewBillForm
+}
+
+export const draftKey = (billId: string) => `debtbot.draft.${billId}`
+
+/** The draft's form from the tab when it was based on this very version of the bill, else the bill as saved. */
+export function loadDraft(bill: Bill): NewBillForm {
+  const base = JSON.stringify(fromBill(bill))
+  try {
+    const raw = sessionStorage.getItem(draftKey(bill.id))
+    const stored = raw ? (JSON.parse(raw) as StoredDraft) : undefined
+    if (stored?.base === base && stored.form) return stored.form
+  } catch {
+    // Storage blocked or broken: start from the bill.
+  }
+  return fromBill(bill)
 }
 
 /** A payment for someone who already paid replaces their amount (as the API does). */

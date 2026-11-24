@@ -1,6 +1,7 @@
 import { useId, useState, type FormEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { BillPaymentCreation } from '../../api/types'
+import { defaultPayer } from '../../lib/editors'
 import { parseAmount } from '../../lib/money'
 import type { Person } from '../../lib/usePeople'
 
@@ -22,7 +23,7 @@ export interface PaymentEditorProps {
 export function PaymentEditor({ people, currency, onSubmit, onCancel, busy, error, hint, title, submitLabel }: PaymentEditorProps) {
   const { t } = useTranslation()
   const id = useId()
-  const [who, setWho] = useState(() => people.find((p) => p.isMe)?.id ?? people[0]?.id ?? '')
+  const [who, setWho] = useState(() => defaultPayer(people))
   const [text, setText] = useState('')
   const [tried, setTried] = useState(false)
   const amount = parseAmount(text)
@@ -51,7 +52,11 @@ export function PaymentEditor({ people, currency, onSubmit, onCancel, busy, erro
               </option>
             ))}
           </select>
-          {tried && whoProblem && <p className="mt-1 text-xs text-danger">{whoProblem}</p>}
+          {people.length === 0 ? (
+            <p className="mt-1 text-xs muted">{t('editor.addPeopleFirst')}</p>
+          ) : (
+            tried && whoProblem && <p className="mt-1 text-xs text-danger">{whoProblem}</p>
+          )}
         </div>
         <div>
           <label className="label" htmlFor={`${id}-amount`}>
