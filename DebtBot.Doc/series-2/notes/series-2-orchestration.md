@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: 645e1162-a1e5-44ec-8c96-df03ffb46bbe
-  modified: 2026-11-24T16:11:15.608Z
+  modified: 2026-11-24T16:41:03.945Z
 ---
 
 Series 2 of DebtBot, started 2026-11-24 after the web-ui series (PR #34) was merged to main. Run like [[web-ui-orchestration]] with the `orchestrate-tasks` skill.
@@ -37,6 +37,8 @@ Series 2 of DebtBot, started 2026-11-24 after the web-ui series (PR #34) was mer
 **Progress**
 - 2026-11-24: series set up (branch, docs, memory); plan draft in `plan.md`, questions sent to the user.
 - 2026-11-24: decisions recorded (7e3147c). T1 (creator leave) started as worker "DebtBot S2 T1 creator leave", id e6c8481a. Next for me alongside: write `receipt-parse.md` with the user.
+- 2026-11-24: `receipt-parse.md` draft committed (65b67a4), with 4 open questions for the user.
+- 2026-11-24: T1 merged into series-2 (aac0685): PUT Bills/{id} (draft replace, exchanges 400), BillForm shared by New bill and drafts, Edit line URLs, and the equal-split lock rule. 205 .NET tests, 122 vitest, e2e browser 74/74 (check.mjs updated). Worker e6c8481a stopped, worktree and branch removed. Open: finalizeBlockers is unused except in tests; exchange drafts can't be edited.
 
 **Why:** the user wants a clean context per task, mockup approval per view, and a durable record.
 **How to apply:** follow this and the skill for every series-2 task. Related: [[web-ui-palette]].
