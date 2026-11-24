@@ -56,6 +56,8 @@ On 2026-11-23 the user set up how the DebtBot API + auth + web UI work is run.
 - 2026-11-23: T5 (Debts, Bills, Bill detail) started as worker "DebtBot T5 debts bills", id 0c8b0b8f.
 - 2026-11-23: T5 reported done (159 .NET tests, 34 vitest, 17/17 runtime) but the user gave it more changes after the report (exchange button, participants autocomplete), so the merge is on hold until its follow-up report. Note for T7: Telegram usernames are stored as "@name"; check that by-telegram accepts a name without the @.
 - 2026-11-24: T5 merged into web-ui (bd35fa0) after the round-4 follow-up (no Exchange button on Debts, PeoplePicker, FilterPerson). 159 .NET tests and 36 vitest pass, 18/18 runtime checks.
+- 2026-11-24: T6 (New bill, Exchange) started as worker "DebtBot T6 newbill exchange", id f2a18930.
+- 2026-11-24: the user asked for a separate mockup session that gets all remaining views approved ahead of time (Spendings, Contacts, Profile for T7; Admin Users, Merge and All bills for T8), so the workers can build without waiting. Worker "DebtBot mockups T7-T8", id b83a20d8, branch task/mockups-78, brief `briefs/mockups-t7-t8.md`. Mockups only; it may run alongside a build task. The T7 and T8 briefs then say the mockups are already approved: build from them with no new mockup round, only asking the user when something is unclear.
 
 **Why:** the user wants a clean context per task, control over how each view looks, and a durable record of the work.
 **How to apply:** follow this for every task in the series. Related: [[web-ui-palette]].
