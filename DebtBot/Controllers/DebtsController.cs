@@ -12,10 +12,12 @@ namespace DebtBot.Controllers;
 public class DebtsController : DebtBotControllerBase
 {
     private readonly IDebtService _debtService;
+    private readonly IUserContactService _contacts;
 
-    public DebtsController(IDebtService debtService)
+    public DebtsController(IDebtService debtService, IUserContactService contacts)
     {
         _debtService = debtService;
+        _contacts = contacts;
     }
 
     [Authorize(IdentityData.AdminUserPolicyName)]
@@ -38,12 +40,20 @@ public class DebtsController : DebtBotControllerBase
     /// My own balances, without settled ones. By default by person, then currency.
     /// Query: <c>withUserId</c>, <c>currencyCode</c> (any case), <c>direction</c> (All, OwedToMe, IOwe),
     /// <c>sortBy</c> (Person, Amount, Currency), <c>sortOrder</c> (Asc, Desc), <c>pageNumber</c>, <c>countPerPage</c>.
+    /// <c>ofUserId</c>: someone you have a confirmed subscription to (else 403); their balances, with each person under
+    /// their own display name.
     /// </summary>
     [HttpGet("Own")]
     public IActionResult GetOwn([FromQuery] DebtListQuery query)
     {
+        var owner = ListOwner(_contacts, query.OfUserId, out var denied);
+        if (denied is not null)
+        {
+            return denied;
+        }
+
         query.CurrencyCode = string.IsNullOrWhiteSpace(query.CurrencyCode) ? null : query.CurrencyCode.Trim().ToUpperInvariant();
 
-        return Ok(_debtService.GetOwn(UserId!.Value, query));
+        return Ok(_debtService.GetOwn(owner, query, ownNames: owner != UserId));
     }
 }

@@ -5,6 +5,9 @@ namespace DebtBot.Models.Bill;
 /// <summary>Filters, sort and paging for the bills a user takes part in (<c>GET Bills</c>).</summary>
 public class BillListQuery
 {
+    /// <summary>Whose list: a user you have a confirmed subscription to, or yourself. Left out = yours.</summary>
+    public Guid? OfUserId { get; set; }
+
     /// <summary>Only bills shared with this user: a ledger record between the two of you, or, before the bill has a ledger (draft, finalizing), both of you take part.</summary>
     public Guid? WithUserId { get; set; }
     /// <summary>Only bills paid in this currency (upper case).</summary>

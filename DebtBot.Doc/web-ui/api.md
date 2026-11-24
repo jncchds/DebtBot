@@ -11,7 +11,9 @@ This covers everything the UI tasks (T4–T8) call. Sign-in endpoints (`api/v1/a
   - A **403 from the Admin policy** (non-admin calling an admin endpoint) and framework 401s have an empty body.
 - **Access rules:**
   - **See a bill** (`HasAccess`): you're its creator, a payer or a line participant — or an admin.
-  - **Change a bill** (lines, payments, finalize, cancel, exchange accept): creator or admin. Someone who can't see the bill gets 404; a participant who isn't the creator gets 403.
+  - **Read a bill** (`CanRead`, since T7b; `GET Bills/{id}` and `GET Bills/lines/{lineId}` only): what `HasAccess` allows, or you have a **confirmed** subscription to anyone taking part in it (creator, payer, line participant, or in its participants list).
+  - **Change a bill** (lines, payments, finalize, cancel, exchange accept): creator or admin. Someone without `HasAccess` gets 404 (that includes a subscriber who can only read it); a participant who isn't the creator gets 403.
+  - **Someone else's lists (`ofUserId`, since T7b):** `GET Debts/Own`, `GET Bills`, `GET Spendings/Own` and `GET Spendings/Own/summary` take `ofUserId?`. Left out or your own id: your lists, unchanged. Someone you have a **confirmed** subscription to (`mySubscription = Confirmed`): their lists, exactly as they would get them. Anything else (pending, none, the other direction): **403** `{ message }`. Admins aren't special here.
 - **Sorting (since T5):** paged lists take `sortBy=<Field>` and `sortOrder=Asc|Desc` next to their filters; see `mockups/shell/README.md`, "List views".
 - **Paging:** `?pageNumber=0&countPerPage=N` (page numbers start at 0; without `countPerPage` everything comes in one page). Paged responses are a `PagingResult<T>`:
 
@@ -61,25 +63,27 @@ interface BillListItem {               // GET Bills
   status: ProcessingState; totalWithTips: number;
   creator: UserDisplay; exchangeBillId: string | null;
   ledgerRecords: LedgerRecord[];
+  participantIds: string[];            // since T7b: everyone in the bill's participants list
 }
 
 interface Debt { creditorUser: UserDisplay; debtorUser: UserDisplay; amount: number; currencyCode: string }
 ```
 
 `Debt` is seen from the creditor's side: `amount > 0` means `debtorUser` owes `creditorUser`; `amount < 0` means `creditorUser` owes `debtorUser` `-amount`. In `Debts/Own`, `creditorUser` is always you (since T5: no subscribed users' balances, and no settled zero balances), and `debtorUser.displayName` is the name in your contact list. The bot's `/Debts` still includes subscriptions.
+With `ofUserId` (since T7b), `creditorUser` is that person and `debtorUser` carries each counterpart's **own** display name (not anybody's contact name); sorting by `Person` uses that name.
 
 ## Bills (`/Bills`)
 
 | Endpoint | Access | Request | Response |
 |---|---|---|---|
-| `GET Bills` | any user | query: `withUserId?`, `currencyCode?` (payment currency, any case), `status?`, `createdByMe?`, `dateFrom?`, `dateTo?` (`yyyy-mm-dd`, whole days, UTC), `search?` (description contains, ignoring case), `sortBy?` (`Date` default, `Description`, `Total`, `Status`), `sortOrder?` (`Asc`, `Desc` default), paging | `PagingResult<BillListItem>` — bills you take part in. `withUserId` (since T5) matches a ledger record between you, or a not yet finalized bill you're both in. |
+| `GET Bills` | any user | query: `ofUserId?` (since T7b: someone you're subscribed to, confirmed; else 403), `withUserId?`, `currencyCode?` (payment currency, any case), `status?`, `createdByMe?`, `dateFrom?`, `dateTo?` (`yyyy-mm-dd`, whole days, UTC), `search?` (description contains, ignoring case), `sortBy?` (`Date` default, `Description`, `Total`, `Status`), `sortOrder?` (`Asc`, `Desc` default), paging | `PagingResult<BillListItem>` — bills you take part in. `withUserId` (since T5) matches a ledger record between you, or a not yet finalized bill you're both in. With `ofUserId`, "you" in `withUserId` and `createdByMe` is that person. |
 | `GET Bills/Own` | any user | paging | `PagingResult<Bill>` — bills you created |
 | `GET Bills/All` | **Admin** | paging | `PagingResult<Bill>` — all bills |
-| `GET Bills/{id}` | see the bill | – | `Bill`, or 404 |
+| `GET Bills/{id}` | read the bill (`CanRead`) | – | `Bill`, or 404 |
 | `POST Bills` | any user (becomes creator) | `BillCreation` | `string` (the new bill id, JSON string). Always a **draft**. |
 | `POST Bills/{id}/lines` | change, **draft only** | `BillLineCreation[]` (at least one) | `Bill` |
 | `POST Bills/{id}/payments` | change, **draft only** | `BillPaymentCreation[]` (at least one) | `Bill` |
-| `GET Bills/lines/{lineId}` | see the line's bill | – | `BillLine` |
+| `GET Bills/lines/{lineId}` | read the line's bill (`CanRead`) | – | `BillLine` |
 | `POST Bills/{id}/Finalize` | change | – | 200, empty. The ledger is written in the background (status `Ready`, then `Processed`). |
 | `POST Bills/{id}/Cancel` | change | – | 200, empty. Background; status becomes `Cancelled`, ledger and spendings are marked cancelled. For an exchange bill, its other bill is cancelled too. 400 if already cancelled. |
 | `POST Bills/text/preview` | any user | `text/plain` body, the bot's bill text format (see `POST Bills/text` in Swagger) | always 200: `{ result: BillParser, errors: string[], isValid: boolean }`. Nothing is saved. |
@@ -147,7 +151,7 @@ interface ExchangeListItem {        // GET Bills/exchanges
 
 | Endpoint | Access | Response |
 |---|---|---|
-| `GET Debts/Own` | any user; query: `withUserId?`, `currencyCode?`, `direction?` (`All`, `OwedToMe`, `IOwe`), `sortBy?` (`Person` default, `Amount` signed, `Currency`), `sortOrder?` (`Asc` default, `Desc`), paging | `PagingResult<Debt>`: your own non-zero balances (since T5) |
+| `GET Debts/Own` | any user; query: `ofUserId?` (since T7b), `withUserId?`, `currencyCode?`, `direction?` (`All`, `OwedToMe`, `IOwe`), `sortBy?` (`Person` default, `Amount` signed, `Currency`), `sortOrder?` (`Asc` default, `Desc`), paging | `PagingResult<Debt>`: your own non-zero balances (since T5) |
 | `GET Debts` | **Admin**, paging | `PagingResult<Debt>`, all |
 | `GET Debts/{userId}` | **Admin**, paging | `PagingResult<Debt>` for that user |
 
@@ -157,8 +161,8 @@ Debts come from a materialized view that refreshes when the ledger changes. Righ
 
 | Endpoint | Access | Response |
 |---|---|---|
-| `GET Spendings/Own` | any user; query: `currencyCode?` (bill currency, any case), `dateFrom?`, `dateTo?` (`yyyy-mm-dd`, whole days, UTC), `includeCancelled?` (default `false`), `sortBy?` (`Date` default, `Amount`), `sortOrder?` (`Desc` default, `Asc`), paging | `PagingResult<Spending>`, your share of finalized bills. Since T7, spendings of cancelled bills (`isCanceled: true`) are left out unless `includeCancelled=true`. Link to `Bills/{billId}`. The bot's `/Spendings` still lists all of them, newest first. |
-| `GET Spendings/Own/summary?dateFrom=&dateTo=` | any user | `SpendingSummary[]`: totals of your non-cancelled spendings per bill currency, ordered by currency (since T7) |
+| `GET Spendings/Own` | any user; query: `ofUserId?` (since T7b), `currencyCode?` (bill currency, any case), `dateFrom?`, `dateTo?` (`yyyy-mm-dd`, whole days, UTC), `includeCancelled?` (default `false`), `sortBy?` (`Date` default, `Amount`), `sortOrder?` (`Desc` default, `Asc`), paging | `PagingResult<Spending>`, your share of finalized bills. Since T7, spendings of cancelled bills (`isCanceled: true`) are left out unless `includeCancelled=true`. Link to `Bills/{billId}`. The bot's `/Spendings` still lists all of them, newest first. |
+| `GET Spendings/Own/summary?dateFrom=&dateTo=&ofUserId=` | any user (`ofUserId` since T7b) | `SpendingSummary[]`: totals of your non-cancelled spendings per bill currency, ordered by currency (since T7) |
 
 ```ts
 interface Spending {

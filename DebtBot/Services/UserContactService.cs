@@ -116,6 +116,11 @@ public class UserContactService : IUserContactService
         return subscription != null;
     }
 
+    public bool HasConfirmedSubscription(Guid subscriberId, Guid userId)
+    {
+        return _debtContext.NotificationSubscriptions.Any(t => t.SubscriberId == subscriberId && t.UserId == userId && t.IsConfirmed);
+    }
+
     public bool CancelSubscription(Guid userId, Guid contactId)
     {
         // I'm the subscriber: my request for, or subscription to, the contact's bills

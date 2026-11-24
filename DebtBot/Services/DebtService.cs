@@ -6,6 +6,9 @@ using DebtBot.Interfaces.Services;
 using DebtBot.Models;
 using DebtBot.Models.Debt;
 using DebtBot.Models.Enums;
+using DebtBot.Models.User;
+using System.Linq.Expressions;
+using Debt = DebtBot.DB.Entities.Debt;
 using Microsoft.EntityFrameworkCore;
 
 namespace DebtBot.Services;
@@ -48,7 +51,7 @@ public class DebtService : IDebtService
             .ToPagingResult(pageNumber, countPerPage);
     }
 
-    public PagingResult<DebtModel> GetOwn(Guid userId, DebtListQuery filter)
+    public PagingResult<DebtModel> GetOwn(Guid userId, DebtListQuery filter, bool ownNames = false)
     {
         var query = _debtContext
             .Debts
@@ -73,21 +76,52 @@ public class DebtService : IDebtService
         };
 
         var desc = filter.SortOrder == SortOrder.Desc;
-        // The person is the name in your contact list, as shown. Amount is signed: ascending puts your largest debt first.
+        // The person is the name as shown: the user's contact name, or for someone else's list (ownNames) the
+        // person's own display name. Amount is signed: ascending puts the largest debt first.
+        Expression<Func<Debt, string>> name = ownNames
+            ? t => t.DebtorUser.ContactUser.DisplayName.ToUpper()
+            : t => t.DebtorUser.DisplayName.ToUpper();
         var sorted = filter.SortBy switch
         {
             DebtSortField.Amount => (desc ? query.OrderByDescending(t => (double)t.Amount) : query.OrderBy(t => (double)t.Amount))
-                .ThenBy(t => t.DebtorUser.DisplayName.ToUpper()),
+                .ThenBy(name),
             DebtSortField.Currency => (desc ? query.OrderByDescending(t => t.CurrencyCode) : query.OrderBy(t => t.CurrencyCode))
-                .ThenBy(t => t.DebtorUser.DisplayName.ToUpper()),
-            _ => (desc ? query.OrderByDescending(t => t.DebtorUser.DisplayName.ToUpper()) : query.OrderBy(t => t.DebtorUser.DisplayName.ToUpper()))
+                .ThenBy(name),
+            _ => (desc ? query.OrderByDescending(name) : query.OrderBy(name))
                 .ThenBy(t => t.CurrencyCode),
         };
 
-        return sorted
+        sorted = sorted
             .ThenBy(t => t.DebtorUserId)
-            .ThenBy(t => t.CurrencyCode)
-            .ProjectTo<DebtModel>(_mapper.ConfigurationProvider)
+            .ThenBy(t => t.CurrencyCode);
+
+        if (!ownNames)
+        {
+            return sorted
+                .ProjectTo<DebtModel>(_mapper.ConfigurationProvider)
+                .ToPagingResult(filter.PageNumber, filter.CountPerPage);
+        }
+
+        return sorted
+            .Select(t => new DebtModel
+            {
+                CreditorUser = new UserDisplayModel
+                {
+                    Id = t.CreditorUser.Id,
+                    DisplayName = t.CreditorUser.DisplayName,
+                    TelegramId = t.CreditorUser.TelegramId,
+                    TelegramUserName = t.CreditorUser.TelegramUserName,
+                },
+                DebtorUser = new UserDisplayModel
+                {
+                    Id = t.DebtorUser.ContactUser.Id,
+                    DisplayName = t.DebtorUser.ContactUser.DisplayName,
+                    TelegramId = t.DebtorUser.ContactUser.TelegramId,
+                    TelegramUserName = t.DebtorUser.ContactUser.TelegramUserName,
+                },
+                Amount = t.Amount,
+                CurrencyCode = t.CurrencyCode,
+            })
             .ToPagingResult(filter.PageNumber, filter.CountPerPage);
     }
 }
