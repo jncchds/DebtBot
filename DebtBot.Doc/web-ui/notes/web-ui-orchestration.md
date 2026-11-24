@@ -72,6 +72,7 @@ On 2026-11-23 the user set up how the DebtBot API + auth + web UI work is run.
 - 2026-11-24: T9 (e2e, polish, docs, PR description) started as worker "DebtBot T9 e2e", id 138418ab. It doesn't mark the PR ready; that's for the orchestrator with the user.
 - 2026-11-24: T9 hit the usage limit (reset 14:00) and was resumed. The user added a polish fix: in every filter row and form that mixes text boxes with rounded (pill) selects, the captions aren't vertically aligned (for example "Search" and "Role" on Admin Users). Fix it in the shared filter and field components.
 - 2026-11-24: T9 merged into web-ui (9a5d3f2): 198 .NET tests, 113 vitest, e2e API 50/50 and browser 74/74, upgrade from main 7/7; e2e set in `DebtBot.Doc/web-ui/e2e/`. PR #34 title and body are updated from `pr-description.md` (gh pr edit fails on Projects classic, so `gh api -X PATCH repos/jncchds/DebtBot/pulls/34` is used). The PR is still a draft until the user says to mark it ready.
+- 2026-11-24: the user merged PR #34 into main (e7a93a3), so the web-ui series is complete. A new orchestrator, "DebtBot orchestrator 2" (id 645e1162), runs the next series: creator self-removal from bill participants, personal API tokens, and planning LLM receipt parsing via OpenRouter. Its handoff is `DebtBot.Doc/web-ui/handoff-next-series.md` on web-ui, and it branches from main.
 
 **Why:** the user wants a clean context per task, control over how each view looks, and a durable record of the work.
 **How to apply:** follow this for every task in the series. Related: [[web-ui-palette]].
