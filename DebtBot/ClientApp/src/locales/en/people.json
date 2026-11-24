@@ -1,5 +1,5 @@
 {
-  "add": "Add a person: type a name or @username…",
+  "add": "Add a person: name or @username…",
   "locked": "Paid, on a by-parts line or alone on a line",
   "more": "{{count}} more: keep typing",
   "noMatch": "No contact matches",

@@ -115,6 +115,109 @@ check('Bills/exchanges lists the accepted and the waiting exchanges', ex.items.s
 const page2 = await call(t.boris, 'GET', '/Bills?countPerPage=20&pageNumber=1')
 check('Boris has a second page of bills, and the total matches', page2.totalCount > 20 && page2.items.length === Math.min(20, page2.totalCount - 20), `${page2.totalCount} / ${page2.items.length}`)
 
+// ---------- Series 2, T1: the creator can be off the bill; PUT Bills/{id} replaces a draft ----------
+t.dmitry = mint(ids.dmitry, 'Dmitry K.', true) // an admin who isn't the creator
+t.grisha = mint(ids.grisha, 'Grisha Volkov')
+const pasta = (people, payer = 'boris') => ({
+  currencyCode: 'EUR',
+  description: 'Creator off the bill',
+  lines: [{ itemDescription: 'Pasta', subtotal: 60, participants: people.map((k) => ({ userId: ids[k] })) }],
+  payments: [{ userId: ids[payer], amount: 60 }],
+})
+const lineIds = (bill) => bill.lines[0].participants.map((p) => p.user.id).sort().join()
+const offId = await call(t.anna, 'POST', '/Bills', pasta(['boris', 'dmitry']))
+const annaDrafts = await call(t.anna, 'GET', '/Bills?status=Draft&countPerPage=100')
+check('a draft Anna made without herself is in her Bills', annaDrafts.items.some((x) => x.id === offId))
+const put1 = await raw(t.anna, 'PUT', `/Bills/${offId}`, pasta(['anna', 'boris', 'dmitry']))
+check('PUT Bills/{id} by the creator replaces the line (Anna back on it)', put1.status === 200 && lineIds(put1.body) === [ids.anna, ids.boris, ids.dmitry].sort().join(), `${put1.status}`)
+await expectStatus(403, 'boris', 'PUT', `/Bills/${offId}`, pasta(['boris', 'dmitry'])) // on the bill, not the creator
+await expectStatus(404, 'lena', 'PUT', `/Bills/${offId}`, pasta(['boris', 'dmitry'])) // no access at all
+await expectStatus(409, 'anna', 'PUT', `/Bills/${bills.pizza}`, pasta(['anna', 'boris'])) // finalized
+await expectStatus(400, 'boris', 'PUT', `/Bills/${bills.exBoris.forwardBillId}`, pasta(['boris', 'grisha'])) // an exchange draft
+const put2 = await raw(t.dmitry, 'PUT', `/Bills/${offId}`, pasta(['boris', 'dmitry']))
+check('PUT by an admin: Anna is off the line again and stays the creator', put2.status === 200 && lineIds(put2.body) === [ids.boris, ids.dmitry].sort().join() && put2.body.creator.id === ids.anna, `${put2.status}`)
+await call(t.anna, 'POST', `/Bills/${offId}/Finalize`)
+let offBill
+for (let i = 0; i < 60; i++) {
+  offBill = await call(t.anna, 'GET', `/Bills/${offId}`)
+  if (offBill.status !== 'Ready' && offBill.status !== 'Processing') break
+  await sleep(1000)
+}
+const rec = offBill.ledgerRecords
+check(
+  'finalized without the creator: Dmitry owes Boris 30, nothing for Anna, still in her Bills',
+  offBill.status === 'Processed' &&
+    rec.length === 1 &&
+    rec[0].debtorUser.id === ids.dmitry &&
+    rec[0].creditorUser.id === ids.boris &&
+    rec[0].amount === 30 &&
+    (offBill.spendings ?? []).every((s) => (s.user?.id ?? s.userId) !== ids.anna) &&
+    (await call(t.anna, 'GET', '/Bills?countPerPage=100')).items.some((x) => x.id === offId),
+  `${offBill.status} ${JSON.stringify(rec)}`,
+)
+
+// ---------- Series 2, T2: API tokens (as Grisha, so Anna's Profile › API tokens starts empty for check.mjs) ----------
+const newTok = (who, name, scope, expiresInDays = 30) => call(t[who], 'POST', '/profile/tokens', { name, scope, expiresInDays })
+const ro = await newTok('grisha', 'e2e read', 'Read')
+const rw = await newTok('grisha', 'e2e write', 'ReadWrite', null)
+check('POST profile/tokens returns the dbt_ secret once', [ro, rw].every((x) => /^dbt_[A-Za-z0-9_-]{43}$/.test(x.token)) && ro.prefix === ro.token.slice(4, 12))
+const listed = await call(t.grisha, 'GET', '/profile/tokens')
+check('GET profile/tokens: both, never the secret', listed.length === 2 && listed.every((x) => !('token' in x) && x.status === 'Active') && listed.find((x) => x.id === rw.id).expiresAt === null)
+const tokStatus = async (token, method, path, body) => (await raw(token, method, path, body)).status
+check('both tokens read (GET Debts/Own)', (await tokStatus(ro.token, 'GET', '/Debts/Own')) === 200 && (await tokStatus(rw.token, 'GET', '/Debts/Own')) === 200)
+const tokBill = { currencyCode: 'EUR', description: 'Token bill', lines: [{ itemDescription: 'Coffee', subtotal: 8, participants: [{ userId: ids.grisha }, { userId: ids.boris }] }], payments: [{ userId: ids.grisha, amount: 8 }] }
+const roPost = await raw(ro.token, 'POST', '/Bills', tokBill)
+check('read-only token: POST Bills → 403 "read-only"', roPost.status === 403 && /read-only/.test(roPost.body?.message ?? ''), `${roPost.status}`)
+const rwPost = await raw(rw.token, 'POST', '/Bills', tokBill)
+check('read-and-write token: POST Bills → 200', rwPost.status === 200, `${rwPost.status}`)
+check(
+  'PUT Bills/{id} and Cancel: 403 read-only, 200 read-and-write',
+  (await tokStatus(ro.token, 'PUT', `/Bills/${rwPost.body}`, tokBill)) === 403 &&
+    (await tokStatus(rw.token, 'PUT', `/Bills/${rwPost.body}`, tokBill)) === 200 &&
+    (await tokStatus(ro.token, 'POST', `/Bills/${rwPost.body}/Cancel`)) === 403 &&
+    (await tokStatus(rw.token, 'POST', `/Bills/${rwPost.body}/Cancel`)) === 200,
+)
+const jwtOnly = [
+  ['PUT', '/auth/password', { currentPassword: 'x', newPassword: 'whatever-123' }],
+  ['GET', '/profile/tokens'],
+  ['POST', '/profile/tokens', { name: 'x', scope: 'Read', expiresInDays: 30 }],
+  ['DELETE', `/profile/tokens/${ro.id}`], // Grisha's, but JWT-only comes first
+  ['POST', '/auth/refresh'],
+  ['POST', '/auth/logout'],
+  ['POST', `/Users/${ids.lena}/password`, { login: 'lena', password: 'lena-pass-123' }],
+  ['POST', `/Users/${ids.boris}/tokens/revoke-all`],
+]
+// An admin's read-and-write token, so the admin endpoints get past the admin policy to the JWT-only filter.
+const dmitryTok = await newTok('dmitry', 'e2e admin', 'ReadWrite')
+const notJwt = []
+for (const [m, p, body] of jwtOnly) {
+  const r = await raw(dmitryTok.token, m, p, body)
+  if (r.status !== 403 || !/API tokens can't be used here/.test(r.body?.message ?? '')) notJwt.push(`${m} ${p} ${r.status}`)
+}
+check(`an admin’s read-and-write token gets 403 on all ${jwtOnly.length} JWT-only endpoints`, notJwt.length === 0, notJwt.join(', '))
+check('an admin’s token is admin (GET Users 200), a regular one isn’t (403)', (await tokStatus(dmitryTok.token, 'GET', '/Users')) === 200 && (await tokStatus(ro.token, 'GET', '/Users')) === 403)
+await call(t.dmitry, 'DELETE', `/profile/tokens/${dmitryTok.id}`)
+const del = await raw(t.grisha, 'DELETE', `/profile/tokens/${rw.id}`)
+check('DELETE profile/tokens/{id} → 204; the revoked token → 401, the other still 200', del.status === 204 && (await tokStatus(rw.token, 'GET', '/Debts/Own')) === 401 && (await tokStatus(ro.token, 'GET', '/Debts/Own')) === 200, `${del.status}`)
+await expectStatus(404, 'boris', 'DELETE', `/profile/tokens/${ro.id}`) // someone else's
+check('no token and an unknown dbt_ token → 401', (await tokStatus(null, 'GET', '/Debts/Own')) === 401 && (await tokStatus('dbt_' + 'x'.repeat(43), 'GET', '/Debts/Own')) === 401)
+// The e2e stack sets the limit to 30 a minute (compose.e2e.yml).
+const rate = await newTok('grisha', 'e2e rate', 'Read')
+let first429 = 0
+let retryAfter = null
+for (let i = 1; i <= 40 && !first429; i++) {
+  const r = await fetch(`${BASE}/profile`, { headers: { Authorization: `Bearer ${rate.token}` } })
+  if (r.status === 429) [first429, retryAfter] = [i, r.headers.get('retry-after')]
+}
+check('the per-token rate limit: the 31st request in a minute → 429 with Retry-After', first429 === 31 && !!retryAfter, `first 429 at ${first429}, Retry-After ${retryAfter}`)
+check('…another token and a session are unaffected', (await tokStatus(ro.token, 'GET', '/profile')) === 200 && (await status('grisha', 'GET', '/profile')) === 200)
+const counted = (await call(t.anna, 'GET', '/Users?search=grisha')).items.find((u) => u.id === ids.grisha)
+check('Admin › Users counts Grisha’s 2 active tokens, no prefixes', counted?.apiTokenCount === 2 && !JSON.stringify(counted).includes(ro.prefix), JSON.stringify(counted))
+await expectStatus(403, 'grisha', 'POST', `/Users/${ids.grisha}/tokens/revoke-all`) // admins only
+const all = await raw(t.anna, 'POST', `/Users/${ids.grisha}/tokens/revoke-all`)
+check('revoke-all (admin) → { revoked: 2 }; his tokens → 401', all.status === 200 && all.body.revoked === 2 && (await tokStatus(ro.token, 'GET', '/Debts/Own')) === 401, `${all.status} ${JSON.stringify(all.body)}`)
+await expectStatus(404, 'anna', 'POST', '/Users/3fa85f64-5717-4562-b3fc-2c963f66afa6/tokens/revoke-all')
+
 const failed = results.filter((x) => !x).length
 console.log(`\napi: ${results.length - failed}/${results.length} passed`)
 process.exit(failed ? 1 : 0)
