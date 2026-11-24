@@ -157,7 +157,10 @@ The UI shows the enums as strings, now that the API sends them that way.
   - On Exchange, either side can be typed as a rate instead of an amount; choosing Rate on one side switches the other to Amount. The worked-out amount is shown and sent.
   - Exchange rates are always shown both ways and in full, never cut off or shortened; the caption is "Exchange rate".
   - On phones nothing may be wider than the screen: tables become stacked rows.
-  - A third "debts currency" (count a bill's debts in either of its two currencies) was planned once (`origin/feature-currency_selection`, an unmerged "ChargeInPaymentCurrency" commit) but never built. Today debts are always in the payment currency. Not part of T6.
+  - A third "debts currency" (count a bill's debts in either of its two currencies) was planned once (`origin/feature-currency_selection`, an unmerged "ChargeInPaymentCurrency" commit) but never built. Today debts are always in the payment currency. **The user decided (2026-11-24) that it stays out of this series**, so it goes in the PR description as a follow-up.
+- **Mockup session for T7/T8 (user, 2026-11-24):**
+  - Subscriptions stay in the web UI (the bot's Telegram notifications) as their own 🔔 Subscriptions page after Contacts.
+  - **Following:** this reverses T5's "no following". Debts, Bills and Spendings get `?of=<userId>`, with a "Whose" dropdown, to view someone you have a confirmed subscription to, read-only. Bill read access extends to confirmed subscribers of any participant. The spec is `mockups/following/README.md`, and it's built in T7b.
 
 ## Step 3: Build and deploy
 - **`DebtBot/Dockerfile`:** add a `node:22-alpine` stage that runs `npm ci && npm run build`, writing to `DebtBot/wwwroot`. The publish stage copies that output in.
@@ -190,6 +193,7 @@ The UI shows the enums as strings, now that the API sends them that way.
 | T4 | UI foundation: ClientApp scaffold, tokens, sidebar shell, login page, auth plumbing, Docker node stage. Mockups first | `briefs/task-04.md` |
 | T5 | UI: Debts, Bills list, Bill detail. Mockups first | `briefs/task-05.md` |
 | T6 | UI: New bill (form and paste-text modes), Exchange (draft, then accept). Mockups first | `briefs/task-06.md` |
-| T7 | UI: Contacts, Spendings, Profile. Mockups first | `briefs/task-07.md` |
+| T7 | UI: Contacts, Spendings, Subscriptions, Profile (mockups approved ahead by the mockup session) | `briefs/task-07.md` |
+| T7b | Following: view a subscribed person's Debts, Bills and Spendings read-only (`?of=`), with backend access (added 2026-11-24, spec `mockups/following/`) | `briefs/task-07b.md` |
 | T8 | UI: Admin (users, merge suggestions, all bills). Mockups first | `briefs/task-08.md` |
 | T9 | End-to-end check in Docker, polish, docs, PR ready for review | `briefs/task-09.md` |
