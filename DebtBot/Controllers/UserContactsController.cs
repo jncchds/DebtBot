@@ -190,4 +190,17 @@ public partial class UserContactsController : DebtBotControllerBase
 
         return Ok();
     }
+
+    /// <summary>Removes your own request for, or subscription to, <paramref name="contactId"/>'s bills. 404 when there is none.</summary>
+    [Authorize]
+    [HttpPost("subscription/cancel")]
+    public IActionResult CancelSubscription(Guid contactId)
+    {
+        if (!_userContactService.CancelSubscription(UserId!.Value, contactId))
+        {
+            return ErrorResult(StatusCodes.Status404NotFound, "You have no subscription to this user.");
+        }
+
+        return Ok();
+    }
 }

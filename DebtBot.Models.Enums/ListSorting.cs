@@ -41,3 +41,11 @@ public enum ExchangeSortField : byte
     /// <summary>The amount the "from" side hands over: yours, when you're in the exchange.</summary>
     Amount = 1,
 }
+
+/// <summary>Fields <c>GET Spendings/Own</c> can sort by (query parameter <c>sortBy</c>).</summary>
+public enum SpendingSortField : byte
+{
+    Date = 0,
+    /// <summary>Your share in the bill currency.</summary>
+    Amount = 1,
+}

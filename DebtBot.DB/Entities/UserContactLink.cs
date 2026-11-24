@@ -11,6 +11,9 @@ public class UserContactLink
     
     public string DisplayName { get; set; }
 
+    /// <summary>When the link was created (UTC). Null for links made before this column existed.</summary>
+    public DateTime? AddedAt { get; set; }
+
     [ForeignKey(nameof(UserId))]
     public virtual User User { get; set; }
     [ForeignKey(nameof(ContactUserId))]

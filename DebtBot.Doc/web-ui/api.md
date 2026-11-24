@@ -157,7 +157,20 @@ Debts come from a materialized view that refreshes when the ledger changes. Righ
 
 | Endpoint | Access | Response |
 |---|---|---|
-| `GET Spendings/Own` | any user, paging | `PagingResult<Spending>`, newest first. Spendings of cancelled bills are included with `isCanceled: true`. Link to `Bills/{billId}`. |
+| `GET Spendings/Own` | any user; query: `currencyCode?` (bill currency, any case), `dateFrom?`, `dateTo?` (`yyyy-mm-dd`, whole days, UTC), `includeCancelled?` (default `false`), `sortBy?` (`Date` default, `Amount`), `sortOrder?` (`Desc` default, `Asc`), paging | `PagingResult<Spending>`, your share of finalized bills. Since T7, spendings of cancelled bills (`isCanceled: true`) are left out unless `includeCancelled=true`. Link to `Bills/{billId}`. The bot's `/Spendings` still lists all of them, newest first. |
+| `GET Spendings/Own/summary?dateFrom=&dateTo=` | any user | `SpendingSummary[]`: totals of your non-cancelled spendings per bill currency, ordered by currency (since T7) |
+
+```ts
+interface Spending {
+  billId: string; description: string; date: string; isCanceled: boolean;
+  amount: number; currencyCode: string;               // your share, in the bill currency
+  paymentAmount: number; paymentCurrencyCode: string; // the same share in the payment currency
+  portion: number;                                    // 0..1 of the bill
+  user: UserDisplay;
+}
+interface SpendingSummary { currencyCode: string; amount: number; count: number }
+```
+Sorting ends with the bill id, so pages are stable; amounts are ordered through a `(double)` cast as in the other lists.
 
 ## Profile (`/profile`)
 
@@ -192,8 +205,9 @@ interface ProfileUpdate { displayName: string; phone?: string | null; email?: st
 | `POST UserContacts/subscription/request?contactId=` | any user | – | 200. Asks to get notifications about `contactId`'s bills. 400 for yourself, 404 for an unknown user (since T3). |
 | `POST UserContacts/subscription/confirm?contactId=` | any user | – | 200. Lets `contactId` get notifications about your bills. 404 `{ message }` when they haven't asked (since T3). |
 | `POST UserContacts/subscription/decline?contactId=` | any user | – | 200. Removes `contactId`'s request or subscription to you. 404 `{ message }` when there is none (since T3). |
+| `POST UserContacts/subscription/cancel?contactId=` | any user | – | 200. Removes **your own** request for, or subscription to, `contactId`'s bills, pending or confirmed (the mirror of `decline`). 404 `{ message }` when there is none (since T7). |
 
-The three subscription endpoints act for the signed-in user (from the token); only the admin's `subscription/add` takes a `userId`.
+The four subscription endpoints act for the signed-in user (from the token); only the admin's `subscription/add` takes a `userId`.
 | `POST UserContacts` | any user | `UserModel` | unchanged, older add endpoint; prefer `by-telegram` |
 | `GET UserContacts`, `GET UserContacts/{id}`, `POST UserContacts/{id}`, `POST UserContacts/subscription/add` | **Admin** | | unchanged |
 
@@ -206,8 +220,13 @@ interface Contact {
   telegramBotEnabled: boolean;     // false: a placeholder who never started the bot
   mySubscription: SubscriptionState;    // you get notified about their bills
   theirSubscription: SubscriptionState; // they get notified about yours; Pending = you can confirm/decline
+  addedAt: string | null;          // when you added them (UTC, since T7); null for contacts added before T7
 }
 ```
+
+`by-telegram` matches the stored `@name` ignoring case, whether or not the query has the `@` (checked in T7's tests).
+
+`addedAt` is set whenever a contact link is created (by-telegram, a bill, the older add endpoint). Links that existed before the T7 migration (`ContactAddedAt`) have `null`: their real date isn't known, and the migration time would make every old contact look added today. The UI sorts them last in "Recently added" and shows no date.
 
 Removing a contact keeps bills, debts and subscriptions. A later finalized bill between you adds the contact back (`EnsureContact`).
 

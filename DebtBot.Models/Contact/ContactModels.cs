@@ -25,6 +25,8 @@ public class ContactModel
     public SubscriptionState MySubscription { get; set; }
     /// <summary>Whether this contact gets notified about my bills (they're the subscriber); Pending means I can confirm or decline.</summary>
     public SubscriptionState TheirSubscription { get; set; }
+    /// <summary>When the contact was added (UTC); null for contacts added before this was recorded.</summary>
+    public DateTime? AddedAt { get; set; }
 }
 
 public class ContactRenameModel
