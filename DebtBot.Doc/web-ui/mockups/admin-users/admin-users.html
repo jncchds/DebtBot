@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DebtBot Admin Users mockup</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .name { font-weight: 600; }
+  .small { font-size: .78rem; }
+  .acts { display: inline-flex; gap: .125rem; justify-content: flex-end; flex-wrap: nowrap; }
+  .tbl td { padding: .55rem .5rem; } .tbl th { padding: .5rem .5rem; } .tbl td:first-child, .tbl th:first-child { padding-left: 1rem; }
+  tr.confirm td, .item.confirm { background: color-mix(in srgb, var(--danger) 6%, transparent); }
+  tr.ask td, .item.ask { background: var(--accent-faint); }
+  .confirm-box { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; }
+  .modal-back { position: fixed; inset: 0; z-index: 40; background: rgba(0,0,0,.45); display: flex; align-items: flex-start; justify-content: center; padding: 6rem 1rem 1rem; }
+  .modal { width: 100%; max-width: 26rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,.45); }
+  .field + .field { margin-top: .9rem; }
+  .help { margin-top: .3rem; font-size: .8rem; color: var(--text-muted); }
+  .input.bad { border-color: var(--danger); }
+  .mfoot { display: flex; justify-content: flex-end; gap: .5rem; padding: .75rem 1rem; border-top: 1px solid var(--border); }
+  .mb { margin-bottom: .9rem; }
+</style>
+</head>
+<body>
+<script>
+  // GET Users?search=&role=&pageNumber=&countPerPage=20 → PagingResult<AdminUser>, ordered by display name.
+  const U = [
+    { id: 'a', name: 'Anna Petrova', tg: '@anna_petrova', tid: 184220911, login: 'anna.p', pw: true, role: 'Admin', bot: true, bills: 57, contacts: 6, me: true },
+    { id: 'b', name: 'Boris Ivanov', tg: '@boris_iv', tid: 201554870, login: null, pw: false, role: 'Regular', bot: true, bills: 31, contacts: 4 },
+    { id: 'b2', name: '@Boris_Iv', tg: '@Boris_Iv', tid: null, login: null, pw: false, role: 'Regular', bot: false, bills: 2, contacts: 0, dup: true },
+    { id: 'c', name: 'Clara Müller', tg: '@clara_m', tid: 377120045, login: 'clara', pw: true, role: 'Regular', bot: true, bills: 12, contacts: 3 },
+    { id: 'd', name: 'Dmitry K.', tg: '@dmitry_k', tid: 499812003, login: null, pw: false, role: 'Admin', bot: true, bills: 22, contacts: 5 },
+    { id: 'g', name: '@grandpa_vlad', tg: '@grandpa_vlad', tid: null, login: null, pw: false, role: 'Regular', bot: false, bills: 0, contacts: 0 },
+    { id: 'l', name: 'Lena', tg: '@lena_s', tid: 512004781, login: null, pw: false, role: 'Regular', bot: true, bills: 3, contacts: 1 },
+    { id: 'o', name: '@olga_petrova', tg: '@olga_petrova', tid: null, login: null, pw: false, role: 'Regular', bot: false, bills: 4, contacts: 0 },
+  ]
+  const tgCell = (u) => `<span class="num">${u.tg ?? '—'}</span><div class="muted small num">${u.tid ?? 'no Telegram id'}</div>`
+  const has = (u) => u.login || u.pw
+  const editLogin = (u) => `<a class="btn btn-secondary btn-sm" title="Set login and password">${has(u) ? '✏️ Change' : '＋ Set'}</a>`
+  const loginCell = (u) => `<div class="row" style="flex-wrap:nowrap;gap:.4rem">${has(u) ? `<span><span class="num">${u.login ?? '—'}</span>${u.pw ? '<div><span class="pill pill-muted">🔑 password set</span></div>' : ''}</span>` : '<span class="muted">—</span>'}<span class="spacer"></span>${editLogin(u)}</div>`
+  const role = (u) => u.role === 'Admin' ? '<span class="pill pill-accent">Admin</span>' : '<span class="muted small">Regular</span>'
+  const bot = (u) => u.bot ? '<span class="pill pill-success">started</span>' : '<span class="pill pill-muted">placeholder</span>'
+  const canDelete = (u) => !u.bot && !u.me
+  const roleBtn = (u) => u.me ? `<a class="btn btn-secondary btn-sm" disabled title="You can't change your own role">${u.role === 'Admin' ? 'Remove admin' : 'Make admin'}</a>`
+    : `<a class="btn btn-secondary btn-sm">${u.role === 'Admin' ? 'Remove admin' : 'Make admin'}</a>`
+  const roleCell = (u) => `<div class="row" style="flex-wrap:nowrap;gap:.4rem">${role(u)}<span class="spacer"></span>${roleBtn(u)}</div>`
+  const acts = (u) => canDelete(u) ? `<a class="btn btn-ghost btn-sm" title="Delete" style="color:var(--danger)">🗑</a>` : ''
+
+  function special(u, state) {
+    if (state === 'delete' && u.id === 'g') return ['confirm', `<div class="confirm-box"><span class="neg" style="flex:1;min-width:12rem">Delete <b>@grandpa_vlad</b>? Only stray placeholders can be deleted; their own contact list goes with them.</span><a class="btn btn-danger btn-sm">Delete</a><a class="btn btn-ghost btn-sm">Keep</a></div>`]
+    if (state === 'delete-409' && u.id === 'o') return ['confirm', `<div class="confirm-box"><span class="neg" style="flex:1;min-width:12rem"><b>@olga_petrova</b> can't be deleted: they have bills or are in someone's contacts. Merge them into the right user instead.</span><a class="btn btn-secondary btn-sm">🔀 Merge…</a><a class="btn btn-ghost btn-sm">Close</a></div>`]
+    if (state === 'role' && u.id === 'c') return ['ask', `<div class="confirm-box"><span style="flex:1;min-width:12rem">Make <b>Clara Müller</b> an admin? Admins see every user and bill and can merge users.</span><a class="btn btn-primary btn-sm">Make admin</a><a class="btn btn-ghost btn-sm">Cancel</a></div>`]
+    return null
+  }
+
+  function modal(state) {
+    const taken = state === 'password-taken'
+    return `<div class="modal-back"><div class="card modal">
+      <div class="card-head"><h2 style="flex:1">🔑 Login &amp; password · Boris Ivanov</h2><a class="btn btn-ghost btn-sm">✕</a></div>
+      <div class="card-body">
+        ${taken ? '<div class="alert-danger mb">The login “clara” is taken. Pick another one.</div>' : ''}
+        <div class="field"><label class="label">Login</label><input class="input${taken ? ' bad' : ''}" value="${taken ? 'clara' : 'boris'}"><div class="help">Boris has no login yet. 3–64 characters: a–z, 0–9, . _ - @.</div></div>
+        <div class="field"><label class="label">New password</label><input class="input" type="password" value="••••••••••"><div class="help">At least 8 characters. Send it to Boris yourself.</div></div>
+        <div class="field"><label class="label">Repeat password</label><input class="input" type="password" value="••••••••••"></div>
+        <div class="alert-info" style="margin-top:1rem">ℹ️ <span>Saving signs Boris out of the web app everywhere.</span></div>
+      </div>
+      <div class="mfoot"><a class="btn btn-ghost">Cancel</a><a class="btn btn-primary">Save</a></div>
+    </div></div>`
+  }
+
+  window.MOCK = {
+    page: 'admin',
+    ctx: ['S:Admin',
+      { i: '👥', t: 'Users', s: 'Search, roles, passwords', a: true },
+      { i: '🔀', t: 'Merge users <span class="count" style="margin-left:.25rem">2</span>', s: 'Duplicate suggestions' },
+      { i: '🧾', t: 'All bills', s: 'read-only' }],
+    render(state, phone) {
+      const search = state === 'search' || state === 'none' ? (state === 'none' ? 'zed' : 'bor') : ''
+      const admins = state === 'admins'
+      let rows = U.filter((u) => (!search || (u.name + u.tg + (u.login ?? '')).toLowerCase().includes(search)) && (!admins || u.role === 'Admin'))
+      const head = `<div class="title-row"><h1>Users</h1></div><p class="sub muted">Everyone DebtBot knows: people who started the bot, and placeholders made from @mentions.</p>`
+      const html = list({
+        phone, open: phone && (state === 'open' || !!search),
+        activeCount: (search ? 1 : 0) + (admins ? 1 : 0),
+        filters: [
+          { type: 'text', label: 'Search', placeholder: 'Name, @username or login', value: search, on: !!search },
+          { type: 'seg', label: 'Role', options: ['All', 'Admin', 'Regular'], value: admins ? 'Admin' : 'All' },
+        ],
+        sort: { field: 'Name', dir: '↑ A–Z' },
+        columns: [
+          { label: 'Name', sorted: '↑', cell: (u) => special(u, state) ? special(u, state)[1] : `<div class="name">${u.name}${u.me ? ' <span class="muted small">(you)</span>' : ''}</div>${u.dup ? '<div class="small" style="color:var(--accent)">🔀 possible duplicate</div>' : ''}` },
+          { label: 'Telegram', cell: tgCell },
+          { label: 'Login &amp; password', cell: loginCell },
+          { label: 'Role', cell: roleCell },
+          { label: 'Bot', cell: bot },
+          { label: 'Bills', cls: 'r', cell: (u) => `<span class="num">${u.bills}</span>` },
+          { label: 'Contacts', cls: 'r', cell: (u) => `<span class="num">${u.contacts}</span>` },
+          { label: '', cls: 'r', w: '3rem', cell: (u) => acts(u) },
+        ],
+        rows,
+        card: (u) => special(u, state) ? special(u, state)[1] : `<div class="l1"><span class="name" style="flex:1;min-width:0">${u.name}${u.me ? ' <span class="muted small">(you)</span>' : ''}</span>${role(u)}</div>
+          <div class="l2 muted"><span class="num">${u.tg}${u.tid ? ' · ' + u.tid : ''}</span><span class="spacer"></span>${bot(u)}</div>
+          <div class="l2 muted"><span>${has(u) ? `login <span class="num" style="color:var(--text)">${u.login ?? '—'}</span>${u.pw ? ' · 🔑 password set' : ''}` : 'no login or password'}</span><span class="spacer"></span>${editLogin(u)}</div>
+          <div class="l2 muted"><span>${u.bills} bills · ${u.contacts} contacts</span><span class="spacer"></span>${roleBtn(u)}${acts(u)}</div>`,
+        pager: { range: search ? `1–${rows.length} of ${rows.length}` : '1–8 of 8', pages: 1 },
+        empty: `<div class="card empty"><div class="big">🔍</div><p style="font-weight:600">No users match</p>
+          <p class="muted" style="font-size:.875rem">Search looks at display names, Telegram usernames and logins.</p>
+          <div class="row" style="justify-content:center"><a class="btn btn-secondary">✕ Clear filters</a></div></div>`,
+      })
+      return head + html + (state.startsWith('password') ? modal(state) : '')
+    },
+  }
+</script>
+<script src="../common/list.js"></script>
+<script src="../common/shell.js"></script>
+<script>
+  // Row tints for inline confirmations (the shared list() only knows hl).
+  document.querySelectorAll('tbody tr, .item').forEach((el) => {
+    if (el.querySelector('.confirm-box .neg')) el.classList.add('confirm')
+    else if (el.querySelector('.confirm-box')) el.classList.add('ask')
+  })
+  // In the table, a confirmation spans the row.
+  document.querySelectorAll('tbody tr.confirm, tbody tr.ask').forEach((tr) => {
+    const box = tr.querySelector('.confirm-box').outerHTML
+    tr.innerHTML = `<td colspan="8">${box}</td>`
+  })
+</script>
+</body>
+</html>
