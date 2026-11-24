@@ -30,13 +30,15 @@ You sign in with a login and password (`PUT api/v1/auth/password` sets them for 
 | `npm run build` | i18n check, typecheck (`tsc -b`) and production build into `../wwwroot` |
 | `npm run lint` | oxlint and the i18n check |
 | `npm run lint:i18n` | `scripts/check-locales.mjs`: every `t('key')` exists, and all locales have the same keys |
-| `npm test` | vitest: the API client's refresh logic, URL list state, money and bill helpers |
+| `npm test` | vitest: the API client's refresh logic, URL list state and list specs, money and bill helpers, the New bill form (request mapping, checks, preview) and exchange maths (rates, rounding, sides) |
 
 ## Conventions
 - **Strings:** every user-facing string goes through i18next. They live in `src/locales/en/<group>.json`, and each file is a key group (`auth.json` → `t('auth.signIn')`). English is the only language for now.
 - **Colours:** only the tokens in `src/index.css` (Lime on graphite). "You owe" uses `danger` and "owed to you" uses `success`.
 - **URLs:** every view, filter, page and tab lives in the URL, so Back and Forward, reload and bookmarks work. The URL map is in `DebtBot.Doc/web-ui/mockups/shell/README.md`.
 - **Lists:** Bills, Debts, Spendings and Exchanges use the shared list pattern (`components/list/ListView.tsx`, `lib/listState.ts`, `lib/lists.ts`), described in `mockups/shell/README.md`, "List views".
-- **Money:** never add or subtract API amounts as floats; use `lib/money.ts` (integer units of 1/10000) and show them with `useFormat().money()`.
+- **Money:** never add or subtract API amounts as floats; use `lib/money.ts` (integer units of 1/10000) and show them with `useFormat().money()`. Exchange rates go through `lib/exchange.ts` (typed rates as units of 1/10^8; worked-out amounts rounded to the currency's digits).
+- **Exchanges:** show them with `components/exchange/ExchangeBits.tsx` (`ExchangeStatusPill`, `RateBothWays`, `ExchangeBanner`) so the Exchange page, the Bill page and the Bills list use the same words. Rates are always shown both ways, in full.
+- **Unsaved forms:** New bill and Exchange keep what was typed in sessionStorage (`lib/newBill.ts` `loadStored`/`store`); modes and editors are in the URL.
 - **Sidebar sub-sections:** a page's own entries go below the divider. Register them in `src/components/subnav/index.tsx`.
 - **API:** call `api<T>()` from `src/api/client.ts` and put the shapes in `src/api/types.ts`. The access token stays in memory. On a 401 the client refreshes once and retries. Refreshes are single-flight within a tab and take turns across tabs (Web Locks), because the backend revokes a session when a refresh token is reused.

@@ -517,10 +517,12 @@ function ExchangeList() {
                 <span className="flex-1" />
                 {d && names.isMe(d.from.id) ? (
                   <>
-                    <span className="muted">{t('exchange.give')}</span>
-                    <span className="tabular-nums">{money(x, 'from')}</span>
-                    <span className="muted">{t('exchange.get')}</span>
-                    <span className="tabular-nums">{money(x, 'to')}</span>
+                    <span className="whitespace-nowrap">
+                      <span className="muted">{t('exchange.give')}</span> <span className="tabular-nums">{money(x, 'from')}</span>
+                    </span>
+                    <span className="whitespace-nowrap">
+                      <span className="muted">{t('exchange.get')}</span> <span className="tabular-nums">{money(x, 'to')}</span>
+                    </span>
                   </>
                 ) : (
                   d && <DealText deal={d} />
