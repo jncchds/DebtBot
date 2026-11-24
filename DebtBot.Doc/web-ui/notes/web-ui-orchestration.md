@@ -67,6 +67,8 @@ On 2026-11-23 the user set up how the DebtBot API + auth + web UI work is run.
 - 2026-11-24: T7 hit the 5-hour usage limit mid-task; I resumed it with a SendMessage after the reset. T7 merged into web-ui (9ea1b8f): Spendings filters and summary, Contact.addedAt (null for old rows), subscription/cancel, and 4 pages. 174 .NET tests, 77 vitest, 15/15 runtime.
 - 2026-11-24: T7b (Following) started as worker "DebtBot T7b following", id 8393fdd8.
 - 2026-11-24: T7b merged into web-ui (7b15eff): ofUserId on Debts/Own, Bills and Spendings (confirmed subscription in your direction, else 403), and IBillService.CanRead for GET Bills/{id} and lines only. 181 .NET tests, 87 vitest. Open: the bill page's "← Bills" goes to your own /bills (for T9).
+- 2026-11-24: T8 (Admin) started as worker "DebtBot T8 admin", id 140a0d2e.
+- 2026-11-24: T8 merged into web-ui (1535d71): Role refuses your own (400), GET Bills/All with filters, and the Admin Users, Merge and All bills pages. 187 .NET tests, 108 vitest. Open: deleting an admin with no data is allowed (moved to T9).
 
 **Why:** the user wants a clean context per task, control over how each view looks, and a durable record of the work.
 **How to apply:** follow this for every task in the series. Related: [[web-ui-palette]].
