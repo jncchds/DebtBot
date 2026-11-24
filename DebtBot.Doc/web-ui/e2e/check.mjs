@@ -241,7 +241,8 @@ if (FLOWS) {
     await b.waitFor('[...document.querySelectorAll("main a")].some(a => a.innerText.includes("← Bills") && a.getAttribute("href") === "/bills")')
   })
 
-  await step('A draft: add a line and a payment (each with its own URL), then finalize', async () => {
+  // Since series-2 T1 a draft is the New bill form: the line and payment stay in the form until Save and finalize.
+  await step('A draft: add a line and a payment (each with its own URL), then save and finalize', async () => {
     await b.goto(`${URL0}/bills/${bills.draft}`)
     await b.waitFor('document.querySelector("main h1")?.innerText === "Dinner at Molto"')
     await b.click('main a', 'Add line')
@@ -256,9 +257,10 @@ if (FLOWS) {
     await fillLabel('Amount', '24', 'main form')
     await b.click('main form button[type=submit]')
     await b.waitFor(`location.pathname === "/bills/${bills.draft}"`)
-    await b.waitFor('[...document.querySelectorAll("main button")].some(x => x.innerText.includes("Finalize") && !x.disabled)')
+    await loaded('Unsaved changes')
+    await b.waitFor('[...document.querySelectorAll("main button")].some(x => x.innerText.includes("Save and finalize") && !x.disabled)')
     await shots('flow-bill-draft')
-    await b.click('main button', 'Finalize')
+    await b.click('main button', 'Save and finalize')
     await b.waitText('Finalized', 30000)
     const bill = await call(tok.anna, 'GET', `/Bills/${bills.draft}`)
     expect(bill.status === 'Processed' && bill.totalWithTips === 84, `API: ${bill.status} ${bill.totalWithTips}`)

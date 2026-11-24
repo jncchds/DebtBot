@@ -3,10 +3,8 @@ import { api, type Query } from './client'
 import type {
   Bill,
   BillCreation,
-  BillLineCreation,
   BillListItem,
   BillListQuery,
-  BillPaymentCreation,
   Contact,
   Debt,
   DebtListQuery,
@@ -96,27 +94,20 @@ function useInvalidateMoney() {
     Promise.all([qc.invalidateQueries({ queryKey: keys.bills() }), qc.invalidateQueries({ queryKey: keys.debts() }), qc.invalidateQueries({ queryKey: keys.spendings() })])
 }
 
-export function useAddLines(billId: string) {
+/**
+ * Save a draft (`PUT Bills/{id}`): replaces its fields, lines and payments, then finalizes it when asked.
+ * 409 when it's no longer a draft.
+ */
+export function useReplaceBill(billId: string) {
   const qc = useQueryClient()
   const invalidate = useInvalidateMoney()
   return useMutation({
-    mutationFn: (lines: BillLineCreation[]) => api<Bill>(`/Bills/${billId}/lines`, { method: 'POST', json: lines }),
-    onSuccess: (bill) => {
-      qc.setQueryData(keys.bill(billId), bill)
-      return invalidate()
+    mutationFn: async ({ bill, finalize }: { bill?: BillCreation; finalize: boolean }) => {
+      // No changes: just finalize.
+      if (bill) qc.setQueryData(keys.bill(billId), await api<Bill>(`/Bills/${billId}`, { method: 'PUT', json: bill }))
+      if (finalize) await api<void>(`/Bills/${billId}/Finalize`, { method: 'POST' })
     },
-  })
-}
-
-export function useAddPayments(billId: string) {
-  const qc = useQueryClient()
-  const invalidate = useInvalidateMoney()
-  return useMutation({
-    mutationFn: (payments: BillPaymentCreation[]) => api<Bill>(`/Bills/${billId}/payments`, { method: 'POST', json: payments }),
-    onSuccess: (bill) => {
-      qc.setQueryData(keys.bill(billId), bill)
-      return invalidate()
-    },
+    onSettled: () => invalidate(),
   })
 }
 
