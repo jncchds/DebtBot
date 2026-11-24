@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DebtBot Exchange mockup</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .hint { margin: .3rem 0 0; font-size: .76rem; color: var(--text-muted); }
+  .err { margin: .3rem 0 0; font-size: .76rem; color: var(--danger); }
+  .input.bad { border-color: var(--danger); }
+  .pchip { display: inline-flex; align-items: center; gap: .25rem; border-radius: 4px; padding: .2rem .25rem .2rem .55rem; font-size: .875rem; color: var(--accent); background: var(--accent-faint); }
+  .pchip .x { padding: 0 .25rem; opacity: .8; }
+  .sides { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: .75rem; align-items: stretch; margin-top: 1rem; }
+  .phone .sides { grid-template-columns: 1fr; }
+  .side { border-radius: 8px; border: 1px solid var(--border); background: var(--surface-2); padding: .75rem; }
+  .side .t { font-size: .875rem; font-weight: 600; margin-bottom: .5rem; }
+  .side .amt { display: grid; grid-template-columns: minmax(0, 1fr) 5rem; gap: .5rem; }
+  .swap { align-self: center; }
+  .phone .swap { justify-self: center; }
+  .rate { margin-top: .875rem; display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; font-size: .875rem; padding: .6rem .75rem; border-radius: 6px; border: 1px dashed var(--border); }
+  .xb { border-radius: 10px; border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); background: var(--accent-faint); padding: 1rem; margin-bottom: 1rem; display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1rem; }
+  .xb .grow { flex: 1 1 18rem; font-size: .9rem; line-height: 1.55; }
+  .phone .xb .btn { flex: 1; }
+  h2.list-title { margin: 1.5rem 0 .75rem; font-size: 1.1rem; }
+  .who { font-weight: 600; }
+  .rate2 { font-size: .8rem; line-height: 1.35; }
+</style>
+</head>
+<body>
+<script>
+  // States: main, created, errors
+  const ROWS = [
+    { date: '22 Nov', who: 'Boris', give: '100.00 EUR', get: '430.00 PLN', r1: '1 EUR = 4.3000 PLN', r2: '1 PLN = 0.2326 EUR', st: 'Draft', mine: true },
+    { date: '19 Nov', who: 'Dmitry', give: '50.00 USD', get: '200.00 PLN', r1: '1 USD = 4.0000 PLN', r2: '1 PLN = 0.2500 USD', st: 'Draft', by: 'Dmitry' },
+    { date: '10 Nov', who: 'Clara', give: '46.00 EUR', get: '50.00 USD', r1: '1 EUR = 1.0870 USD', r2: '1 USD = 0.9200 EUR', st: 'Processed' },
+    { date: '3 Nov', who: 'Boris', give: '232.50 EUR', get: '1,000.00 PLN', r1: '1 EUR = 4.3011 PLN', r2: '1 PLN = 0.2325 EUR', st: 'Processed' },
+    { date: '28 Oct', who: 'Mum', give: '70.00 EUR', get: '300.00 PLN', r1: '1 EUR = 4.2857 PLN', r2: '1 PLN = 0.2333 EUR', st: 'Cancelled' },
+  ]
+  const PILL = { Draft: ['pill-accent', 'Waiting to accept'], Ready: ['pill-muted', 'Accepting…'], Processed: ['pill-muted', 'Accepted'], Cancelled: ['pill-danger', 'Cancelled'] }
+  const pill = (s) => `<span class="pill ${PILL[s][0]}">${PILL[s][1]}</span>`
+  const act = (r) => r.st !== 'Draft' ? '' : r.mine ? '<a class="btn btn-primary btn-sm">✓ Accept</a>' : `<span class="muted" style="font-size:.78rem">${r.by} accepts</span>`
+
+  function form(s, phone) {
+    const bad = s === 'errors'
+    const fresh = s === 'created'
+    const byRate = s === 'rate'
+    const firstRate = s === 'rate-first'
+    // One side at most is a rate: picking Rate on one side switches the other to Amount.
+    const seg = (on) => `<span class="seg"><span class="opt${on ? '' : ' on'}">Amount</span><span class="opt${on ? ' on' : ''}">Rate</span></span>`
+    const person = bad || fresh ? `<input class="input${bad ? ' bad' : ''}" placeholder="Type a name or @username">${bad ? '<p class="err">Pick who you exchange with.</p>' : ''}`
+      : `<div class="row"><span class="pchip">Boris <span class="muted" style="font-size:.78rem">@boris_m</span><span class="x">×</span></span></div>`
+    const v = (x) => fresh ? '' : x
+    return `<div class="card">
+      <div class="card-head"><h2 class="grow">New exchange</h2></div>
+      <div class="card-body">
+        <label class="label">With</label>${person}
+        <div class="sides">
+          <div class="side"><div class="t row" style="gap:.5rem"><span style="flex:1">You give</span>${seg(firstRate)}</div>
+            ${firstRate
+              ? `<div class="amt" style="grid-template-columns:auto 5rem auto minmax(0,1fr) auto;align-items:center"><span class="num muted" style="font-size:.875rem">1</span><input class="input num" style="text-transform:uppercase" value="EUR"><span class="muted">=</span><input class="input num focus" style="text-align:right" value="4.30"><span class="num muted" style="font-size:.875rem">PLN</span></div>
+                 <div class="row" style="margin-top:.5rem;font-size:.85rem"><span class="muted">That’s</span><b class="num">100.00 EUR</b><span class="muted" style="font-size:.76rem">rounded to 0.01</span><span class="spacer"></span><a class="btn btn-ghost btn-sm" title="Type the rate the other way round">⇅ Flip</a></div>`
+              : `<div class="amt"><input class="input num${bad ? ' bad' : ''}" style="text-align:right" value="${bad ? '0' : v('100.00')}" placeholder="0.00"><input class="input num" style="text-transform:uppercase" value="${v('EUR')}" placeholder="EUR"></div>`}
+            ${bad ? '<p class="err">Enter an amount above zero.</p>' : ''}</div>
+          <a class="btn btn-secondary swap" title="Swap sides">⇄${phone ? ' Swap' : ''}</a>
+          <div class="side"><div class="t row" style="gap:.5rem"><span style="flex:1">${bad || fresh ? 'They give you' : 'Boris gives you'}</span>${seg(byRate)}</div>
+            ${byRate
+              ? `<div class="amt" style="grid-template-columns:auto minmax(0,1fr) 5rem;align-items:center"><span class="num muted" style="font-size:.875rem">1 EUR =</span><input class="input num focus" style="text-align:right" value="4.30"><input class="input num" style="text-transform:uppercase" value="PLN"></div>
+                 <div class="row" style="margin-top:.5rem;font-size:.85rem"><span class="muted">That’s</span><b class="num">430.00 PLN</b><span class="muted" style="font-size:.76rem">rounded to 0.01</span><span class="spacer"></span><a class="btn btn-ghost btn-sm" title="Type the rate the other way round">⇅ Flip</a></div>`
+              : `<div class="amt"><input class="input num" style="text-align:right" value="${v('430.00')}" placeholder="0.00"><input class="input num${bad ? ' bad' : ''}" style="text-transform:uppercase" value="${bad ? 'EUR' : v('PLN')}" placeholder="PLN"></div>`}
+            ${bad ? '<p class="err">Pick a different currency from the one you give.</p>' : ''}</div>
+        </div>
+        ${fresh || bad ? '<div class="rate muted">The rate shows up once both amounts are in.</div>'
+          : `<div class="rate"><span class="muted">Exchange rate</span><b class="num">1 EUR = 4.3000 PLN</b><b class="num">1 PLN = 0.2326 EUR</b></div>`}
+        <div style="margin-top:.875rem"><label class="label">Description <span style="font-weight:400">(optional)</span></label><input class="input" placeholder="Exchange" value="${fresh || bad ? '' : 'Cash for the Kraków trip'}"></div>
+        <div class="row" style="margin-top:1rem"><a class="btn btn-primary"${bad ? ' style="opacity:.5"' : ''}>🔁 Create exchange</a><span class="muted" style="font-size:.8rem">Creates two draft bills. Nothing counts until you accept.</span></div>
+      </div></div>`
+  }
+
+  const banner = (phone) => `<div class="xb"><span style="font-size:1.4rem">🔁</span>
+    <div class="grow"><b>Draft exchange with Boris.</b> You give Boris <b class="num">100.00 EUR</b>, Boris gives you <b class="num">430.00 PLN</b>.<br>
+      <span class="muted">Rate</span> <span class="num">1 EUR = 4.3000 PLN · 1 PLN = 0.2326 EUR</span><br>
+      <span class="muted">Bills:</span> <a class="link">you → Boris, EUR</a> · <a class="link">Boris → you, PLN</a></div>
+    <a class="btn btn-primary">✓ Accept</a><a class="btn btn-danger">Cancel</a></div>`
+
+  window.MOCK = {
+    page: 'exchange',
+    ctx: ['S:Waiting to accept',
+      { i: '🔁', t: 'Boris', s: '22 Nov · 100.00 EUR ⇄ 430.00 PLN', w: 1 },
+      { i: '🔁', t: 'Dmitry', s: '19 Nov · 50.00 USD ⇄ 200.00 PLN', w: 1 },
+      'S:Recent exchanges',
+      { i: '✅', t: 'Clara', s: '10 Nov · 46.00 EUR ⇄ 50.00 USD', w: 1 },
+      { i: '✅', t: 'Boris', s: '3 Nov · 232.50 EUR ⇄ 1,000.00 PLN', w: 1 },
+      { i: '✖️', t: 'Mum', s: '28 Oct · cancelled' }],
+    render(s, phone) {
+      const head = `<div class="title-row"><h1>Exchange</h1></div>
+        <p class="sub muted">Swap money in two currencies with someone. It’s made as two draft bills and counts once you accept it.</p>`
+      return head + (s === 'created' ? banner(phone) : '') + form(s, phone)
+        + `<h2 class="list-title">Exchanges</h2>` + list({
+          phone, open: false, activeCount: 0,
+          filters: [
+            { type: 'text', label: 'Person', placeholder: 'Type a name or @username' },
+            { type: 'text', label: 'Currency', placeholder: 'Any, e.g. EUR' },
+            { type: 'seg', label: 'Status', options: ['All', 'Waiting to accept', 'Accepted', 'Cancelled'], value: 'All' },
+          ],
+          sort: { field: 'Date', dir: '↓ Newest first' },
+          columns: [
+            { label: 'Date', w: '5.5rem', sorted: '↓', cell: (r) => `<span class="muted num">${r.date}</span>` },
+            { label: 'With', cell: (r) => `<span class="who">🔁 ${r.who}</span>${r.by ? `<div class="muted" style="font-size:.78rem">by ${r.by}</div>` : ''}` },
+            { label: 'You give', cls: 'r', cell: (r) => `<span class="num">${r.give}</span>` },
+            { label: 'You get', cls: 'r', cell: (r) => `<span class="num">${r.get}</span>` },
+            { label: 'Rate', cell: (r) => `<div class="rate2 num">${r.r1}</div><div class="rate2 num muted">${r.r2}</div>` },
+            { label: 'Status', cell: (r) => pill(r.st) },
+            { label: '', cls: 'r', w: '7rem', cell: act },
+          ],
+          rows: ROWS.map((r) => ({ ...r, hl: s === 'created' && r.mine })),
+          card: (r) => `<div class="l1"><span class="who" style="flex:1;min-width:0">🔁 ${r.who}</span>${pill(r.st)}</div>
+            <div class="l2"><span class="muted num">${r.date}</span><span class="spacer"></span><span class="muted">give</span><span class="num">${r.give}</span><span class="muted">get</span><span class="num">${r.get}</span></div>
+            <div class="l2" style="align-items:center"><span><span class="num rate2" style="display:block">${r.r1}</span><span class="num rate2 muted" style="display:block">${r.r2}</span></span><span class="spacer"></span>${act(r)}</div>`,
+          pager: { range: '1–5 of 5', pages: 1 },
+          empty: '',
+        })
+    },
+  }
+</script>
+<script src="../common/list.js"></script>
+<script src="../common/shell.js"></script>
+</body>
+</html>
