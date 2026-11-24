@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { BillListItem, LedgerRecord, UserDisplay } from '../api/types'
-import { finalizeBlockers, handle, myBalance, pairExchanges, peopleCount, tipsUnits } from './bills'
+import { handle, myBalance, pairExchanges, peopleCount, tipsUnits } from './bills'
 
 const u = (id: string): UserDisplay => ({ id, displayName: id, telegramId: null, telegramUserName: null })
 const rec = (creditor: string, debtor: string, amount: number, currencyCode: string): LedgerRecord => ({ creditorUser: u(creditor), debtorUser: u(debtor), amount, currencyCode })
@@ -29,13 +29,6 @@ describe('bill facts', () => {
 
   it('counts people once', () => {
     expect(peopleCount({ lines: [line(1, 'a', 'b'), line(1, 'b', 'c')], payments: [{ user: u('a'), amount: 2 }, { user: u('d'), amount: 1 }] })).toBe(4)
-  })
-
-  it('lists finalize blockers like the API', () => {
-    expect(finalizeBlockers({ status: 'Draft', lines: [line(10, 'a')], payments: [{ user: u('a'), amount: 10 }], totalWithTips: 10 })).toEqual([])
-    expect(finalizeBlockers({ status: 'Draft', lines: [], payments: [], totalWithTips: 0 })).toEqual(['bill.blockers.noLines', 'bill.blockers.noPayments', 'bill.blockers.noTotal'])
-    expect(finalizeBlockers({ status: 'Draft', lines: [line(10)], payments: [{ user: u('a'), amount: 10 }], totalWithTips: 10 })).toEqual(['bill.blockers.noParticipants'])
-    expect(finalizeBlockers({ status: 'Processed', lines: [], payments: [], totalWithTips: 0 })).toEqual(['bill.blockers.notDraft'])
   })
 })
 

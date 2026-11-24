@@ -36,17 +36,6 @@ export function canChange(bill: Pick<Bill, 'creator'>, meId: string | undefined,
   return isAdmin || bill.creator.id === meId
 }
 
-/** Reasons the API would refuse Finalize (api.md), as locale keys; empty when it can be finalized. */
-export function finalizeBlockers(bill: Pick<Bill, 'status' | 'lines' | 'payments' | 'totalWithTips'>): string[] {
-  const out: string[] = []
-  if (bill.status !== 'Draft') return ['bill.blockers.notDraft']
-  if (!bill.lines.some((l) => l.subtotal > 0)) out.push('bill.blockers.noLines')
-  else if (bill.lines.some((l) => l.participants.length === 0)) out.push('bill.blockers.noParticipants')
-  if (!bill.payments.some((p) => p.amount > 0)) out.push('bill.blockers.noPayments')
-  if (!(bill.totalWithTips > 0)) out.push('bill.blockers.noTotal')
-  return out
-}
-
 export const canCancel = (status: ProcessingState) => status === 'Draft' || status === 'Processed'
 
 /** A row of the Bills list: a bill, or both bills of an exchange (when both are on the page). */

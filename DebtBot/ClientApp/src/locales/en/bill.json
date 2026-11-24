@@ -1,10 +1,8 @@
 {
   "blockers": {
     "noLines": "Add a line to finalize",
-    "noParticipants": "Every line needs people",
     "noPayments": "Add a payment to finalize",
-    "noTotal": "The total must be above zero",
-    "notDraft": "Only drafts can be finalized"
+    "noTotal": "The total must be above zero"
   },
   "byParts": "by parts",
   "cancel": "Cancel bill",
