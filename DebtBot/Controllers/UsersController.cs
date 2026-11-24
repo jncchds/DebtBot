@@ -2,7 +2,9 @@
 using DebtBot.Identity;
 using DebtBot.Interfaces.Services;
 using DebtBot.Models.Auth;
+using DebtBot.Models.Profile;
 using DebtBot.Models.User;
+using DebtBot.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -16,11 +18,13 @@ public class UsersController : DebtBotControllerBase
 {
     private readonly IUserService _userService;
     private readonly IAuthService _authService;
+    private readonly IApiTokenService _apiTokens;
 
-    public UsersController(IUserService userService, IAuthService authService)
+    public UsersController(IUserService userService, IAuthService authService, IApiTokenService apiTokens)
     {
        _userService = userService;
        _authService = authService;
+       _apiTokens = apiTokens;
     }
 
     [HttpGet("{id:guid}")]
@@ -123,11 +127,28 @@ public class UsersController : DebtBotControllerBase
     /// Sets a user's web sign-in login and password. Login may be left empty when the user already has one.
     /// Signs the user out of all web sessions.
     /// </summary>
+    [JwtOnly]
     [HttpPost("{id}/password")]
     public async Task<IActionResult> SetPassword(Guid id, AdminSetPasswordModel model, CancellationToken cancellationToken)
     {
         var result = await _authService.AdminSetPasswordAsync(id, model, cancellationToken);
         return result.ToActionResult(this);
+    }
+
+    /// <summary>
+    /// Revokes all of a user's active API tokens. Returns <c>{ revoked }</c>, the number revoked. Admins never see the
+    /// tokens themselves, only the count in the users list.
+    /// </summary>
+    [JwtOnly]
+    [HttpPost("{id:guid}/tokens/revoke-all")]
+    public async Task<IActionResult> RevokeAllTokens(Guid id, CancellationToken cancellationToken)
+    {
+        if (_userService.GetUserById(id) is null)
+        {
+            return ErrorResult(StatusCodes.Status404NotFound, "User not found.");
+        }
+
+        return Ok(new ApiTokensRevokedModel { Revoked = await _apiTokens.RevokeAllAsync(id, cancellationToken) });
     }
 
     /// <summary>

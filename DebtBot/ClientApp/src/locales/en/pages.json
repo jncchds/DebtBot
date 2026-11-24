@@ -12,5 +12,6 @@
   "profile": { "subtitle": "How you appear to people you share bills with.", "title": "Profile" },
   "spendings": { "subtitle": "Your share of every bill you take part in.", "title": "Spendings" },
   "subscriptions": { "subtitle": "The bot can tell someone in Telegram about your new bills and debts, and tell you about theirs. Both sides have to agree.", "title": "Subscriptions" },
-  "telegram": { "subtitle": "Your account is your Telegram identity. It can't be changed here.", "title": "Telegram" }
+  "telegram": { "subtitle": "Your account is your Telegram identity. It can't be changed here.", "title": "Telegram" },
+  "tokens": { "subtitle": "Let your scripts and apps call the DebtBot API as you. Treat a token like a password.", "title": "API tokens" }
 }

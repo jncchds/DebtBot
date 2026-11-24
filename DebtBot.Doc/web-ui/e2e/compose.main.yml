@@ -1,9 +1,6 @@
 # Upgrade path only (upgrade.sh): run the app image built from origin/main instead of this branch's.
-# Main can't start with the empty Telegram settings of the shipped compose (the web-ui branch made them optional),
-# so it gets a placeholder token (it can't reach Telegram with it, which it only logs) and LogChatId 0 (off).
+# Since series-2 T3 main is the web-ui merge, which runs without Telegram settings like this branch (T9's version
+# gave the pre-web-ui main a placeholder bot token).
 services:
   debtbot:
     image: debtbot-main:local
-    environment:
-      - DebtBot_DebtBot__Telegram__BotToken=123456789:PlaceholderTokenForTheUpgradeCheck
-      - DebtBot_DebtBot__Telegram__LogChatId=0

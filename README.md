@@ -7,9 +7,9 @@ spendings. It's a **Telegram bot** and a **web app** on the same data:
 - **Telegram bot:** add bills in a short text format, finalize them, see debts, spendings and bills, exchange
   currencies with someone (`/ExchangeDebt`), and get notified about the bills of people who let you subscribe.
 - **Web app:** the same and more, from a browser: 💸 Debts, 🧾 Bills (with a bill's lines, payments and ledger, and
-  the draft actions), ➕ New bill (a form or the bot's text format, with a preview), 🔁 Exchange (two draft bills,
+  a draft edited in the same form as a new bill), ➕ New bill (a form or the bot's text format, with a preview), 🔁 Exchange (two draft bills,
   accepted in one step), 📊 Spendings, 👥 Contacts, 🔔 Subscriptions (and read-only "following" of people who let
-  you), 👤 Profile, and 🛠 Admin (users, merging duplicate users, all bills). Sign in with the Telegram Login Widget,
+  you), 👤 Profile (with personal API tokens), and 🛠 Admin (users, merging duplicate users, all bills). Sign in with the Telegram Login Widget,
   or with an optional login and password.
 
 The server is ASP.NET Core (.NET 11) with PostgreSQL and RabbitMQ (MassTransit). The web UI (React 19, Vite,
@@ -32,6 +32,7 @@ waits for healthy Postgres and RabbitMQ and applies the database migrations on s
 | `DebtBot_DebtBot__Telegram__BotToken` | The bot token from BotFather. Optional: without it the bot is off, the app still runs, and the web UI offers only login and password. |
 | `DEFAULT_USER_TELEGRAM_ID`, `DEFAULT_USER_TELEGRAM_USERNAME` | The first admin, created when there's none. |
 | `DebtBot_DebtBot__ForwardedHeaders__Enabled` (and `__KnownProxies`, `__KnownNetworks`) | Behind a reverse proxy: take the client IP and scheme from `X-Forwarded-For`/`X-Forwarded-Proto`, so the per-IP sign-in limit sees real clients. Off by default. |
+| `DebtBot_DebtBot__ApiTokens__RateLimitPerMinute`, `__MaxActivePerUser` | Optional: requests a minute per API token (120; 0 turns the limit off) and active tokens per user (20). See "Calling the API". |
 | `DebtBot_DebtBot__Telegram__LogBotToken`, `__LogChatId` | Optional: send error logs to a Telegram chat. |
 
 **Telegram sign-in on the web** needs, besides the bot token:
@@ -46,6 +47,18 @@ There is no open sign-up: every web user is someone DebtBot knows from Telegram.
 
 More: [`DebtBot.Doc/web-ui/web-sign-in.md`](DebtBot.Doc/web-ui/web-sign-in.md) (sessions, the proxy setting, the
 widget) and [`DebtBot.Doc/web-ui/api.md`](DebtBot.Doc/web-ui/api.md) (the REST API).
+
+## Calling the API
+Scripts and apps call the REST API with a personal API token. Make one on 👤 Profile › API tokens: give it a name,
+choose **Read only** or **Read and write**, and an expiry (30, 90 or 365 days, or never). The token (`dbt_…`) is shown
+once; copy it then. Send it as a bearer token:
+```sh
+curl -H "Authorization: Bearer dbt_…" https://<your host>/api/v1/Debts/Own
+```
+A token acts as you, with your access. A read-only token gets 403 on anything but GET; no token can manage tokens,
+change passwords or refresh web sessions. Each token is limited to 120 requests a minute. Revoke a token on the same
+page; an admin can revoke all of a user's tokens on 🛠 Admin › Users. The API reference is at `/swagger` (Authorize
+takes a token too), and [`api.md`](DebtBot.Doc/web-ui/api.md) has the details ("API tokens").
 
 ## Local development
 - **.NET SDK 11** (the projects target `net11.0`) and **Node 22**.

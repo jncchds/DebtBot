@@ -1,4 +1,5 @@
-﻿using DebtBot.Interfaces.Services;
+﻿using DebtBot.Identity;
+using DebtBot.Interfaces.Services;
 using DebtBot.Models.Auth;
 using DebtBot.Services;
 using DebtBot.Telegram;
@@ -81,6 +82,7 @@ public class AuthController : DebtBotControllerBase
 
     /// <summary>Exchanges the refresh cookie for a new access token and rotates the cookie.</summary>
     [AllowAnonymous]
+    [JwtOnly]
     [HttpPost("refresh")]
     public async Task<ActionResult<SessionModel>> Refresh(CancellationToken cancellationToken)
     {
@@ -98,6 +100,7 @@ public class AuthController : DebtBotControllerBase
 
     /// <summary>Ends this browser's session. Anonymous on purpose: the access token may already have expired.</summary>
     [AllowAnonymous]
+    [JwtOnly]
     [HttpPost("logout")]
     public async Task<IActionResult> Logout(CancellationToken cancellationToken)
     {
@@ -127,6 +130,7 @@ public class AuthController : DebtBotControllerBase
     /// Sets the current user's login and password the first time, or changes them (which needs the current password).
     /// Changing the password signs out the user's other web sessions.
     /// </summary>
+    [JwtOnly]
     [HttpPut("password")]
     public async Task<IActionResult> SetPassword(SetPasswordModel model, CancellationToken cancellationToken)
     {

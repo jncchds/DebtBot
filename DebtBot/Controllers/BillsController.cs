@@ -99,6 +99,17 @@ public class BillsController : DebtBotControllerBase
 		return FromResult(_billService.Create(billModel, UserId!.Value), id => Ok(id));
 	}
 
+    /// <summary>
+    /// Replaces a draft bill (creator or admin): its fields, lines and payments, as in POST Bills. An empty date keeps
+    /// the bill's date. 409 when the bill is no longer a draft; 400 for an exchange. Returns the bill.
+    /// </summary>
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> ReplaceDraftAsync(Guid id, BillCreationModel billModel, CancellationToken cancellationToken)
+    {
+        var result = await _billService.ReplaceDraftAsync(id, billModel, UserId!.Value, IsAdmin, cancellationToken);
+        return FromResult(result, bill => Ok(bill));
+    }
+
     /// <summary>Adds lines to a draft bill (creator or admin). Returns the bill.</summary>
     [HttpPost("{id:guid}/lines")]
     public async Task<IActionResult> AddLinesAsync(Guid id, List<BillLineCreationModel> lines, CancellationToken cancellationToken)

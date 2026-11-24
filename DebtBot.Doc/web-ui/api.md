@@ -3,7 +3,7 @@
 This covers everything the UI tasks (T4–T8) call, as of the end of the series (T9). Sign-in endpoints (`api/v1/auth/*`) are described in `web-sign-in.md`; their shapes are repeated briefly at the end.
 
 ## Conventions
-- **Base:** `/api/v1`. Every endpoint below needs `Authorization: Bearer <accessToken>` unless marked otherwise. No token → **401**.
+- **Base:** `/api/v1`. Every endpoint below needs `Authorization: Bearer <accessToken>` unless marked otherwise: a web session's JWT, or a personal API token `dbt_…` (series 2, see "API tokens" below). No token, or an unknown, expired or revoked one → **401**.
 - **"Self"** is always the user in the token. No endpoint takes the caller's own id from the body or query.
 - **JSON:** camelCase; enums go out and come in as **strings**. Dates are ISO 8601 UTC. Amounts are JSON numbers (decimals, e.g. `30.0000`).
 - **Errors:** `{ "message": string, "errors": string[] }` where `message` joins `errors` with `; `.
@@ -83,6 +83,7 @@ With `ofUserId` (since T7b), `creditorUser` is that person and `debtorUser` carr
 | `GET Bills/All` | **Admin** | since T8: the `GET Bills` query without `ofUserId` and `createdByMe` (ignored), plus `creatorId?`; `withUserId` is anyone taking part (the participants list) | `PagingResult<BillListItem>` — every bill (before T8: `PagingResult<Bill>`, paging only) |
 | `GET Bills/{id}` | read the bill (`CanRead`) | – | `Bill`, or 404 |
 | `POST Bills` | any user (becomes creator) | `BillCreation` | `string` (the new bill id, JSON string). Always a **draft**. |
+| `PUT Bills/{id}` | change, **draft only** (since series-2 T1) | `BillCreation` | `Bill`. Replaces the draft's fields, lines and payments in one transaction, validated like `POST Bills`; an empty `date` keeps the bill's date, and the creator stays the creator (also when an admin saves). The bill's participants list is rebuilt: the creator always stays, people no longer on a line or payment are removed. 409 when the bill is no longer a draft (checked again inside the transaction, so a finalize that won the race isn't overwritten); 400 for an exchange bill (cancel it and make a new one). The web's draft page saves with it. |
 | `POST Bills/{id}/lines` | change, **draft only** | `BillLineCreation[]` (at least one) | `Bill` |
 | `POST Bills/{id}/payments` | change, **draft only** | `BillPaymentCreation[]` (at least one) | `Bill` |
 | `GET Bills/lines/{lineId}` | read the line's bill (`CanRead`) | – | `BillLine` |
@@ -115,6 +116,7 @@ interface BillPaymentCreation { userId: string; amount: number }   // amount > 0
 ```
 
 - **Validation (400):** bad currency code, amounts or subtotals not above zero, a line without participants, a user twice in one line or in the payments, an unknown user id, a non-draft bill.
+- **The creator doesn't have to take part** (series-2 T1): a bill whose creator is on no line and no payment is still theirs (in their lists, theirs to edit, finalize and cancel); finalizing gives them no debts and no spendings.
 - **Payments on a user who already paid** replace that user's amount (that's how the repository has always worked).
 - **Total with tips when adding lines:** if the bill's `totalWithTips` equals the sum of its current line subtotals (no tips, or an empty draft), it grows with the new lines. Otherwise it stays as it is, so a bill entered with a receipt total keeps it.
 - **Finalize (400)** needs: status `Draft`, at least one line with subtotal > 0, every line with participants, at least one payment > 0, total > 0.
@@ -200,6 +202,39 @@ interface ProfileUpdate { displayName: string; phone?: string | null; email?: st
 - Login and password are changed with `PUT auth/password`.
 - `GET Users/own` (admin-only, old) is removed.
 
+## API tokens (series 2, T2)
+Personal access tokens let a script or an app call the API as the user, with every access rule above applying unchanged.
+
+- **Format:** `dbt_` plus 43 characters (32 random bytes, base64url). Only the SHA-256 hash is stored, and the secret is returned once, by create. Lists show `prefix` (the 8 characters after `dbt_`) as `dbt_a1b2c3d4…`.
+- **Header:** `Authorization: Bearer dbt_…`, the same header as a session. The default authentication scheme picks by the value: `dbt_…` goes to the token handler, anything else to JWT.
+- **Who you are:** the token's user, with the same claims as their JWT (`nameidentifier`, `name`, `Admin` for admins), read from the database on every request, so a role change, a rename or a merge applies at once. API-token requests also carry `auth_method=pat`, `pat_scope` and `pat_id`.
+- **Scopes:** `Read` gets **403** `{ message: "This API token is read-only." }` on anything but GET, HEAD and OPTIONS, for every endpoint. `ReadWrite` can do whatever the user can.
+- **JWT only** (a token gets **403** `{ message: "API tokens can't be used here. Sign in to the web app instead." }`, whatever its scope or role): `GET/POST/DELETE profile/tokens`, `PUT auth/password`, `POST auth/refresh`, `POST auth/logout`, `POST Users/{id}/password`, `POST Users/{id}/tokens/revoke-all`. Telegram sign-in (`POST auth/telegram`) takes no bearer, so nothing else is affected. In code: `[JwtOnly]`.
+- **Expiry:** 30, 90 or 365 days, or never. **Limit:** 20 active (not expired, not revoked) tokens per user (`DebtBot:ApiTokens:MaxActivePerUser`).
+- **Rate limit:** a fixed window per token, 120 requests a minute (`DebtBot:ApiTokens:RateLimitPerMinute`; 0 turns it off). Over it: **429** `{ message }` with `Retry-After`. Session (JWT) traffic isn't limited.
+- **Last used:** `lastUsedAt` is written at most once a minute per token.
+- **Errors:** 401 for an unknown, expired or revoked token or a deleted user (no body); 403 as above; 429 for the rate limit.
+
+| Endpoint | Access | Request | Response |
+|---|---|---|---|
+| `GET profile/tokens` | any user, JWT only | – | `ApiToken[]`: active first, then expired, then revoked; newest first within each |
+| `POST profile/tokens` | any user, JWT only | `ApiTokenCreation` | `ApiTokenCreated` (the secret, this once); 400 `{ message }` for a bad name, scope or expiry; 409 at 20 active tokens |
+| `DELETE profile/tokens/{id}` | own tokens, JWT only | – | 204, also when already revoked (the first `revokedAt` stays); 404 for someone else's or an unknown id |
+| `POST Users/{id}/tokens/revoke-all` | **Admin**, JWT only | – | `{ revoked: number }` (active tokens revoked); 404 for an unknown user |
+
+```ts
+type ApiTokenScope = 'Read' | 'ReadWrite'
+interface ApiToken {
+  id: string; name: string; prefix: string; scope: ApiTokenScope;
+  createdAt: string; lastUsedAt: string | null; expiresAt: string | null; revokedAt: string | null;
+  status: 'Active' | 'Expired' | 'Revoked';
+}
+interface ApiTokenCreated extends ApiToken { token: string }   // dbt_…
+interface ApiTokenCreation { name: string; scope: ApiTokenScope; expiresInDays: 30 | 90 | 365 | null }   // name 1–100 characters
+```
+- Admins never see other users' tokens: `GET Users` carries only `apiTokenCount`.
+- **Swagger** (`/swagger`, served in every environment): "Authorize" takes a session token or a `dbt_…` token the same way.
+
 ## Contacts (`/UserContacts`)
 
 | Endpoint | Access | Request | Response |
@@ -257,6 +292,7 @@ interface AdminUser {
   login: string | null; hasPassword: boolean;   // never the hash
   billCount: number;                // bills the user takes part in
   contactCount: number;             // entries in the user's own contact list
+  apiTokenCount: number;            // active API tokens (series 2); never the tokens themselves
   firstBillDate: string | null;     // earliest bill they take part in ("older")
 }
 interface MergeSuggestion { keep: AdminUser; merge: AdminUser; reasons: MergeReason[] }
@@ -286,6 +322,7 @@ It runs in one transaction. The old user's data moves to the kept user (`newUser
 - **Rows between the two users are deleted**, since they would point a user at itself: their ledger records with each other (so their mutual debt disappears), their contact links to each other, and their subscriptions to each other.
 - **Profile:** for display name, Telegram id, Telegram username, phone and email, the kept user's value wins and the old one only fills gaps. The bot is enabled if either had it. The kept user becomes admin if either was.
 - **Web sign-in:** if the kept user has neither a login nor a password, it takes the old user's login and password hash. Otherwise the kept user's stay and the old ones are dropped. The login is released before it's reassigned, so the unique index holds.
+- **API tokens** (series 2): the old user's tokens are deleted with it, so they stop working at once. They are not moved to the kept user.
 - **Sessions:** the old user's refresh tokens are deleted. Access tokens already issued to the old user still pass signature checks until they expire (60 min), but they point at a user id that no longer exists.
 - **The old user row is deleted.** Nothing references it afterwards.
 

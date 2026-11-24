@@ -157,7 +157,7 @@ public class UserRepository : IUserRepository
     /// Merges <paramref name="oldUserId"/> into <paramref name="newUserId"/> in one transaction and removes the old user.
     /// Rows keyed by user that would collide (both users in the same bill, line, contact or subscription) are combined
     /// into the kept user's row; rows that would point a user at itself (old and new as each other's contact,
-    /// subscription or ledger counterpart) are deleted. The old user's refresh tokens are deleted.
+    /// subscription or ledger counterpart) are deleted. The old user's refresh tokens and API tokens are deleted.
     /// </summary>
     /// <returns>False when either user doesn't exist.</returns>
     public bool MergeUsers(Guid oldUserId, Guid newUserId)
@@ -360,6 +360,12 @@ public class UserRepository : IUserRepository
             .Where(t => t.UserId == oldUserId)
             .ExecuteDelete();
 
+        // API tokens of the old user are revoked, like its sessions: they go with the old user (not moved to the kept one)
+
+        _debtContext.ApiTokens
+            .Where(t => t.UserId == oldUserId)
+            .ExecuteDelete();
+
         // Profile
 
         newUser.DisplayName = newUser.DisplayName ?? oldUser.DisplayName;
@@ -436,6 +442,7 @@ public class UserRepository : IUserRepository
 
     private IQueryable<AdminUserModel> adminUsers(IQueryable<User> users)
     {
+        var now = DateTime.UtcNow;
         return users.Select(u => new AdminUserModel
         {
             Id = u.Id,
@@ -450,6 +457,7 @@ public class UserRepository : IUserRepository
             HasPassword = u.PasswordHash != null,
             BillCount = _debtContext.BillParticipants.Count(p => p.UserId == u.Id),
             ContactCount = _debtContext.UserContactsLinks.Count(c => c.UserId == u.Id),
+            ApiTokenCount = _debtContext.ApiTokens.Count(t => t.UserId == u.Id && t.RevokedAt == null && (t.ExpiresAt == null || t.ExpiresAt > now)),
             FirstBillDate = _debtContext.BillParticipants
                 .Where(p => p.UserId == u.Id)
                 .Min(p => (DateTime?)p.Bill.Date)

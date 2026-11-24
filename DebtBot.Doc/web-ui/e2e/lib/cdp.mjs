@@ -1,6 +1,6 @@
 // Minimal headless Chrome driver over the DevTools protocol (Node 22's built-in WebSocket).
 import { spawn } from 'node:child_process'
-import { mkdtempSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -9,6 +9,21 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 export async function launch(port = 9333) {
   const dir = mkdtempSync(join(process.env.TMPDIR ?? tmpdir(), 'chrome-'))
   const proc = spawn('google-chrome', ['--headless=new', '--no-sandbox', '--disable-gpu', '--hide-scrollbars', `--remote-debugging-port=${port}`, `--user-data-dir=${dir}`, 'about:blank'], { stdio: 'ignore' })
+  // Chrome's helper processes can still be writing for a moment after the browser exits: retry, and never fail the run.
+  const removeProfile = () => {
+    try {
+      rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 })
+    } catch (e) {
+      console.log(`  couldn't remove the Chrome profile ${dir}: ${e.message}`)
+    }
+  }
+  // Also when the script dies without close().
+  process.once('exit', () => {
+    try {
+      proc.kill('SIGKILL')
+    } catch { /* already gone */ }
+    removeProfile()
+  })
   let ver
   // Chrome can take a minute to come up on a loaded machine.
   for (let i = 0; i < 600 && !ver; i++) {
@@ -38,6 +53,10 @@ export async function launch(port = 9333) {
   await send('Page.enable')
   await send('Runtime.enable')
   await send('Log.enable')
+  await send('Network.enable')
+  // Requests in flight, so a failed step can say what it was waiting for (a request that never settles).
+  const inFlight = new Map()
+  const settled = (p) => inFlight.delete(p.requestId)
 
   // Console errors and warnings, uncaught exceptions and browser log errors (failed requests, CSP, ...).
   const problems = []
@@ -50,10 +69,20 @@ export async function launch(port = 9333) {
     if (p.entry.level === 'error' || p.entry.level === 'warning') problems.push(`log.${p.entry.level}: ${p.entry.text.slice(0, 200)} ${p.entry.url ?? ''}`)
   } })
 
+  handlers.push({ method: 'Network.requestWillBeSent', fn: (p) => inFlight.set(p.requestId, { url: p.request.url, method: p.request.method, at: Date.now() }) })
+  handlers.push({ method: 'Network.loadingFinished', fn: settled })
+  handlers.push({ method: 'Network.loadingFailed', fn: settled })
+  handlers.push({ method: 'Page.frameNavigated', fn: (p) => { if (!p.frame.parentId) inFlight.clear() } })
+
   const b = {
     send,
     events,
     /** Console errors/warnings and exceptions since the last call (cleared on read). */
+    /** Requests sent more than `ms` ago that haven't finished or failed, as "METHOD url (N s)". */
+    pending(ms = 3000) {
+      const now = Date.now()
+      return [...inFlight.values()].filter((r) => now - r.at > ms).map((r) => `${r.method} ${r.url} (${Math.round((now - r.at) / 1000)} s)`)
+    },
     takeProblems() {
       return problems.splice(0)
     },
@@ -79,13 +108,19 @@ export async function launch(port = 9333) {
     },
     async waitFor(expr, timeout = 15000) {
       const end = Date.now() + timeout
+      let last = 'never evaluated'
+      let tries = 0
       while (Date.now() < end) {
+        tries++
         try {
           if (await b.eval(`!!(${expr})`)) return true
-        } catch { /* page navigating */ }
+          last = 'false'
+        } catch (e) {
+          last = e.message.slice(0, 200) // page navigating
+        }
         await sleep(150)
       }
-      throw new Error(`timeout waiting for ${expr}`)
+      throw new Error(`timeout waiting for ${expr} (${tries} tries, last: ${last})`)
     },
     /** Waits until some element's text includes `text`. */
     async waitText(text, timeout) {
@@ -129,7 +164,15 @@ export async function launch(port = 9333) {
       const r = await send('Page.captureScreenshot', { format: 'png', clip })
       writeFileSync(file, Buffer.from(r.data, 'base64'))
     },
-    async close() { ws.close(); proc.kill('SIGTERM') },
+    /** Stops Chrome and removes its throwaway profile (100–200 MB each; /tmp is often a small tmpfs). */
+    async close() {
+      ws.close()
+      const exited = new Promise((r) => proc.once('exit', r))
+      proc.kill('SIGTERM')
+      await Promise.race([exited, sleep(5000)])
+      if (proc.exitCode === null && proc.signalCode === null) proc.kill('SIGKILL')
+      removeProfile()
+    },
   }
   return b
 }

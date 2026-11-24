@@ -1,18 +1,17 @@
-import { useState, type ReactNode } from 'react'
-import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
+import { useEffect, useState, type ReactNode } from 'react'
+import { Link, useLocation, useParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { useAcceptExchange, useAddLines, useAddPayments, useBill, useBillAction } from '../api/bills'
+import { useAcceptExchange, useBill, useBillAction, useReplaceBill } from '../api/bills'
 import { ApiError } from '../api/client'
-import type { Bill as BillModel } from '../api/types'
+import type { Bill as BillModel, UserDisplay } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import { StatusPill } from '../components/bill/bits'
-import { LineEditor } from '../components/bill/LineEditor'
-import { PaymentEditor } from '../components/bill/PaymentEditor'
+import { BillForm } from '../components/bill/BillForm'
 import { ErrorBox, Loading, Spinner } from '../components/ui'
-import { canCancel, canChange, finalizeBlockers, firstLine, isEqualSplit, peopleCount, tipsUnits } from '../lib/bills'
+import { canCancel, canChange, firstLine, isEqualSplit, peopleCount, tipsUnits } from '../lib/bills'
+import { checkNewBill, draftChanged, draftKey, formEditor, fromBill, loadDraft, store, toBillCreation, type FormEditor, type NewBillForm, type StoredDraft } from '../lib/newBill'
 import { useFormat } from '../lib/useFormat'
 import { usePeople, useNameOf, type Person } from '../lib/usePeople'
-import { PeoplePicker } from '../components/people/PeoplePicker'
 import { ExchangeBanner, ExchangeStatusPill } from '../components/exchange/ExchangeBits'
 import { dealFromBill, orientDeal } from '../lib/exchange'
 import { POLL_MS, usePollWindow } from '../lib/usePollWindow'
@@ -38,13 +37,13 @@ function useActionError() {
 }
 
 /**
- * A bill: /bills/<id>, with the editors at /bills/<id>/add-line and /bills/<id>/add-payment (mockups/bill).
+ * A bill: /bills/<id> (mockups/bill). A draft you can change is the New bill form (DraftForm), with its editors at
+ * /bills/<id>/add-line, /add-payment and /edit-line/<n>.
  * Finalize, cancel and accept run in the background (T2), so the page polls until the status changes.
  */
-export default function Bill({ mode }: { mode?: 'add-line' | 'add-payment' }) {
+export default function Bill({ mode }: { mode?: 'add-line' | 'add-payment' | 'edit-line' }) {
   const { t } = useTranslation()
-  const { id = '' } = useParams()
-  const navigate = useNavigate()
+  const { id = '', n } = useParams()
   const f = useFormat()
   const names = useNameOf()
   const { user, isAdmin } = useAuth()
@@ -64,10 +63,6 @@ export default function Bill({ mode }: { mode?: 'add-line' | 'add-payment' }) {
 
   const action = useBillAction(id)
   const accept = useAcceptExchange()
-  const addLines = useAddLines(id)
-  const addPayments = useAddPayments(id)
-  const { people } = usePeople()
-  const [search, setSearch] = useSearchParams()
   // The list this bill was opened from; kept on the add-line/add-payment steps so "← Bills" still goes back to it.
   const origin = useOrigin()
 
@@ -87,27 +82,6 @@ export default function Bill({ mode }: { mode?: 'add-line' | 'add-payment' }) {
   const rawDeal = isExchange ? dealFromBill(bill) : null
   const deal = rawDeal && orientDeal(rawDeal, user?.id)
   const editable = mine && bill.status === 'Draft' && !isExchange && !processing
-  const blockers = finalizeBlockers(bill)
-  const base = `/bills/${bill.id}`
-  // People added to the bill but not on a line or payment yet live in the URL (?people=a,b), so reload keeps them.
-  const extraIds = (search.get('people') ?? '').split(',').filter(Boolean)
-  const qs = search.toString() ? `?${search}` : ''
-  const backToBill = () => navigate(`${base}${qs}`, { replace: true, state: origin })
-  const onBill = billPeople(bill, user?.id)
-  const byId = new Map(people.map((p) => [p.id, p]))
-  const billPeopleList: Person[] = [...new Set([...onBill, ...extraIds])].map(
-    (pid) => byId.get(pid) ?? { id: pid, name: names.long(findUser(bill, pid) ?? { id: pid, displayName: pid }), isMe: pid === user?.id },
-  )
-  const setExtras = (ids: string[]) =>
-    setSearch(
-      (prev) => {
-        const next = new URLSearchParams(prev)
-        if (ids.length) next.set('people', ids.join(','))
-        else next.delete('people')
-        return next
-      },
-      { replace: true, state: origin },
-    )
 
   const run = (kind: Waiting['action'], p: Promise<unknown>) => {
     setError(undefined)
@@ -122,18 +96,8 @@ export default function Bill({ mode }: { mode?: 'add-line' | 'add-payment' }) {
   const tips = tipsUnits(bill)
 
   const actions: ReactNode[] = []
+  // A draft you can change is the New bill form (series-2 mockups/creator-leave): Finalize is in its actions.
   if (mine && !processing) {
-    if (bill.status === 'Draft' && !isExchange)
-      actions.push(
-        blockers.length > 0 && (
-          <span key="hint" className="text-[0.8rem] muted">
-            {t(blockers[0])}
-          </span>
-        ),
-        <button key="fin" type="button" className="btn-primary" disabled={blockers.length > 0 || action.isPending} onClick={() => run('finalize', action.mutateAsync('Finalize'))}>
-          ✓ {t('bill.finalize')}
-        </button>,
-      )
     if (canCancel(bill.status))
       actions.push(
         <button key="cancel" type="button" className="btn-danger" disabled={action.isPending} onClick={() => setConfirmCancel(true)}>
@@ -216,19 +180,16 @@ export default function Bill({ mode }: { mode?: 'add-line' | 'add-payment' }) {
         />
       )}
 
-      {editable && (
-        <section className="card mb-4 px-4 py-3">
-          <PeoplePicker
-            people={people}
-            selected={billPeopleList}
-            locked={new Set(onBill)}
-            onAdd={(p) => setExtras([...extraIds.filter((x) => x !== p.id), p.id])}
-            onRemove={(p) => setExtras(extraIds.filter((x) => x !== p.id))}
-          />
-          <p className="mt-1.5 text-[0.8rem] muted">{t('people.onBillHint')}</p>
-        </section>
-      )}
-
+      {editable ? (
+        <DraftForm
+          bill={bill}
+          editor={formEditor(mode, n)}
+          linkState={origin}
+          onError={setError}
+          onFinalizing={() => setWaiting({ action: 'finalize', until: Date.now() + POLL_MS })}
+        />
+      ) : (
+      <>
       <dl className="card mb-4 grid grid-cols-2 md:grid-cols-4">
         {[
           [t('bill.total'), f.money(bill.totalWithTips, bill.currencyCode)],
@@ -247,13 +208,8 @@ export default function Bill({ mode }: { mode?: 'add-line' | 'add-payment' }) {
         <section className="card">
           <div className="flex items-center gap-2 border-b border-line px-4 py-3">
             <h2 className="flex-1 font-bold">{t('bill.lines')}</h2>
-            {editable && mode !== 'add-line' && (
-              <Link to={`${base}/add-line${qs}`} state={origin} className="btn-secondary px-2.5 py-1 text-[0.8rem]">
-                ＋ {t('editor.addLine')}
-              </Link>
-            )}
           </div>
-          {bill.lines.length === 0 && mode !== 'add-line' && <p className="px-4 py-3.5 text-sm muted">{t('bill.noLines')}</p>}
+          {bill.lines.length === 0 && <p className="px-4 py-3.5 text-sm muted">{t('bill.noLines')}</p>}
           <ul className="divide-y divide-line">
             {bill.lines.map((l) => {
               const parts = l.participants.map((p) => p.part)
@@ -276,33 +232,14 @@ export default function Bill({ mode }: { mode?: 'add-line' | 'add-payment' }) {
               )
             })}
           </ul>
-          {editable && mode === 'add-line' && (
-            <div className="px-3 pb-3 md:px-4 md:pb-4">
-              <LineEditor
-                title={t('editor.addLine')}
-                people={billPeopleList}
-                currency={bill.currencyCode}
-                busy={addLines.isPending}
-                error={addLines.error && <div className="alert-danger">{message(addLines.error)}</div>}
-                hint={tips === 0n ? t('editor.totalGrows') : t('editor.totalStays', { total: f.money(bill.totalWithTips, bill.currencyCode) })}
-                onCancel={backToBill}
-                onSubmit={(line) => addLines.mutate([line], { onSuccess: backToBill })}
-              />
-            </div>
-          )}
         </section>
 
         <div className="grid gap-4 md:grid-cols-2">
           <section className="card">
             <div className="flex items-center gap-2 border-b border-line px-4 py-3">
               <h2 className="flex-1 font-bold">{t('bill.payments')}</h2>
-              {editable && mode !== 'add-payment' && (
-                <Link to={`${base}/add-payment${qs}`} state={origin} className="btn-secondary px-2.5 py-1 text-[0.8rem]">
-                  ＋ {t('editor.addPayment')}
-                </Link>
-              )}
             </div>
-            {bill.payments.length === 0 && mode !== 'add-payment' && <p className="px-4 py-3.5 text-sm muted">{t('bill.noPayments')}</p>}
+            {bill.payments.length === 0 && <p className="px-4 py-3.5 text-sm muted">{t('bill.noPayments')}</p>}
             <ul className="divide-y divide-line">
               {bill.payments.map((p) => (
                 <li key={p.user.id} className="flex items-baseline gap-2 px-4 py-2.5 text-[0.9rem]">
@@ -311,20 +248,6 @@ export default function Bill({ mode }: { mode?: 'add-line' | 'add-payment' }) {
                 </li>
               ))}
             </ul>
-            {editable && mode === 'add-payment' && (
-              <div className="px-3 pb-3 md:px-4 md:pb-4">
-                <PaymentEditor
-                  title={t('editor.addPayment')}
-                  people={billPeopleList}
-                  currency={bill.paymentCurrencyCode}
-                  busy={addPayments.isPending}
-                  error={addPayments.error && <div className="alert-danger">{message(addPayments.error)}</div>}
-                  hint={t('editor.paymentReplaces')}
-                  onCancel={backToBill}
-                  onSubmit={(p) => addPayments.mutate([p], { onSuccess: backToBill })}
-                />
-              </div>
-            )}
           </section>
 
           <section className="card">
@@ -356,6 +279,8 @@ export default function Bill({ mode }: { mode?: 'add-line' | 'add-payment' }) {
           </section>
         </div>
       </div>
+      </>
+      )}
     </>
   )
 }
@@ -387,15 +312,120 @@ function NotFoundBill() {
   )
 }
 
-/** Everyone already on the bill (you, line participants, payers), in that order, once each. */
-function billPeople(bill: BillModel, meId: string | undefined): string[] {
-  const ids = new Set<string>()
-  if (meId) ids.add(meId)
-  bill.lines.forEach((l) => l.participants.forEach((p) => ids.add(p.user.id)))
-  bill.payments.forEach((p) => ids.add(p.user.id))
-  return [...ids]
+/** Everyone the saved bill names: its creator, line participants and payers, once each. */
+function billUsers(bill: BillModel): UserDisplay[] {
+  const all = [bill.creator, ...bill.lines.flatMap((l) => l.participants.map((p) => p.user)), ...bill.payments.map((p) => p.user)]
+  return [...new Map(all.map((u) => [u.id, u])).values()]
 }
 
-function findUser(bill: BillModel, id: string) {
-  return bill.lines.flatMap((l) => l.participants.map((p) => p.user)).concat(bill.payments.map((p) => p.user)).find((u) => u.id === id)
+/**
+ * A draft you can change, as the New bill form prefilled from it (series-2 mockups/creator-leave). Every change
+ * stays in the form, kept in this tab, until Save (`PUT Bills/{id}` replaces the draft) or Save and finalize.
+ * The editors are at /bills/<id>/add-line, /add-payment and /edit-line/<n>.
+ */
+function DraftForm({
+  bill,
+  editor,
+  linkState,
+  onError,
+  onFinalizing,
+}: {
+  bill: BillModel
+  editor?: FormEditor
+  linkState?: unknown
+  onError: (message?: string) => void
+  onFinalizing: () => void
+}) {
+  const { t } = useTranslation()
+  const names = useNameOf()
+  const { user } = useAuth()
+  const { people } = usePeople()
+  const message = useActionError()
+  const replace = useReplaceBill(bill.id)
+  const [form, setForm] = useState<NewBillForm>(() => loadDraft(bill))
+  const [tried, setTried] = useState(false)
+  const base = JSON.stringify(fromBill(bill))
+
+  // The form is kept in the tab together with the saved version it's based on (lib/newBill.ts loadDraft).
+  useEffect(() => store(draftKey(bill.id), { base, form } satisfies StoredDraft), [bill.id, base, form])
+
+  // Anyone on the saved bill can be put back, also people who aren't your contacts (an admin editing someone's
+  // draft can add its creator back).
+  const known = new Set(people.map((p) => p.id))
+  const fromBillUsers: Person[] = billUsers(bill)
+    .filter((u) => !known.has(u.id))
+    .map((u) => ({ id: u.id, name: u.id === user?.id ? t('common.youNamed', { name: u.displayName }) : names.long(u), isMe: u.id === user?.id }))
+  const pickable = [...people, ...fromBillUsers]
+  const byId = new Map(pickable.map((p) => [p.id, p]))
+  const personOf = (pid: string): Person => byId.get(pid) ?? { id: pid, name: '…', isMe: pid === user?.id }
+
+  const check = checkNewBill(form)
+  const changed = draftChanged(form, bill)
+  const busy = replace.isPending
+
+  const save = (finalize: boolean) => {
+    setTried(true)
+    onError(undefined)
+    if (!check.canSave || (finalize && check.finalizeBlockers.length > 0)) return
+    replace.mutate(
+      { bill: changed ? toBillCreation(form) : undefined, finalize },
+      {
+        onSuccess: () => {
+          setTried(false)
+          if (finalize) {
+            store(draftKey(bill.id), undefined)
+            onFinalizing()
+          }
+        },
+        onError: (e) => onError(message(e)),
+      },
+    )
+  }
+
+  return (
+    <BillForm form={form} setForm={setForm} base={`/bills/${bill.id}`} editor={editor} tried={tried} people={pickable} personOf={personOf} linkState={linkState}>
+      <section className="card">
+        {tried && !check.canSave && (
+          <div className="px-4 pt-3.5">
+            <div className="alert-danger" role="alert">
+              <b>{t('newBill.cantSave')}</b> {t('newBill.fixFields')}
+            </div>
+          </div>
+        )}
+        <div className="flex flex-wrap items-center gap-2 px-4 py-3.5">
+          <span className="text-[0.8rem] muted">{t(changed ? 'newBill.unsaved' : 'newBill.saved')}</span>
+          {changed && (
+            <button
+              type="button"
+              className="btn-ghost px-2 py-1 text-[0.8rem]"
+              disabled={busy}
+              onClick={() => {
+                setForm(fromBill(bill))
+                setTried(false)
+                onError(undefined)
+              }}
+            >
+              {t('newBill.discard')}
+            </button>
+          )}
+          <span className="flex-1" />
+          {busy && (
+            <span className="inline-flex items-center gap-2 text-sm" role="status">
+              <Spinner className="h-4 w-4" />
+              {t('newBill.saving')}
+            </span>
+          )}
+          {!busy && check.canSave && check.finalizeBlockers.length > 0 && <span className="text-[0.8rem] muted">{t(check.finalizeBlockers[0])}</span>}
+          <div className="flex flex-wrap gap-2 max-md:w-full max-md:[&>*]:flex-1">
+            <button type="button" className="btn-secondary" disabled={busy || !changed} onClick={() => save(false)}>
+              {t('newBill.save')}
+            </button>
+            <button type="button" className="btn-primary" disabled={busy || (check.canSave && check.finalizeBlockers.length > 0)} onClick={() => save(true)}>
+              ✓ {t(changed ? 'newBill.saveFinalize' : 'bill.finalize')}
+            </button>
+          </div>
+        </div>
+      </section>
+    </BillForm>
+  )
 }

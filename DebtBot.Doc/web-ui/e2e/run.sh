@@ -14,6 +14,8 @@ if [ "$2" = "--no-build" ]; then
 else
   docker compose $C up -d --build 2>&1 | tail -1
 fi
+# Finalizing goes through RabbitMQ: seeding before the app's bus is connected leaves bills in Processing.
+"$E/wait-bus.sh" $C
 
 STATUS=0
 node "$E/seed.mjs"

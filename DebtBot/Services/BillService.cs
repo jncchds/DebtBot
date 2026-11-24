@@ -314,6 +314,46 @@ public class BillService : IBillService
         return BillActionResult<BillModel>.Ok((await _billRepository.GetAsync(billId, cancellationToken))!);
     }
 
+    public async Task<BillActionResult<BillModel>> ReplaceDraftAsync(Guid billId, BillCreationModel billModel, Guid userId, bool isAdmin, CancellationToken cancellationToken)
+    {
+        var access = await getForChangeAsync(billId, userId, isAdmin, cancellationToken);
+        if (access.Status != BillActionStatus.Ok)
+        {
+            return access;
+        }
+        var bill = access.Value!;
+
+        // The two bills of an exchange mirror each other; editing one half would break the pair.
+        if (bill.ExchangeBillId is not null)
+        {
+            return BillActionResult<BillModel>.Invalid("An exchange can't be edited; cancel it and make a new one");
+        }
+        if (bill.Status != ProcessingState.Draft)
+        {
+            return BillActionResult<BillModel>.Conflict("Only draft bills can be changed");
+        }
+
+        var errors = BillRules.ValidateBill(billModel);
+        if (errors.Count == 0)
+        {
+            errors.AddRange(unknownUsers(BillRules.UserIds(billModel.Lines, billModel.Payments)));
+        }
+        if (errors.Count != 0)
+        {
+            return BillActionResult<BillModel>.Invalid(errors);
+        }
+
+        // An empty date keeps the bill's date. The creator stays the bill's creator, also when an admin saves it.
+        var parsed = BillRules.ToParserModel(billModel, bill.Date);
+        var creator = _userService.GetUserById(bill.Creator.Id)!;
+        if (!_billRepository.ReplaceDraft(billId, parsed, creator))
+        {
+            return BillActionResult<BillModel>.Conflict("Only draft bills can be changed");
+        }
+
+        return BillActionResult<BillModel>.Ok((await _billRepository.GetAsync(billId, cancellationToken))!);
+    }
+
     public async Task<BillActionResult<BillModel>> AddPaymentsAsync(Guid billId, List<BillPaymentCreationModel> payments, Guid userId, bool isAdmin, CancellationToken cancellationToken)
     {
         var access = await getForChangeAsync(billId, userId, isAdmin, cancellationToken);
