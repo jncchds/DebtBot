@@ -9,6 +9,9 @@ import { FilterChoice, FilterCurrency, FilterDate, FilterFlag, FilterPerson, Fil
 import { ListView, type Column } from '../components/list/ListView'
 import { PageTitle } from '../components/ui'
 import { useAuth } from '../auth/AuthContext'
+import { FollowingBanner, NoAccess, WhoseSelect } from '../components/following/Following'
+import { isNoAccess, useFollowing } from '../lib/useFollowing'
+import { balanceOwner, listActionsAllowed, youreOnIt } from '../lib/following'
 import { canChange, firstLine, pairExchanges, type BillRow } from '../lib/bills'
 import { withFilter } from '../lib/listState'
 import { billsQuery, billsSpec, PAGE_SIZE } from '../lib/lists'
@@ -22,16 +25,23 @@ function RowStatus({ r }: { r: BillRow }) {
   return r.bill.exchangeBillId ? <ExchangeStatusPill status={r.bill.status} /> : <StatusPill status={r.bill.status} />
 }
 
-/** 🧾 Bills: the bills you take part in, as the shared list (mockups/bills). */
+/**
+ * 🧾 Bills: the bills you take part in, as the shared list (mockups/bills).
+ * With `?of=<userId>`, the bills of someone you're subscribed to, read-only (mockups/following).
+ */
 export default function Bills() {
   const { t } = useTranslation()
   const f = useFormat()
   const { user, isAdmin } = useAuth()
   const names = useNameOf()
   const { people } = usePeople()
-  const debts = useAllOwnDebts()
+  const { of, viewing } = useFollowing()
+  const name = viewing.kind === 'of' ? viewing.name : ''
+  const owner = balanceOwner(viewing, user?.id)
+  // Someone else's list: the person filter and currencies come from their balances (their counterparts).
+  const debts = useAllOwnDebts(of)
   const [state, setState] = useListState(billsSpec)
-  const query = useMemo(() => billsQuery(state), [state])
+  const query = useMemo(() => ({ ...billsQuery(state), ofUserId: of }), [state, of])
   // After Accept, the two bills are finalized in the background: poll for a while so the status catches up.
   const [pollUntil, setPollUntil] = useState(0)
   const polling = usePollWindow(pollUntil)
@@ -40,7 +50,12 @@ export default function Bills() {
   const [acceptError, setAcceptError] = useState<string>()
   const rows = useMemo(() => pairExchanges(bills.data?.items ?? []), [bills.data])
 
-  const others = people.filter((p) => !p.isMe)
+  const theirPeople = useMemo(() => {
+    const seen = new Map<string, string>()
+    for (const d of debts.data ?? []) seen.set(d.debtorUser.id, d.debtorUser.id === user?.id ? t('common.youNamed', { name: d.debtorUser.displayName }) : d.debtorUser.displayName)
+    return [...seen].map(([id, n]) => ({ id, name: n, isMe: id === user?.id })).sort((a, b) => a.name.localeCompare(b.name))
+  }, [debts.data, user?.id, t])
+  const others = of ? theirPeople : people.filter((p) => !p.isMe)
   const currencies = [...new Set((debts.data ?? []).map((d) => d.currencyCode))].sort()
   const statusLabel = state.filters.status ? t(`bills.statusFilter.${state.filters.status}`) : undefined
   const personLabel = state.filters.with ? (others.find((p) => p.id === state.filters.with)?.name ?? '') : undefined
@@ -56,7 +71,14 @@ export default function Bills() {
     .join(' ')
 
   const isExchangeDraft = (r: BillRow) => !!r.bill.exchangeBillId && r.bill.status === 'Draft'
-  const canAccept = (r: BillRow) => isExchangeDraft(r) && canChange(r.bill, user?.id, isAdmin)
+  const canAccept = (r: BillRow) => listActionsAllowed(viewing) && isExchangeDraft(r) && canChange(r.bill, user?.id, isAdmin)
+  const onIt = (r: BillRow) =>
+    youreOnIt(viewing, r.bill, user?.id) && (
+      <>
+        {' · '}
+        <span className="pill-muted px-1.5 py-0">{t('following.bills.onIt')}</span>
+      </>
+    )
 
   const total = (r: BillRow) =>
     r.pair ? (
@@ -80,6 +102,7 @@ export default function Bills() {
   const by = (r: BillRow) => (
     <>
       {t('bills.by', { name: names.short(r.bill.creator) })}
+      {onIt(r)}
       {r.bill.exchangeBillId && (
         <>
           {' · '}
@@ -114,14 +137,34 @@ export default function Bills() {
     { key: 'date', header: t('bills.date'), sort: 'date', width: '6rem', cell: (r) => <span className="tabular-nums muted">{f.date(r.bill.date)}</span> },
     { key: 'bill', header: t('bills.bill'), sort: 'description', cell: (r) => (<><div>{title(r)}</div><div className="text-[0.8rem] muted">{by(r)}</div></>) },
     { key: 'total', header: t('bills.total'), sort: 'total', align: 'right', cell: total },
-    { key: 'balance', header: t('bills.yourBalance'), align: 'right', cell: (r) => <MyBalance records={[...r.bill.ledgerRecords, ...(r.pair?.ledgerRecords ?? [])]} meId={user?.id} /> },
+    {
+      key: 'balance',
+      header: of ? t('following.bills.balance', { name }) : t('bills.yourBalance'),
+      align: 'right',
+      cell: (r) => <MyBalance records={[...r.bill.ledgerRecords, ...(r.pair?.ledgerRecords ?? [])]} meId={owner} name={of && name} />,
+    },
     { key: 'status', header: t('bills.status'), sort: 'status', width: '7.5rem', cell: (r) => <RowStatus r={r} /> },
     { key: 'action', header: <span className="sr-only">{t('bills.actions')}</span>, align: 'right', width: '7.5rem', cell: acceptButton },
   ]
 
+  if (of && isNoAccess(bills.error))
+    return (
+      <>
+        <PageTitle subtitle={t('pages.bills.subtitle')}>{t('pages.bills.title')}</PageTitle>
+        <WhoseSelect />
+        <NoAccess error={bills.error} />
+      </>
+    )
+
   return (
     <>
-      <PageTitle subtitle={`${subtitle}.`}>{t('pages.bills.title')}</PageTitle>
+      {of ? (
+        <PageTitle subtitle={t('following.subtitle.bills', { name })}>{t('following.title.bills', { name })}</PageTitle>
+      ) : (
+        <PageTitle subtitle={`${subtitle}.`}>{t('pages.bills.title')}</PageTitle>
+      )}
+      <WhoseSelect />
+      {of && <FollowingBanner page="bills" name={name} />}
       {acceptError && (
         <div className="alert-danger mb-4" role="alert">
           {acceptError}
@@ -150,7 +193,7 @@ export default function Bills() {
               ]}
               onChange={(v) => setState(withFilter(state, 'status', v))}
             />
-            <FilterFlag label={t('bills.mine')} value={!!state.filters.mine} onChange={(v) => setState(withFilter(state, 'mine', v))} />
+            <FilterFlag label={of ? t('following.bills.mine', { name }) : t('bills.mine')} value={!!state.filters.mine} onChange={(v) => setState(withFilter(state, 'mine', v))} />
           </>
         }
         sorts={[
@@ -169,6 +212,7 @@ export default function Bills() {
             <div className="mt-0.5 flex items-baseline gap-2 text-[0.8rem]">
               <span className="min-w-0 flex-1 muted">
                 {f.date(r.bill.date)} · {t('bills.by', { name: names.short(r.bill.creator) })}
+                {onIt(r)}
               </span>
               <span className="text-right">{total(r)}</span>
             </div>
@@ -181,7 +225,7 @@ export default function Bills() {
             ) : (
               r.bill.ledgerRecords.length > 0 && (
                 <div className="mt-0.5 text-right text-[0.8rem]">
-                  <MyBalance records={r.bill.ledgerRecords} meId={user?.id} />
+                  <MyBalance records={r.bill.ledgerRecords} meId={owner} name={of && name} />
                 </div>
               )
             )}
@@ -201,8 +245,8 @@ export default function Bills() {
             <div className="mb-2 text-[2rem]" aria-hidden>
               🧾
             </div>
-            <p className="font-semibold">{t('bills.empty')}</p>
-            <p className="mt-1 text-sm muted">{t('bills.emptyHint')}</p>
+            <p className="font-semibold">{of ? t('following.bills.empty') : t('bills.empty')}</p>
+            <p className="mt-1 text-sm muted">{of ? t('following.bills.emptyHint', { name }) : t('bills.emptyHint')}</p>
           </>
         }
         filteredEmpty={

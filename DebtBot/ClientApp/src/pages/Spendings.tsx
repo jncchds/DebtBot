@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import { useSpendings, useSpendingSummary } from '../api/bills'
 import type { Spending } from '../api/types'
+import { FollowingBanner, NoAccess, WhoseSelect } from '../components/following/Following'
+import { isNoAccess, useFollowing } from '../lib/useFollowing'
 import { FilterCurrency, FilterDate, FilterFlag } from '../components/list/filters'
 import { ListView, type Column } from '../components/list/ListView'
 import { PageTitle } from '../components/ui'
@@ -16,15 +18,20 @@ import { useListState } from '../lib/useListState'
 /** "33 % of the bill": always a whole percentage of the bill (user, round 1). */
 const sharePercent = (portion: number) => Math.round(portion * 100)
 
-/** 📊 Spendings: your share of every bill you take part in, as the shared list (mockups/spendings). */
+/**
+ * 📊 Spendings: your share of every bill you take part in, as the shared list (mockups/spendings).
+ * With `?of=<userId>`, the spendings of someone you're subscribed to, read-only (mockups/following).
+ */
 export default function Spendings() {
   const { t } = useTranslation()
   const f = useFormat()
+  const { of, viewing } = useFollowing()
+  const name = viewing.kind === 'of' ? viewing.name : ''
   const [state, setState] = useListState(spendingsSpec)
-  const query = useMemo(() => spendingsQuery(state), [state])
+  const query = useMemo(() => ({ ...spendingsQuery(state), ofUserId: of }), [state, of])
   const list = useSpendings(query)
-  // All-time totals give the currencies you have spendings in, for the currency suggestions.
-  const summary = useSpendingSummary()
+  // All-time totals give the currencies there are spendings in, for the currency suggestions.
+  const summary = useSpendingSummary(undefined, undefined, of)
   const currencies = (summary.data ?? []).map((s) => s.currencyCode)
 
   /** Cancelled spendings are faded (shown only with "Show cancelled"). */
@@ -74,9 +81,24 @@ export default function Spendings() {
     { key: 'status', header: <span className="sr-only">{t('spendings.status')}</span>, align: 'right', width: '7.5rem', cell: cancelledPill },
   ]
 
+  if (of && isNoAccess(list.error))
+    return (
+      <>
+        <PageTitle subtitle={t('pages.spendings.subtitle')}>{t('pages.spendings.title')}</PageTitle>
+        <WhoseSelect />
+        <NoAccess error={list.error} />
+      </>
+    )
+
   return (
     <>
-      <PageTitle subtitle={t('pages.spendings.subtitle')}>{t('pages.spendings.title')}</PageTitle>
+      {of ? (
+        <PageTitle subtitle={t('following.subtitle.spendings', { name })}>{t('following.title.spendings', { name })}</PageTitle>
+      ) : (
+        <PageTitle subtitle={t('pages.spendings.subtitle')}>{t('pages.spendings.title')}</PageTitle>
+      )}
+      <WhoseSelect />
+      {of && <FollowingBanner page="spendings" name={name} />}
       <ListView<Spending>
         spec={spendingsSpec}
         state={state}
@@ -126,7 +148,7 @@ export default function Spendings() {
               📊
             </div>
             <p className="font-semibold">{t('spendings.empty')}</p>
-            <p className="mt-1 text-sm muted">{t('spendings.emptyHint')}</p>
+            <p className="mt-1 text-sm muted">{of ? t('following.spendings.emptyHint', { name }) : t('spendings.emptyHint')}</p>
           </>
         }
         filteredEmpty={
