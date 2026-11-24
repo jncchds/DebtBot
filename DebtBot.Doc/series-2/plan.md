@@ -54,6 +54,12 @@ Free OpenRouter models that read images and support structured output, checked 2
 ## User decisions (2026-11-24)
 - **Creator removal:** the same lock as everyone else. Your chip shows • while you are on a line or a payment; once you are off them all it gets ×. No "remove from everything".
   - Amended by the user, during T1: **equal-split lines don't count for the lock.** Removing a person takes them off every equal-split line, and the split recalculates. Payments, by-parts lines and lines where they're the only participant still lock. The rule is the same for everyone.
+  - More from the user during T1's mockups:
+    - No warning text about equal lines, and no "Add yourself" section; you add yourself back from the People search.
+    - **A draft opens in the same form as New bill**, prefilled, with lines (✎ edit, ✕ remove), payments (✕) and the preview. Unsaved changes are kept in the tab.
+    - "Save" calls a new **PUT Bills/{id}**, which replaces the whole draft (draft only, creator or admin). "Save and finalize" saves, then finalizes. There's no per-line endpoint and no `?people=` value for drafts.
+    - ✎ Edit line (people, parts, item, subtotal) works on New bill too, at `/bills/new/edit-line/<n>` and `/bills/<id>/edit-line/<n>`.
+    - Mockups show the real page with each section once, not a sheet of states.
 - **Token scopes:** chosen per token, "Read only" or "Read and write". A read-only token gets 403 on anything but GET (and HEAD/OPTIONS).
 - **Admin and tokens:** Admin Users shows each user's active token count and a "Revoke all tokens" action. Admins never see individual tokens.
 - **Receipt parse:** plan only in this series. The orchestrator writes `receipt-parse.md` (design, settings, schema, errors, tests, open questions) and agrees it with the user; building it, including mockups and any bot support, is a later series.

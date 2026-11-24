@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: 645e1162-a1e5-44ec-8c96-df03ffb46bbe
-  modified: 2026-11-24T15:57:20.158Z
+  modified: 2026-11-24T16:11:15.608Z
 ---
 
 Series 2 of DebtBot, started 2026-11-24 after the web-ui series (PR #34) was merged to main. Run like [[web-ui-orchestration]] with the `orchestrate-tasks` skill.
@@ -24,6 +24,13 @@ Series 2 of DebtBot, started 2026-11-24 after the web-ui series (PR #34) was mer
 **Decisions**
 - 2026-11-24 (user): creator chip locked like others while on a line/payment; tokens have a per-token scope (Read only / Read and write); admins get "Revoke all tokens" per user plus a count, never see tokens; receipt parse is **plan only** this series (orchestrator writes `receipt-parse.md` with the user, build later).
 - 2026-11-24 (user, during T1): equal-split lines don't lock. Removing someone drops them from those lines; payments, by-parts lines and sole-participant lines still lock. The rule is the same for everyone.
+- 2026-11-24 (user, T1 mockups; T1 scope widened):
+  - A draft opens in the New bill form, prefilled; unsaved edits are kept in the tab.
+  - Save calls a new PUT Bills/{id} that replaces the whole draft (draft only, creator or admin); "Save and finalize" saves, then finalizes.
+  - ✎ edit line on New bill too, at /bills/new/edit-line/<n> and /bills/<id>/edit-line/<n>.
+  - No "Add yourself" section, no equal-lines warning.
+  - Mockups show the real page, each section once.
+  - T2: read-only tokens must refuse PUT Bills/{id}.
 - Defaults I picked: expiry 30/90/365/never (90 preselected); PATs can't manage tokens, passwords or Telegram linking.
 - Tasks: T1 creator, T2 API tokens, T3 e2e + docs + PR description.
 
