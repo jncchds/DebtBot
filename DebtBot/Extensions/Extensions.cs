@@ -22,9 +22,24 @@ namespace DebtBot.Extensions
 
         public static PagingResult<T> ToPagingResult<T>(this IQueryable<T> query, int pageNumber = 0, int? countPerPage = null)
         {
-            var count = query.Count();
-            var items = query.Skip(pageNumber * countPerPage ?? 0).Take(countPerPage ?? count).ToList();
-            return new PagingResult<T>(countPerPage ?? count, pageNumber, count, items);
+            // The page and the count are two queries, and data can change between them (a bill finalized in the
+            // background, a new one created). Read the page first and keep the count consistent with it:
+            // - no page size: one query, the count is the list;
+            // - a short page is the last page, so the count follows from it;
+            // - a full page: count separately, but never below what this page already shows.
+            if (countPerPage is null)
+            {
+                var all = query.ToList();
+                return new PagingResult<T>(all.Count, pageNumber, all.Count, all);
+            }
+
+            var size = countPerPage.Value;
+            var skip = pageNumber * size;
+            var items = query.Skip(skip).Take(size).ToList();
+            var count = items.Count < size && (items.Count > 0 || skip == 0)
+                ? skip + items.Count
+                : items.Count == 0 ? query.Count() : Math.Max(query.Count(), skip + items.Count);
+            return new PagingResult<T>(size, pageNumber, count, items);
         }
 
         public static List<InlineButtonRecord> ToInlineKeyboardButtons<T>(this PagingResult<T> pagingResults, string commandName, string parameters = "")

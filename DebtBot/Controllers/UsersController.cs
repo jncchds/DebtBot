@@ -61,7 +61,8 @@ public class UsersController : DebtBotControllerBase
 
     /// <summary>
     /// Deletes a user that has no bills, ledger records or spendings and is in nobody's contacts (a stray placeholder).
-    /// 409 when there is such data: merge the user into another one instead.
+    /// 409 when there is such data: merge the user into another one instead. 400 for an admin (make them Regular first)
+    /// and for your own account.
     /// </summary>
     [HttpDelete("{id}")]
     public IActionResult Delete(Guid id)
@@ -74,6 +75,8 @@ public class UsersController : DebtBotControllerBase
         return _userService.DeleteUser(id) switch
         {
             DeleteUserResult.Deleted => Ok(),
+            DeleteUserResult.IsAdmin => ErrorResult(StatusCodes.Status400BadRequest,
+                "Admins can't be deleted. Make them Regular first."),
             DeleteUserResult.InUse => ErrorResult(StatusCodes.Status409Conflict,
                 "This user still has bills, debts or contacts. Merge them into another user instead."),
             _ => ErrorResult(StatusCodes.Status404NotFound, "User not found."),

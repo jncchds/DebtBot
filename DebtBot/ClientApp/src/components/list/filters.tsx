@@ -50,7 +50,8 @@ export function FilterChoice({ label, value, options, onChange }: { label: strin
   return (
     <div className="min-w-0 flex-[1_1_100%] md:flex-none" role="group" aria-label={label}>
       <span className="label">{label}</span>
-      <div className="flex flex-wrap gap-1">
+      {/* As tall as an input, so this caption lines up with the text boxes' captions in the same row. */}
+      <div className="input-h flex flex-wrap items-center gap-1">
         {options.map((o) => {
           const on = (value ?? '') === o.value
           return (
@@ -75,7 +76,7 @@ export function FilterChoice({ label, value, options, onChange }: { label: strin
 
 export function FilterFlag({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
   return (
-    <label className="inline-flex cursor-pointer items-center gap-2 self-end pb-1.5 text-sm">
+    <label className="input-h inline-flex cursor-pointer items-center gap-2 text-sm md:mt-6">
       <input type="checkbox" className="h-4 w-4 accent-[var(--accent)]" checked={value} onChange={(e) => onChange(e.target.checked)} />
       {label}
     </label>

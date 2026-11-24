@@ -295,6 +295,25 @@ public class BillRepository : IBillRepository
         await _debtContext.SaveChangesAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// Adds the bill's participants (creator, line participants and payers) in the same transaction as the bill,
+    /// so lists filtered on BillParticipants (GET Bills) show a bill as soon as it's created. They used to be
+    /// written later by the EnsureBillParticipant consumer, which made a just-created bill missing from GET Bills.
+    /// </summary>
+    private void ensureParticipants(Guid billId, IEnumerable<Guid> userIds)
+    {
+        foreach (var userId in userIds.Distinct())
+        {
+            if (_debtContext.BillParticipants.Local.Any(p => p.BillId == billId && p.UserId == userId)
+                || _debtContext.BillParticipants.Any(p => p.BillId == billId && p.UserId == userId))
+            {
+                continue;
+            }
+
+            _debtContext.BillParticipants.Add(new BillParticipant { BillId = billId, UserId = userId });
+        }
+    }
+
     private void addLines(Guid billId, List<BillLineParserModel> parsedLines, UserModel creator)
     {
         parsedLines.ForEach(l => addLine(billId, l, creator));
@@ -304,6 +323,7 @@ public class BillRepository : IBillRepository
         using var transaction = _debtContext.Database.BeginTransaction();
 
         addLines(billId, parsedLines, creator);
+        ensureParticipants(billId, parsedLines.SelectMany(l => l.Participants).Select(p => p.User.Id!.Value));
         _debtContext.SaveChanges();
 
         transaction.Commit();
@@ -319,6 +339,7 @@ public class BillRepository : IBillRepository
         using var transaction = _debtContext.Database.BeginTransaction();
 
         addPayments(billId, payments, creator);
+        ensureParticipants(billId, payments.Select(p => p.User.Id!.Value));
         _debtContext.SaveChanges();
 
         transaction.Commit();
@@ -371,6 +392,9 @@ public class BillRepository : IBillRepository
             addPayments(bill.Id, parsedBill.Payments, creator);
         }
 
+        ensureParticipants(bill.Id, (parsedBill.Lines ?? []).SelectMany(l => l.Participants).Select(p => p.User.Id!.Value)
+            .Concat((parsedBill.Payments ?? []).Select(p => p.User.Id!.Value))
+            .Prepend(creator.Id));
         _debtContext.SaveChanges();
 
         transaction.Commit();

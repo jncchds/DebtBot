@@ -13,12 +13,14 @@ using DebtBot.Services;
 using DebtBot.Telegram;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using System.Net;
 using System.Reflection;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -56,6 +58,7 @@ builder.Services.AddMemoryCache();
 builder.Services.AddScoped<UpdateHandler>();
 builder.Services.AddScoped<ReceiverService>();
 builder.Services.AddHostedService<PollingService>();
+builder.Services.AddHostedService<RefreshTokenPurgeService>();
 
 builder.Services.AddSingleton<TelegramRateLimiter>();
 builder.Services.AddSingleton<TelegramBotInfoProvider>();
@@ -116,8 +119,30 @@ builder.Services
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
+// Behind a reverse proxy (opt-in, DebtBot:ForwardedHeaders:Enabled): the client IP and scheme come from
+// X-Forwarded-For / X-Forwarded-Proto, so the per-IP sign-in limit sees real clients and Request.IsHttps is right.
+var forwarded = builder.Configuration
+    .GetSection($"{DebtBotConfiguration.SectionName}:ForwardedHeaders")
+    .Get<ForwardedHeadersConfiguration>() ?? new ForwardedHeadersConfiguration();
+if (forwarded.Enabled)
+{
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        options.ForwardLimit = 1;
+        var proxies = SplitList(forwarded.KnownProxies).Select(IPAddress.Parse).ToList();
+        var networks = SplitList(forwarded.KnownNetworks).Select(System.Net.IPNetwork.Parse).ToList();
+        // Only loopback is trusted by default; a proxy in another container needs the list, or (with none given)
+        // any proxy is trusted. That's only safe when the app can't be reached except through the proxy.
+        options.KnownProxies.Clear();
+        options.KnownIPNetworks.Clear();
+        proxies.ForEach(options.KnownProxies.Add);
+        networks.ForEach(options.KnownIPNetworks.Add);
+    });
+}
+
 // Basic brute-force protection for the sign-in endpoints, per client IP.
-// Behind a reverse proxy all clients share the proxy's IP unless forwarded headers are set up.
+// Behind a reverse proxy all clients share the proxy's IP unless forwarded headers are enabled (above).
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -204,6 +229,11 @@ ApplyDatabaseMigrations(app.Services, debtBotConfig);
 
 CreateDefaultUser(app.Services);
 
+if (forwarded.Enabled)
+{
+    app.UseForwardedHeaders();
+}
+
 // Configure the HTTP request pipeline.
 //if (app.Environment.IsDevelopment())
 {
@@ -226,6 +256,9 @@ app.MapControllers();
 app.MapFallbackToFile("{*path:regex(^(?!(api|swagger)(/|$)).*$):nonfile}", "index.html");
 
 app.Run();
+
+static IEnumerable<string> SplitList(string? value) =>
+    (value ?? "").Split([',', ';', ' '], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
 static void WarnAboutInsecureConfiguration(WebApplication app, DebtBotConfiguration config)
 {

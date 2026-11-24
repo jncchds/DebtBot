@@ -107,26 +107,8 @@ public class BillService : IBillService
             fillPaymentUserIds(parsedBill.Payments, creator);
         }
 
-        var billId = _billRepository.Add(parsedBill, creator);
-
-        _ = Task.Run(() =>
-        {
-            _publishEndpoint.Publish(new EnsureBillParticipant(billId, creator.Id));
-
-            parsedBill.Lines?.All(t => t.Participants?.All(p =>
-            {
-                _publishEndpoint.Publish(new EnsureBillParticipant(billId, p.User.Id!.Value));
-                return true;
-            }) ?? true);
-
-            parsedBill.Payments?.All(p =>
-            {
-                _publishEndpoint.Publish(new EnsureBillParticipant(billId, p.User.Id!.Value));
-                return true;
-            });
-        });
-
-        return billId;
+        // The repository writes the bill's participants in the same transaction.
+        return _billRepository.Add(parsedBill, creator);
     }
 
     public async Task<bool> FinalizeAsync(Guid id, CancellationToken cancellationToken, bool forceSponsor = false)
@@ -274,14 +256,6 @@ public class BillService : IBillService
             .ToList();
     }
 
-    private async Task ensureParticipantsAsync(Guid billId, IEnumerable<Guid> userIds, CancellationToken cancellationToken)
-    {
-        foreach (var userId in userIds.Distinct())
-        {
-            await _publishEndpoint.Publish(new EnsureBillParticipant(billId, userId), cancellationToken);
-        }
-    }
-
     public BillActionResult<Guid> Create(BillCreationModel billModel, Guid creatorId)
     {
         var errors = BillRules.ValidateBill(billModel);
@@ -337,8 +311,6 @@ public class BillService : IBillService
             await _billRepository.SetTotalWithTipsAsync(billId, newTotal.Value, cancellationToken);
         }
 
-        await ensureParticipantsAsync(billId, BillRules.UserIds(lines, null), cancellationToken);
-
         return BillActionResult<BillModel>.Ok((await _billRepository.GetAsync(billId, cancellationToken))!);
     }
 
@@ -367,8 +339,6 @@ public class BillService : IBillService
 
         var creator = _userService.GetUserById(userId)!;
         _billRepository.AddPayments(billId, BillRules.ToParserPayments(payments!), creator);
-
-        await ensureParticipantsAsync(billId, BillRules.UserIds(null, payments), cancellationToken);
 
         return BillActionResult<BillModel>.Ok((await _billRepository.GetAsync(billId, cancellationToken))!);
     }

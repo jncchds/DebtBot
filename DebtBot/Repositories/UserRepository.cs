@@ -102,6 +102,12 @@ public class UserRepository : IUserRepository
             return DeleteUserResult.NotFound;
         }
 
+        // An admin is never deleted, data or not: take the role away first.
+        if (user.Role == UserRole.Admin)
+        {
+            return DeleteUserResult.IsAdmin;
+        }
+
         // Ledger records and spendings have Restrict FKs, and deleting a bill's creator would cascade-delete the bill
         // for everyone in it. Users with any of this data, or in someone else's contacts, are merged into another user
         // instead. Their own contact list goes with them.

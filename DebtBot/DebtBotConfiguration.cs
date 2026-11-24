@@ -8,6 +8,20 @@
         public ProcessorConfiguration BillProcessor { get; set; }
         public JwtConfiguration JwtConfiguration { get; set; }
         public TelegramConfiguration Telegram { get; set; }
+        public ForwardedHeadersConfiguration ForwardedHeaders { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Behind a reverse proxy: take the client IP and scheme from X-Forwarded-For / X-Forwarded-Proto.
+    /// Off by default, because a client that reaches the app directly could then fake its IP.
+    /// </summary>
+    public class ForwardedHeadersConfiguration
+    {
+        public bool Enabled { get; set; }
+        /// <summary>Comma-separated proxy IPs to trust. With neither this nor <see cref="KnownNetworks"/>, any proxy is trusted.</summary>
+        public string? KnownProxies { get; set; }
+        /// <summary>Comma-separated CIDR networks to trust, e.g. "172.16.0.0/12".</summary>
+        public string? KnownNetworks { get; set; }
     }
 
     public class RetryConfiguration

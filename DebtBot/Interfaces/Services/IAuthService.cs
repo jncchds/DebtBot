@@ -33,6 +33,13 @@ public interface IAuthService
 
     /// <summary>Revokes one refresh token (sign-out). Unknown tokens are ignored.</summary>
     Task RevokeRefreshTokenAsync(string rawToken, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Deletes refresh tokens that can never be used again: expired ones, and ones revoked more than
+    /// <c>AuthService.RevokedTokenRetention</c> ago (kept that long so a replayed old token is still
+    /// recognised and revokes its chain). Returns how many rows were deleted.
+    /// </summary>
+    Task<int> PurgeRefreshTokensAsync(CancellationToken cancellationToken = default);
 }
 
 public record AuthSignInResult(UserModel? User, string? Error = null, bool LockedOut = false)

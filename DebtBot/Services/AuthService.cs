@@ -357,6 +357,18 @@ public partial class AuthService : IAuthService
         return new RefreshResult(user, new IssuedRefreshToken(newRaw, replacement.ExpiresAt));
     }
 
+    /// <summary>How long a revoked (rotated or signed-out) refresh token is kept for reuse detection.</summary>
+    public static readonly TimeSpan RevokedTokenRetention = TimeSpan.FromDays(7);
+
+    public async Task<int> PurgeRefreshTokensAsync(CancellationToken cancellationToken = default)
+    {
+        var now = UtcNow;
+        var revokedBefore = now - RevokedTokenRetention;
+        return await _db.RefreshTokens
+            .Where(t => t.ExpiresAt <= now || (t.RevokedAt != null && t.RevokedAt < revokedBefore))
+            .ExecuteDeleteAsync(cancellationToken);
+    }
+
     public async Task RevokeRefreshTokenAsync(string rawToken, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(rawToken))

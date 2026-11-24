@@ -5,6 +5,7 @@ import type { ProcessingState } from '../../api/types'
 import { formatRate, unitRate, type ExchangeDeal } from '../../lib/exchange'
 import { useFormat } from '../../lib/useFormat'
 import { useNameOf } from '../../lib/usePeople'
+import { useOrigin } from '../../lib/useOrigin'
 
 /**
  * The pieces every view of an exchange shares, so the Exchange page, the Bill page and the Bills list use the
@@ -65,6 +66,7 @@ export function DealText({ deal }: { deal: ExchangeDeal }) {
 export function ExchangeBanner({ deal, status, actions, note }: { deal: ExchangeDeal; status?: ProcessingState; actions?: ReactNode; note?: ReactNode }) {
   const { t } = useTranslation()
   const names = useNameOf()
+  const origin = useOrigin()
   const other = names.isMe(deal.from.id) ? deal.to : names.isMe(deal.to.id) ? deal.from : null
   return (
     <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-3 rounded-[10px] border border-accent/40 bg-accent-faint p-4">
@@ -78,11 +80,11 @@ export function ExchangeBanner({ deal, status, actions, note }: { deal: Exchange
         <span className="muted">{t('exchange.rate')}</span> <RateBothWays a={deal.fromAmount} aCurrency={deal.fromCurrency} b={deal.toAmount} bCurrency={deal.toCurrency} className="align-top" />
         <br />
         <span className="muted">{t('exchange.bills')}</span>{' '}
-        <Link to={`/bills/${deal.fromBillId}`} className="link">
+        <Link to={`/bills/${deal.fromBillId}`} state={origin} className="link">
           {t('exchange.billLabel', { from: names.short(deal.from), to: names.short(deal.to), currency: deal.fromCurrency })}
         </Link>
         {' · '}
-        <Link to={`/bills/${deal.toBillId}`} className="link">
+        <Link to={`/bills/${deal.toBillId}`} state={origin} className="link">
           {t('exchange.billLabel', { from: names.short(deal.to), to: names.short(deal.from), currency: deal.toCurrency })}
         </Link>
         {note && <div className="mt-1">{note}</div>}

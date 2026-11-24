@@ -1,6 +1,6 @@
 # DebtBot REST API for the web UI
 
-This covers everything the UI tasks (T4–T8) call. Sign-in endpoints (`api/v1/auth/*`) are described in `web-sign-in.md`; their shapes are repeated briefly at the end.
+This covers everything the UI tasks (T4–T8) call, as of the end of the series (T9). Sign-in endpoints (`api/v1/auth/*`) are described in `web-sign-in.md`; their shapes are repeated briefly at the end.
 
 ## Conventions
 - **Base:** `/api/v1`. Every endpoint below needs `Authorization: Bearer <accessToken>` unless marked otherwise. No token → **401**.
@@ -15,7 +15,8 @@ This covers everything the UI tasks (T4–T8) call. Sign-in endpoints (`api/v1/a
   - **Change a bill** (lines, payments, finalize, cancel, exchange accept): creator or admin. Someone without `HasAccess` gets 404 (that includes a subscriber who can only read it); a participant who isn't the creator gets 403.
   - **Someone else's lists (`ofUserId`, since T7b):** `GET Debts/Own`, `GET Bills`, `GET Spendings/Own` and `GET Spendings/Own/summary` take `ofUserId?`. Left out or your own id: your lists, unchanged. Someone you have a **confirmed** subscription to (`mySubscription = Confirmed`): their lists, exactly as they would get them. Anything else (pending, none, the other direction): **403** `{ message }`. Admins aren't special here.
 - **Sorting (since T5):** paged lists take `sortBy=<Field>` and `sortOrder=Asc|Desc` next to their filters; see `mockups/shell/README.md`, "List views".
-- **Paging:** `?pageNumber=0&countPerPage=N` (page numbers start at 0; without `countPerPage` everything comes in one page). Paged responses are a `PagingResult<T>`:
+- **Paging:** `?pageNumber=0&countPerPage=N` (page numbers start at 0; without `countPerPage` everything comes in one page). Paged responses are a `PagingResult<T>`.
+  - Since T9 the page is read first and `totalCount` is kept consistent with it: without `countPerPage` it's one query; a short page is the last page, so the total follows from it; a full page is counted separately but never reported below what it shows. Data can still change between two requests.
 
 ```ts
 interface PagingResult<T> {
@@ -77,7 +78,7 @@ With `ofUserId` (since T7b), `creditorUser` is that person and `debtorUser` carr
 
 | Endpoint | Access | Request | Response |
 |---|---|---|---|
-| `GET Bills` | any user | query: `ofUserId?` (since T7b: someone you're subscribed to, confirmed; else 403), `withUserId?`, `currencyCode?` (payment currency, any case), `status?`, `createdByMe?`, `dateFrom?`, `dateTo?` (`yyyy-mm-dd`, whole days, UTC), `search?` (description contains, ignoring case), `sortBy?` (`Date` default, `Description`, `Total`, `Status`), `sortOrder?` (`Asc`, `Desc` default), paging | `PagingResult<BillListItem>` — bills you take part in. `withUserId` (since T5) matches a ledger record between you, or a not yet finalized bill you're both in. With `ofUserId`, "you" in `withUserId` and `createdByMe` is that person. |
+| `GET Bills` | any user | query: `ofUserId?` (since T7b: someone you're subscribed to, confirmed; else 403), `withUserId?`, `currencyCode?` (payment currency, any case), `status?`, `createdByMe?`, `dateFrom?`, `dateTo?` (`yyyy-mm-dd`, whole days, UTC), `search?` (description contains, ignoring case), `sortBy?` (`Date` default, `Description`, `Total`, `Status`), `sortOrder?` (`Asc`, `Desc` default), paging | `PagingResult<BillListItem>` — bills you take part in (the bill's participants list: creator, payers and line participants, written with the bill since T9, so a new bill is listed at once). `withUserId` (since T5) matches a ledger record between you, or a not yet finalized bill you're both in. With `ofUserId`, "you" in `withUserId` and `createdByMe` is that person. |
 | `GET Bills/Own` | any user | paging | `PagingResult<Bill>` — bills you created |
 | `GET Bills/All` | **Admin** | since T8: the `GET Bills` query without `ofUserId` and `createdByMe` (ignored), plus `creatorId?`; `withUserId` is anyone taking part (the participants list) | `PagingResult<BillListItem>` — every bill (before T8: `PagingResult<Bill>`, paging only) |
 | `GET Bills/{id}` | read the bill (`CanRead`) | – | `Bill`, or 404 |
@@ -137,7 +138,7 @@ interface ExchangeListItem {        // GET Bills/exchanges
   rate: number;                     // fromAmount / toAmount
 }
 ```
-- **Exchanges list:** only linked pairs (`exchangeBillId`) are listed, so bills made by `/ExchangeDebt` before the link existed don't show up there (they still show in `GET Bills`). Access is checked on the bills themselves (creator, payer or line participant), so a new exchange shows up at once.
+- **Exchanges list:** only linked pairs (`exchangeBillId`) are listed. Pairs made by `/ExchangeDebt` before the link existed are linked by the data migration `LinkOldExchanges` (T9), but only where the pairing is certain: same creator, status and description text, made within a minute, one payment and one "Exchange" line each, mirrored people, currencies and amounts, and no other bill matching either side. Anything ambiguous stays unlinked and only shows in `GET Bills`. Access is checked on the bills themselves (creator, payer or line participant), so a new exchange shows up at once.
 - **Rules (400):** both amounts > 0; two different users that exist; 3-letter currency codes.
 - **What it creates:** the same two bills as Telegram's `/ExchangeDebt`.
   - **Forward:** "from" pays `fromAmount fromCurrency` for "to"'s one line "Exchange" of `toAmount toCurrency`. After finalizing, "to" owes "from" `fromAmount fromCurrency`.
@@ -246,7 +247,7 @@ Removing a contact keeps bills, debts and subscriptions. A later finalized bill 
 | `GET Users/merge/suggestions` | – | `MergeSuggestion[]` |
 | `POST Users/merge` | `{ oldUserId, newUserId }` (the old query parameters still work) | `AdminUser` (the kept user); 400 for missing or identical ids, or for merging away your own signed-in account; 404 for an unknown id |
 | `PUT Users/{id}` | `UserCreationModel` (displayName, telegramUserName, phone, email; null fields stay as they are) | 200; 404 for an unknown id; **400 when `telegramId` differs from the user's** (a Telegram id is never editable, since T3) |
-| `DELETE Users/{id}` | – | 200; 404 for an unknown id; 400 for your own account; **409 `{ message }` while the user has bills (created, paid or shared), ledger records or spendings, or is in someone else's contacts**: merge them instead. Their own contact list and subscriptions are deleted with them. So only stray placeholders can be deleted (since T3). |
+| `DELETE Users/{id}` | – | 200; 404 for an unknown id; 400 for your own account; **400 `{ message }` for any admin**, with or without data: make them Regular first (since T9); **409 `{ message }` while the user has bills (created, paid or shared), ledger records or spendings, or is in someone else's contacts**: merge them instead. Their own contact list and subscriptions are deleted with them. So only stray placeholders can be deleted (since T3). |
 | `POST Users` | | unchanged, older endpoint |
 
 ```ts
