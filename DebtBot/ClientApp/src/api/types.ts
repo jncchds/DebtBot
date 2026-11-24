@@ -202,6 +202,8 @@ export interface BillListItem {
   ledgerRecords: LedgerRecord[]
   /** Everyone in the bill's participants list (T7b), to mark bills you're on in someone else's list. */
   participantIds: string[]
+  /** How many people take part: creator, payers and line participants (T8). */
+  participantCount: number
 }
 
 /** GET Bills query. Dates are `yyyy-mm-dd` (whole days, UTC). */
@@ -361,4 +363,62 @@ export interface Contact {
   theirSubscription: SubscriptionState
   /** When you added them (ISO, UTC); null for contacts added before this was recorded. */
   addedAt: string | null
+}
+
+// Admin (api/v1/Users, GET Bills/All)
+
+/** `GET Users` rows. */
+export interface AdminUser {
+  id: string
+  displayName: string
+  telegramId: number | null
+  telegramUserName: string | null
+  phone: string | null
+  email: string | null
+  role: UserRole
+  /** The user has started the bot; false for placeholders made from @mentions. */
+  telegramBotEnabled: boolean
+  login: string | null
+  hasPassword: boolean
+  /** Bills the user takes part in. */
+  billCount: number
+  /** Entries in the user's own contact list. */
+  contactCount: number
+  /** The earliest bill they take part in. */
+  firstBillDate: string | null
+}
+
+/** `GET Users` query: display name, Telegram username or login contains `search`, ignoring case; ordered by name. */
+export interface AdminUserQuery extends Paging {
+  search?: string
+  role?: UserRole
+}
+
+/** `GET Users/{id}`. */
+export interface UserModel {
+  id: string
+  displayName: string
+  telegramId: number | null
+  telegramUserName: string | null
+  phone: string | null
+  email: string | null
+  telegramBotEnabled: boolean
+  role: UserRole
+}
+
+export interface MergeSuggestion {
+  keep: AdminUser
+  merge: AdminUser
+  reasons: MergeReason[]
+}
+
+/** `POST Users/{id}/password`: login may be left out when the user already has one. */
+export interface AdminSetPassword {
+  login?: string
+  password: string
+}
+
+/** `GET Bills/All` (admin): Bills' query without `ofUserId` and `createdByMe`, plus the creator. `withUserId` is anyone on the bill. */
+export interface AdminBillListQuery extends Omit<BillListQuery, 'ofUserId' | 'createdByMe'> {
+  creatorId?: string
 }

@@ -20,6 +20,8 @@ export function useFormat() {
         const d = new Date(iso)
         return (d.getFullYear() === new Date().getFullYear() ? short : shortYear).format(d)
       },
+      /** "18 Nov 2026", always with the year. */
+      dateYear: (iso: string) => shortYear.format(new Date(iso)),
       /** "18 Nov 2026, 20:40" */
       dateTime: (iso: string) => long.format(new Date(iso)),
     }

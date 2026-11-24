@@ -1,4 +1,4 @@
-import type { BillListQuery, BillSortField, DebtDirection, DebtListQuery, DebtSortField, ExchangeListQuery, ExchangeSortField, ProcessingState, SortOrder, SpendingListQuery, SpendingSortField } from '../api/types'
+import type { AdminBillListQuery, AdminUserQuery, BillListQuery, UserRole,BillSortField, DebtDirection, DebtListQuery, DebtSortField, ExchangeListQuery, ExchangeSortField, ProcessingState, SortOrder, SpendingListQuery, SpendingSortField } from '../api/types'
 import type { ListSpec, ListState } from './listState'
 
 /**
@@ -85,6 +85,60 @@ export function exchangesQuery(s: ListState): ExchangeListQuery {
     currencyCode: s.filters.currency,
     status: s.filters.status ? EXCHANGE_STATUS[s.filters.status] : undefined,
     sortBy: EXCHANGE_SORT[s.sort],
+    sortOrder: apiOrder(s),
+    pageNumber: s.page - 1,
+    countPerPage: PAGE_SIZE,
+  }
+}
+
+/**
+ * 🛠 Admin › Users: /admin/users?search=&role=admin|regular&page=2
+ * The API orders by display name only, so there is one sort and its order can't change.
+ */
+export const adminUsersSpec: ListSpec = {
+  filters: { search: { kind: 'text' }, role: { kind: 'choice', values: ['admin', 'regular'] } },
+  sorts: { name: 'asc' },
+}
+
+const USER_ROLE: Record<string, UserRole> = { admin: 'Admin', regular: 'Regular' }
+
+export function adminUsersQuery(s: ListState): AdminUserQuery {
+  return {
+    search: s.filters.search,
+    role: s.filters.role ? USER_ROLE[s.filters.role] : undefined,
+    pageNumber: s.page - 1,
+    countPerPage: PAGE_SIZE,
+  }
+}
+
+/**
+ * 🛠 Admin › All bills: /admin/bills?q=&by=<userId>&with=<userId>&currency=EUR&from=&to=
+ *   &status=draft|processing|finalized|cancelled&sort=date|description|total|status&order=asc|desc&page=2
+ * Bills' URL without `mine`, plus `by` (the creator); `with` is anyone on the bill.
+ */
+export const adminBillsSpec: ListSpec = {
+  filters: {
+    q: { kind: 'text' },
+    by: { kind: 'id' },
+    with: { kind: 'id' },
+    currency: { kind: 'currency' },
+    from: { kind: 'date' },
+    to: { kind: 'date' },
+    status: { kind: 'choice', values: ['draft', 'processing', 'finalized', 'cancelled'] },
+  },
+  sorts: billsSpec.sorts,
+}
+
+export function adminBillsQuery(s: ListState): AdminBillListQuery {
+  return {
+    search: s.filters.q,
+    creatorId: s.filters.by,
+    withUserId: s.filters.with,
+    currencyCode: s.filters.currency,
+    dateFrom: s.filters.from,
+    dateTo: s.filters.to,
+    status: s.filters.status ? BILL_STATUS[s.filters.status] : undefined,
+    sortBy: BILL_SORT[s.sort],
     sortOrder: apiOrder(s),
     pageNumber: s.page - 1,
     countPerPage: PAGE_SIZE,

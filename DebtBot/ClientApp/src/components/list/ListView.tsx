@@ -45,6 +45,10 @@ export interface ListViewProps<T> {
   /** Clicking a row or card (outside its buttons and links) opens this. */
   rowHref?: (item: T) => string | undefined
   rowHighlight?: (item: T) => boolean
+  /** Shows something else in place of a row or card (an inline confirmation), across all columns. It brings its own padding. */
+  rowReplace?: (item: T) => ReactNode | undefined
+  /** The list has one fixed order (the API can't sort the other way): the direction button only shows it. */
+  orderFixed?: boolean
   items: T[] | undefined
   total: number
   pageSize: number
@@ -108,7 +112,8 @@ export function ListView<T>(p: ListViewProps<T>) {
       <button
         type="button"
         className="btn-secondary px-2.5 py-1 text-[0.8rem] whitespace-nowrap"
-        title={t('list.changeOrder', { order: orderLabel(p.state.order === 'asc' ? 'desc' : 'asc') })}
+        title={p.orderFixed ? undefined : t('list.changeOrder', { order: orderLabel(p.state.order === 'asc' ? 'desc' : 'asc') })}
+        disabled={p.orderFixed}
         onClick={() => p.onChange(withOrderToggled(p.state))}
       >
         {arrow}
@@ -177,19 +182,28 @@ export function ListView<T>(p: ListViewProps<T>) {
             </tr>
           </thead>
           <tbody>
-            {p.items.map((item) => (
-              <tr
-                key={p.rowKey(item)}
-                onClick={open(item)}
-                className={clsx('border-b border-line last:border-b-0', p.rowHref?.(item) && 'cursor-pointer hover:bg-accent-faint', p.rowHighlight?.(item) && 'bg-accent-faint')}
-              >
-                {p.columns.map((c) => (
-                  <td key={c.key} className={clsx('px-4 py-2.5 align-middle', c.align === 'right' && 'text-right')}>
-                    {c.cell(item)}
+            {p.items.map((item) => {
+              const replaced = p.rowReplace?.(item)
+              return replaced ? (
+                <tr key={p.rowKey(item)} className="border-b border-line last:border-b-0">
+                  <td colSpan={p.columns.length} className="p-0">
+                    {replaced}
                   </td>
-                ))}
-              </tr>
-            ))}
+                </tr>
+              ) : (
+                <tr
+                  key={p.rowKey(item)}
+                  onClick={open(item)}
+                  className={clsx('border-b border-line last:border-b-0', p.rowHref?.(item) && 'cursor-pointer hover:bg-accent-faint', p.rowHighlight?.(item) && 'bg-accent-faint')}
+                >
+                  {p.columns.map((c) => (
+                    <td key={c.key} className={clsx('px-4 py-2.5 align-middle', c.align === 'right' && 'text-right')}>
+                      {c.cell(item)}
+                    </td>
+                  ))}
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
@@ -197,15 +211,20 @@ export function ListView<T>(p: ListViewProps<T>) {
   } else {
     body = (
       <ul className={clsx('card divide-y divide-line overflow-hidden transition-opacity', p.fetching && 'opacity-60')}>
-        {p.items.map((item) => (
-          <li
-            key={p.rowKey(item)}
-            onClick={open(item)}
-            className={clsx('px-4 py-3', p.rowHref?.(item) && 'cursor-pointer hover:bg-accent-faint', p.rowHighlight?.(item) && 'bg-accent-faint')}
-          >
-            {p.card(item)}
-          </li>
-        ))}
+        {p.items.map((item) => {
+          const replaced = p.rowReplace?.(item)
+          return replaced ? (
+            <li key={p.rowKey(item)}>{replaced}</li>
+          ) : (
+            <li
+              key={p.rowKey(item)}
+              onClick={open(item)}
+              className={clsx('px-4 py-3', p.rowHref?.(item) && 'cursor-pointer hover:bg-accent-faint', p.rowHighlight?.(item) && 'bg-accent-faint')}
+            >
+              {p.card(item)}
+            </li>
+          )
+        })}
       </ul>
     )
   }
