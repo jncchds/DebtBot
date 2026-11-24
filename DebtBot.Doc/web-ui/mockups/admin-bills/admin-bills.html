@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DebtBot Admin All bills mockup</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .desc { font-weight: 600; }
+  .by { font-size: .8rem; }
+</style>
+</head>
+<body>
+<script>
+  // GET Bills/All (admin) with the Bills filters + creatorId → every bill, read-only.
+  const ROWS = [
+    { date: '22 Nov', desc: 'Exchange with Boris', by: 'Anna Petrova', x: true, total: '100.00 EUR ⇄ 430.00 PLN', st: 'Draft', people: 2 },
+    { date: '21 Nov', desc: 'Dinner at Molto', by: 'Anna Petrova', total: '84.00 EUR', st: 'Draft', people: 3 },
+    { date: '20 Nov', desc: 'Football pitch rent', by: 'Boris Ivanov', total: '90.00 EUR', st: 'Processed', people: 2 },
+    { date: '19 Nov', desc: 'Office coffee', by: 'Lena', total: '24.00 PLN', st: 'Ready', people: 6 },
+    { date: '18 Nov', desc: 'Pizza night', by: 'Anna Petrova', total: '50.00 EUR', st: 'Processed', people: 5 },
+    { date: '15 Nov', desc: 'Taxi to the airport', by: 'Boris Ivanov', total: '30.00 EUR', st: 'Processed', people: 3 },
+    { date: '13 Nov', desc: 'Board games', by: 'Grisha', total: '36.80 USD', st: 'Processed', people: 2 },
+    { date: '12 Nov', desc: 'Groceries Lidl', by: 'Dmitry K.', total: '63.40 PLN', st: 'Processed', people: 2 },
+    { date: '8 Nov', desc: 'Cinema', by: 'Clara Müller', total: '24.00 EUR', st: 'Cancelled', people: 2 },
+  ]
+  const PILL = { Draft: ['pill-accent', 'Draft'], Ready: ['pill-muted', 'Processing…'], Processed: ['pill-muted', 'Finalized'], Cancelled: ['pill-danger', 'Cancelled'] }
+  const pill = (s) => `<span class="pill ${PILL[s][0]}">${PILL[s][1]}</span>`
+  const icon = (r) => r.x ? '🔁 ' : ''
+  window.MOCK = {
+    page: 'admin',
+    ctx: ['S:Admin',
+      { i: '👥', t: 'Users', s: 'Search, roles, passwords' },
+      { i: '🔀', t: 'Merge users <span class="count" style="margin-left:.25rem">2</span>', s: 'Duplicate suggestions' },
+      { i: '🧾', t: 'All bills', s: 'read-only', a: true }],
+    render(state, phone) {
+      const filtered = state === 'filtered' || state === 'filtered-empty'
+      const fe = state === 'filtered-empty'
+      const head = `<div class="title-row"><h1>All bills</h1></div>
+        <p class="sub muted">${filtered ? `Created by Boris Ivanov${fe ? ', cancelled' : ''}.` : 'Every bill in DebtBot, read-only. Open one to see it in full.'}</p>`
+      if (state === 'empty') return head + `<div class="card empty"><div class="big">🧾</div><p style="font-weight:600">No bills yet</p>
+        <p class="muted" style="font-size:.875rem">Nobody has made a bill yet.</p></div>`
+      const rows = fe ? [] : filtered ? ROWS.filter((r) => r.by === 'Boris Ivanov') : ROWS
+      return head + list({
+        phone, open: phone && (filtered || state === 'open'),
+        activeCount: filtered ? (fe ? 2 : 1) : 0,
+        filters: [
+          { type: 'text', label: 'Search', placeholder: 'Description contains…' },
+          { type: 'text', label: 'Created by', placeholder: 'Type a name…', value: filtered ? 'Boris Ivanov' : '', on: filtered },
+          { type: 'text', label: 'Person', placeholder: 'Type a name…' },
+          { type: 'select', label: 'Currency', value: 'Any currency' },
+          { type: 'date', label: 'From' },
+          { type: 'date', label: 'To' },
+          { type: 'seg', label: 'Status', options: ['All', 'Draft', 'Processing', 'Finalized', 'Cancelled'], value: fe ? 'Cancelled' : 'All' },
+        ],
+        sort: { field: 'Date', dir: '↓ Newest first' },
+        columns: [
+          { label: 'Date', w: '5.5rem', sorted: '↓', cell: (r) => `<span class="muted num">${r.date}</span>` },
+          { label: 'Bill', cell: (r) => `<div class="desc">${icon(r)}${r.desc}</div><div class="by muted">by ${r.by}${r.x ? ' · <span class="pill pill-accent" style="padding:0 .4rem">Exchange pair</span>' : ''}</div>` },
+          { label: 'People', cls: 'r', w: '5rem', cell: (r) => `<span class="num">${r.people}</span>` },
+          { label: 'Total', cls: 'r', cell: (r) => `<span class="num">${r.total}</span>` },
+          { label: 'Status', w: '8rem', cell: (r) => pill(r.st) },
+        ],
+        rows,
+        card: (r) => `<div class="l1"><span class="desc" style="flex:1;min-width:0">${icon(r)}${r.desc}</span>${pill(r.st)}</div>
+          <div class="l2 muted"><span>${r.date} · by ${r.by} · ${r.people} people</span><span class="spacer"></span><span class="num" style="color:var(--text)">${r.total}</span></div>`,
+        pager: filtered ? { range: `1–${rows.length} of ${rows.length}`, pages: 1 } : { range: '1–20 of 412', pages: 21 },
+        empty: `<div class="card empty"><div class="big">🔍</div><p style="font-weight:600">No bills match these filters</p>
+          <p class="muted" style="font-size:.875rem">Try another creator, person, currency or status.</p>
+          <div class="row" style="justify-content:center"><a class="btn btn-secondary">✕ Clear filters</a></div></div>`,
+      })
+    },
+  }
+</script>
+<script src="../common/list.js"></script>
+<script src="../common/shell.js"></script>
+</body>
+</html>
