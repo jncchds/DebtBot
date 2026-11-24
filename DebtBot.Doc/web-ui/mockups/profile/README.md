@@ -35,3 +35,6 @@ Title "Telegram", subtitle "Your account is your Telegram identity. It can't be 
 
 ## Backend needs
 None: `GET`/`PUT profile`, `PUT auth/password` and `GET auth/config` cover it.
+
+## Built (T7)
+Built as specified. After saving Details, the session is refreshed so "Sign out (Name)" shows the new name. A 409 marks the login field and shows the alert; a wrong current password shows the API's message.
