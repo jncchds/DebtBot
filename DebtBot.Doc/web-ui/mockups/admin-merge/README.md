@@ -37,3 +37,10 @@ Title "Merge users", subtitle "Pairs that look like the same person: the same Te
 
 ## Backend needs (T8)
 None.
+
+## Built (T8)
+- `pages/AdminMerge.tsx`, `components/admin/UserSearch.tsx`, `lib/admin.ts` (URL state: `parseMergeUrl`, `mergeSearch`, `withSwap`, `withManual`, `withManualSwapped`, `afterMerge`).
+- Swap and Back to the suggestion are new history entries; picking or clearing a user in the manual picker too. After a merge the merged-away user is dropped from `swap`, `keep` and `merge` (replacing the history entry), and the page scrolls to the top for the ✅ message.
+- `swap` is keyed by the suggested merge user's id, as the spec says: in a group of three where one user is the suggested merge user of two pairs, swapping one swaps both.
+- The manual picker excludes the user chosen on the other side; its user boxes come from the suggestion rows when they're there, otherwise from `GET Users/{id}` plus a search by name.
+- A merge refetches every query (users, suggestions and badge, bills, debts, contacts).

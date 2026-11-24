@@ -49,6 +49,8 @@ export interface ListViewProps<T> {
   rowReplace?: (item: T) => ReactNode | undefined
   /** The list has one fixed order (the API can't sort the other way): the direction button only shows it. */
   orderFixed?: boolean
+  /** Narrower cell padding for wide tables with many columns (Admin › Users). */
+  dense?: boolean
   items: T[] | undefined
   total: number
   pageSize: number
@@ -91,6 +93,7 @@ export function ListView<T>(p: ListViewProps<T>) {
   const sort = p.sorts.find((s) => s.value === p.state.sort) ?? p.sorts[0]
   const orderLabel = (o: Order) => (o === 'asc' ? sort.asc : sort.desc)
   const arrow = p.state.order === 'asc' ? '↑' : '↓'
+  const pad = p.dense ? 'px-2 first:pl-4 last:pr-4' : 'px-4'
 
   const open = (item: T) => (e: MouseEvent) => {
     const href = p.rowHref?.(item)
@@ -172,7 +175,7 @@ export function ListView<T>(p: ListViewProps<T>) {
                   key={c.key}
                   scope="col"
                   style={c.width ? { width: c.width } : undefined}
-                  className={clsx('border-b border-line px-4 py-2 text-[0.72rem] font-semibold tracking-wide text-muted uppercase', c.align === 'right' ? 'text-right' : 'text-left')}
+                  className={clsx('border-b border-line py-2 text-[0.72rem] font-semibold tracking-wide text-muted uppercase', pad, c.align === 'right' ? 'text-right' : 'text-left')}
                   aria-sort={c.sort && c.sort === p.state.sort ? (p.state.order === 'asc' ? 'ascending' : 'descending') : undefined}
                 >
                   {c.header}
@@ -197,7 +200,7 @@ export function ListView<T>(p: ListViewProps<T>) {
                   className={clsx('border-b border-line last:border-b-0', p.rowHref?.(item) && 'cursor-pointer hover:bg-accent-faint', p.rowHighlight?.(item) && 'bg-accent-faint')}
                 >
                   {p.columns.map((c) => (
-                    <td key={c.key} className={clsx('px-4 py-2.5 align-middle', c.align === 'right' && 'text-right')}>
+                    <td key={c.key} className={clsx('py-2.5 align-middle', pad, c.align === 'right' && 'text-right')}>
                       {c.cell(item)}
                     </td>
                   ))}

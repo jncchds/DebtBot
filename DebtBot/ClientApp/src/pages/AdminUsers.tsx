@@ -53,7 +53,7 @@ export default function AdminUsers() {
         {isMe(u) && <span className="text-[0.8rem] muted"> {t('admin.users.you')}</span>}
       </div>
       {duplicates.has(u.id) && (
-        <Link to="/admin/merge" className="text-[0.78rem] text-accent hover:underline">
+        <Link to="/admin/merge" className="text-[0.78rem] whitespace-nowrap text-accent hover:underline">
           🔀 {t('admin.users.duplicate')}
         </Link>
       )}
@@ -68,7 +68,7 @@ export default function AdminUsers() {
     </Link>
   )
 
-  const passwordSet = <span className="pill-muted px-1.5 py-0">🔑 {t('admin.users.passwordSet')}</span>
+  const passwordSet = <span className="pill-muted px-1.5 py-0 whitespace-nowrap">🔑 {t('admin.users.passwordSet')}</span>
 
   const rolePill = (u: AdminUser) => (u.role === 'Admin' ? <span className="pill-accent">{t('admin.users.admin')}</span> : <span className="px-2 text-xs muted">{t('admin.users.regular')}</span>)
 
@@ -174,7 +174,7 @@ export default function AdminUsers() {
       cell: (u) => (
         <>
           <div>{u.telegramUserName ? handle(u.telegramUserName) : '—'}</div>
-          <div className="text-[0.8rem] tabular-nums muted">{telegramId(u)}</div>
+          <div className="text-[0.78rem] whitespace-nowrap tabular-nums muted">{telegramId(u)}</div>
         </>
       ),
     },
@@ -204,7 +204,7 @@ export default function AdminUsers() {
     { key: 'bot', header: t('admin.users.bot'), cell: botPill },
     { key: 'bills', header: t('admin.users.bills'), align: 'right', cell: (u) => <span className="tabular-nums">{u.billCount}</span> },
     { key: 'contacts', header: t('admin.users.contacts'), align: 'right', cell: (u) => <span className="tabular-nums">{u.contactCount}</span> },
-    { key: 'delete', header: <span className="sr-only">{t('admin.users.delete')}</span>, align: 'right', width: '3rem', cell: deleteButton },
+    { key: 'delete', header: <span className="sr-only">{t('admin.users.delete')}</span>, align: 'right', cell: deleteButton },
   ]
 
   const card = (u: AdminUser) => (
@@ -272,6 +272,7 @@ export default function AdminUsers() {
         }
         sorts={[{ value: 'name', label: t('admin.users.name'), asc: t('list.az'), desc: t('list.za') }]}
         orderFixed
+        dense
         columns={columns}
         card={card}
         rowKey={(u) => u.id}

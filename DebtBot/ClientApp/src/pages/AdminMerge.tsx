@@ -215,7 +215,7 @@ function UserBox({ user, kind }: { user: AdminUser; kind: 'keep' | 'merge' }) {
     <div className={clsx('min-w-0 rounded-[10px] border px-4 py-3', kind === 'keep' ? 'border-accent bg-accent-faint' : 'border-dashed border-line')}>
       <div className={clsx('text-[0.7rem] font-bold tracking-wide uppercase', kind === 'keep' ? 'text-accent' : 'muted')}>{kind === 'keep' ? `✓ ${t('admin.merge.keep')}` : `✕ ${t('admin.merge.mergeAway')}`}</div>
       <div className="mb-1.5 truncate text-[1.05rem] font-bold">{user.displayName}</div>
-      <dl className="grid grid-cols-[6.5rem_1fr] gap-x-3 gap-y-0.5 text-[0.85rem]">
+      <dl className="grid grid-cols-[4.75rem_1fr] gap-x-3 md:grid-cols-[6.5rem_1fr] gap-y-0.5 text-[0.85rem]">
         {rows.map(([k, v]) => (
           <div key={k} className="contents">
             <dt className="muted">{k}</dt>

@@ -30,7 +30,7 @@ You sign in with a login and password (`PUT api/v1/auth/password` sets them for 
 | `npm run build` | i18n check, typecheck (`tsc -b`) and production build into `../wwwroot` |
 | `npm run lint` | oxlint and the i18n check |
 | `npm run lint:i18n` | `scripts/check-locales.mjs`: every `t('key')` exists, and all locales have the same keys |
-| `npm test` | vitest: the API client's refresh logic, URL list state and list specs, money and bill helpers, the New bill form (request mapping, checks, preview), exchange maths (rates, rounding, sides), contact search and subscription grouping, and the profile form checks |
+| `npm test` | vitest: the API client's refresh logic, URL list state and list specs, money and bill helpers, the New bill form (request mapping, checks, preview), exchange maths (rates, rounding, sides), contact search and subscription grouping, the profile form checks, and the admin list specs, Merge users URL state and admin Login & password checks |
 
 ## Conventions
 - **Strings:** every user-facing string goes through i18next. They live in `src/locales/en/<group>.json`, and each file is a key group (`auth.json` → `t('auth.signIn')`). English is the only language for now.
@@ -43,4 +43,5 @@ You sign in with a login and password (`PUT api/v1/auth/password` sets them for 
 - **Contacts and subscriptions:** `GET UserContacts/Own` returns every contact, so search, "Recently added", the subscription groups and the 🔔 badge are worked out in the browser (`lib/contacts.ts`). Every contact or subscription change refetches that one query (`api/people.ts`).
 - **Rich strings:** a string with bold names or a link uses `<Trans i18nKey="…" components={{ b: <strong /> }} />`; the i18n check knows `i18nKey`.
 - **Sidebar sub-sections:** a page's own entries go below the divider. Register them in `src/components/subnav/index.tsx`.
+- **Admin (T8):** `api/admin.ts` holds the admin queries; they're off for non-admins. People pickers over **all users** (not your contacts) use `components/admin/UserSearch.tsx` (`UserSearch`, `FilterUser`), which asks `GET Users?search=`. A merge refetches every query, since it moves bills, debts and contacts. `ListView` has `rowReplace` (an inline confirmation across the row), `orderFixed` (one fixed order) and `dense` (narrower cells).
 - **API:** call `api<T>()` from `src/api/client.ts` and put the shapes in `src/api/types.ts`. The access token stays in memory. On a 401 the client refreshes once and retries. Refreshes are single-flight within a tab and take turns across tabs (Web Locks), because the backend revokes a session when a refresh token is reused.

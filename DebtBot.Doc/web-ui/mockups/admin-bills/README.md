@@ -23,3 +23,11 @@ Admin (as T4) with All bills highlighted; Merge users carries its badge.
 ## API and backend needs (T8)
 - `GET Bills/All` (admin) takes the same `[FromQuery] BillListQuery` as `GET Bills` (`search`, `withUserId` = a participant, `currencyCode`, `status`, `dateFrom`, `dateTo`, `sortBy`, `sortOrder`, paging) **plus `creatorId?`**, without `createdByMe`, and returns `PagingResult<BillListItem>` with a new `participantCount` (today it returns full `Bill`s with paging only).
 - Draft exchanges: two linked drafts show as one row, as on Bills (by `exchangeBillId`).
+
+## Built (T8)
+- `pages/AdminBills.tsx`, `adminBillsSpec`/`adminBillsQuery` in `lib/lists.ts`, `GET Bills/All` with `AdminBillListQuery` (backend).
+- Created by and Person are `FilterUser` (type-to-search over all users); a chosen user is named from `GET Users/{id}`.
+- Currency is the same 3-letter box as Bills (`FilterCurrency`), with suggestions from the bills on the page.
+- The subtitle summarises status, person, currency and creator ("Created by Boris Ivanov."); search and dates alone keep the plain subtitle.
+- People is `participantCount` (the bill's participants list); for an exchange pair, the larger of the two.
+- An exchange pair shows as one row only when both bills are on the same page, as on Bills.
