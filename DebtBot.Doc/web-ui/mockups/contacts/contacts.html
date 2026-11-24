@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DebtBot Contacts mockup</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .name { font-weight: 600; }
+  .small { font-size: .8rem; }
+  .addrow { display: flex; gap: .5rem; align-items: center; }
+  .addrow .input { max-width: 22rem; }
+  .phone .addrow .input { max-width: none; }
+  .hint { margin-top: .5rem; font-size: .8rem; }
+  .searchrow { display: flex; align-items: center; gap: .75rem; padding: .75rem 1rem; border-bottom: 1px solid var(--border); }
+  .searchrow .input { max-width: 22rem; }
+  .phone .searchrow .input { max-width: none; }
+  .acts { display: inline-flex; gap: .25rem; justify-content: flex-end; }
+  .confirm td { background: color-mix(in srgb, var(--danger) 6%, transparent); }
+  .confirm-box { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; }
+  .sec-title { padding: .75rem 1rem; border-bottom: 1px solid var(--border); display: flex; align-items: baseline; gap: .5rem; }
+  .sec-title .muted { font-size: .8rem; }
+  .prow { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; padding: .75rem 1rem; border-top: 1px solid var(--border); }
+  .prow:first-of-type { border-top: 0; }
+  .prow .who { flex: 1; min-width: 10rem; }
+  .none { padding: .9rem 1rem; font-size: .875rem; }
+  .mb { margin-bottom: 1rem; }
+</style>
+</head>
+<body>
+<script>
+  // GET UserContacts/Own, ordered by name. my = mySubscription (you get their bills), their = theirSubscription.
+  const C = [
+    { id: 'b', name: 'Boris', own: 'Boris Ivanov', tg: '@boris_iv', bot: true, my: 'Confirmed', their: 'Confirmed', added: '3 Oct' },
+    { id: 'c', name: 'Clara', own: 'Clara Müller', tg: '@clara_m', bot: true, my: 'Pending', their: 'None', added: '12 Oct' },
+    { id: 'd', name: 'Dmitry', own: 'Dmitry K.', tg: '@dmitry_k', bot: true, my: 'None', their: 'Pending', added: '1 Nov' },
+    { id: 'l', name: 'Lena', own: 'Lena', tg: '@lena_s', bot: true, my: 'None', their: 'None', added: '20 Nov' },
+    { id: 'm', name: 'Mum', own: '@olga_petrova', tg: '@olga_petrova', bot: false, my: 'None', their: 'None', added: '28 Oct' },
+  ]
+  const tgCell = (c) => `<span class="num">${c.tg}</span>${c.bot ? '' : ` <span class="pill pill-muted" title="A placeholder: they were mentioned on a bill but never started the bot">never started the bot</span>`}`
+  const notif = (c) => c.my === 'Confirmed' ? '<span class="pill pill-success">🔔 You get their bills</span>'
+    : c.my === 'Pending' ? '<span class="pill pill-muted">⏳ Asked, waiting</span>'
+    : c.bot ? '<a class="btn btn-secondary btn-sm">🔔 Ask for their bills</a>'
+    : '<span class="muted small">—</span>'
+  const acts = () => `<span class="acts"><a class="btn btn-ghost btn-sm" title="Rename">✏️ Rename</a><a class="btn btn-ghost btn-sm" title="Remove">🗑 Remove</a></span>`
+  const showOwn = (c) => c.own !== c.name && c.own !== c.tg
+  const ownName = (c) => showOwn(c) ? `<div class="muted small">${c.own}</div>` : ''
+
+  function addCard(state) {
+    const v = state === 'added' ? '' : state === 'add-error' ? '@ab' : ''
+    const msg = state === 'added'
+      ? `<div class="alert-info" style="margin-top:.75rem">✅ <span><b>@grandpa_vlad</b> added. They haven't started the bot yet, so they're a placeholder for now: you can put them on bills, and they'll see everything once they start the bot.</span></div>`
+      : state === 'add-error'
+      ? `<div class="alert-danger" style="margin-top:.75rem">That isn't a Telegram username: use 5–32 letters, digits or _.</div>` : ''
+    return `<div class="card mb"><div class="card-body">
+      <label class="label">Add by Telegram username</label>
+      <div class="addrow"><input class="input${state === 'add-error' ? ' focus' : ''}" placeholder="@username" value="${v}"><a class="btn btn-primary">＋ Add</a></div>
+      ${msg || '<div class="hint muted">Works for people who haven\'t started the bot yet, too.</div>'}
+    </div></div>`
+  }
+
+  function contactsPage(state, phone) {
+    const head = `<div class="title-row"><h1>Contacts</h1></div><p class="sub muted">People you share bills with. The names here are yours: only you see them.</p>`
+    if (state === 'empty') return head + addCard(state) + `<div class="card empty"><div class="big">👥</div><p style="font-weight:600">No contacts yet</p>
+      <p class="muted" style="font-size:.875rem">Add someone by their Telegram username above. People you share a bill with are added automatically.</p></div>`
+    const req = `<div class="alert-info mb">🔔 <span style="flex:1"><b>Dmitry</b> wants notifications about your bills.</span><a class="btn btn-primary btn-sm">Review</a></div>`
+    const q = state === 'search' ? 'bo' : ''
+    let rows = q ? C.filter((c) => (c.name + c.own + c.tg).toLowerCase().includes(q)) : C
+    const added = state === 'added' ? [{ id: 'g', name: '@grandpa_vlad', own: '@grandpa_vlad', tg: '@grandpa_vlad', bot: false, my: 'None', their: 'None', hl: true }] : []
+    rows = [...rows, ...added].sort((a, b) => a.name.replace('@', '').localeCompare(b.name.replace('@', '')))
+    const search = `<div class="searchrow"><input class="input${q ? ' on' : ''}" placeholder="🔍 Search by name or @username" value="${q}"><span class="spacer"></span><span class="muted small"${phone ? ' style="display:none"' : ''}>${q ? `${rows.length} of ${C.length}` : `${rows.length} contacts`}</span></div>`
+    const nameCell = (c) => state === 'rename' && c.id === 'm'
+      ? `<div class="row" style="flex-wrap:nowrap"><input class="input focus" value="Mama" style="max-width:12rem"><a class="btn btn-primary btn-sm">Save</a><a class="btn btn-ghost btn-sm">Cancel</a></div>`
+      : `<div class="name">${c.name}</div>${ownName(c)}`
+    const confirm = (c) => `<div class="confirm-box"><span class="neg" style="flex:1;min-width:12rem">Remove <b>${c.name}</b> from your contacts? Bills and debts with them stay; sharing a new bill adds them back.</span><a class="btn btn-danger btn-sm">Remove</a><a class="btn btn-ghost btn-sm">Keep</a></div>`
+    let body
+    if (phone) {
+      body = rows.map((c) => state === 'remove' && c.id === 'c'
+        ? `<div class="item" style="background:color-mix(in srgb, var(--danger) 6%, transparent)">${confirm(c)}</div>`
+        : `<div class="item${c.hl ? ' hl' : ''}"><div class="l1">${state === 'rename' && c.id === 'm' ? nameCell(c) : `<span class="name" style="flex:1;min-width:0">${c.name}</span>${acts().replace(/ Rename| Remove/g, '')}`}</div>
+          <div class="l2 muted">${showOwn(c) ? c.own + ' · ' : ''}<span class="num">${c.tg}</span></div>
+          <div class="l2">${c.bot ? notif(c) : '<span class="pill pill-muted">never started the bot</span>'}</div></div>`).join('')
+      body = `<div class="card">${search}${rows.length ? body : noMatch}</div>`
+    } else {
+      body = `<div class="card">${search}${rows.length ? `<table class="tbl"><thead><tr><th>Name <span class="sorted">↑</span></th><th>Telegram</th><th>Notifications</th><th></th></tr></thead><tbody>
+        ${rows.map((c) => state === 'remove' && c.id === 'c'
+          ? `<tr class="confirm"><td colspan="4">${confirm(c)}</td></tr>`
+          : `<tr${c.hl ? ' class="hl"' : ''}><td>${nameCell(c)}</td><td>${tgCell(c)}</td><td>${notif(c)}</td><td class="r">${state === 'rename' && c.id === 'm' ? '' : acts()}</td></tr>`).join('')}
+        </tbody></table>` : noMatch}</div>`
+    }
+    return head + (state === 'search' ? '' : req) + addCard(state) + body
+  }
+  const noMatch = `<div class="empty"><div class="big">🔍</div><p style="font-weight:600">No contacts match</p><p class="muted" style="font-size:.875rem">Try part of a name or a @username.</p></div>`
+
+  function requestsPage(state, phone) {
+    const empty = state === 'requests-empty'
+    const head = `<div class="title-row"><h1>Notifications about bills</h1></div>
+      <p class="sub muted">The bot can tell someone in Telegram when you're on a new bill, and tell you about theirs. Both sides have to agree.</p>`
+    const row = (who, sub, right) => `<div class="prow"><div class="who"><div class="name">${who}</div><div class="muted small">${sub}</div></div><div class="row">${right}</div></div>`
+    const sec = (t, s, inner) => `<div class="card mb"><div class="sec-title"><h2>${t}</h2><span class="muted">${s}</span></div>${inner}</div>`
+    if (empty) return head
+      + sec('Asking for your bills', 'confirm or decline', '<div class="none muted">No requests.</div>')
+      + sec('Get your bills', 'people you confirmed', '<div class="none muted">Nobody yet.</div>')
+      + sec('Your subscriptions', 'whose bills you get', '<div class="none muted">None. Use 🔔 Ask for their bills on Contacts.</div>')
+    return head
+      + sec('Asking for your bills', 'confirm or decline',
+        row('Dmitry', '@dmitry_k · asked to be told about your bills', '<a class="btn btn-primary btn-sm">✓ Confirm</a><a class="btn btn-secondary btn-sm">Decline</a>'))
+      + sec('Get your bills', 'people you confirmed',
+        row('Boris', '@boris_iv', '<span class="pill pill-success">Confirmed</span><a class="btn btn-ghost btn-sm">Stop</a>'))
+      + sec('Your subscriptions', 'whose bills you get',
+        row('Boris', '@boris_iv', '<span class="pill pill-success">🔔 You get their bills</span><a class="btn btn-ghost btn-sm">Stop</a>')
+        + row('Clara', '@clara_m', '<span class="pill pill-muted">⏳ Waiting for Clara</span><a class="btn btn-ghost btn-sm">Withdraw</a>'))
+  }
+
+  window.MOCK = {
+    page: 'contacts',
+    ctxFor: (s) => [
+      'S:Requests',
+      ...(s === 'requests-empty' || s === 'empty' ? [{ i: '✅', t: 'No requests', s: 'Nobody is waiting' }]
+        : [{ i: '🔔', t: 'Dmitry', s: 'wants your bills', a: s.startsWith('requests') }]),
+      'S:Recently added',
+      ...(s === 'empty' ? [{ i: '👤', t: 'Nobody yet', s: 'Add someone by @username' }] : [
+        ...(s === 'added' ? [{ i: '👤', t: '@grandpa_vlad', s: 'today · never started the bot' }] : []),
+        { i: '👤', t: 'Lena', s: '@lena_s · 20 Nov' },
+        { i: '👤', t: 'Dmitry', s: '@dmitry_k · 1 Nov' },
+        { i: '👤', t: 'Mum', s: '@olga_petrova · 28 Oct' }]),
+      'A:All contacts'],
+    render(state, phone) { return state.startsWith('requests') ? requestsPage(state, phone) : contactsPage(state, phone) },
+  }
+</script>
+<script src="../common/shell.js"></script>
+</body>
+</html>
