@@ -111,11 +111,12 @@ function Group({ id, title, hint, empty, people, children }: { id: string; title
         <ul>
           {people.map((c) => (
             <li key={c.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-line px-4 py-3 last:border-b-0">
-              <span className="min-w-0 flex-1">
+              {/* Phones (mockups/subscriptions): the name gets its own line, the pill and buttons go under it. */}
+              <span className="min-w-0 flex-1 max-md:basis-full">
                 <span className="block font-semibold break-words">{c.displayName}</span>
                 {c.telegramUserName && <span className="block text-[0.8rem] muted">{handle(c.telegramUserName)}</span>}
               </span>
-              <span className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-2">{children(c)}</span>
+              <span className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-2 max-md:ml-0 max-md:justify-start">{children(c)}</span>
             </li>
           ))}
         </ul>
