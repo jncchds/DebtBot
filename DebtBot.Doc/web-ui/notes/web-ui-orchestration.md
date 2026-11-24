@@ -55,6 +55,7 @@ On 2026-11-23 the user set up how the DebtBot API + auth + web UI work is run.
 - 2026-11-23: T4 merged into web-ui (81c26ea). ClientApp: React 19, Vite 8, react-router 8, Tailwind 4, i18next; refresh is single-flight and serialized across tabs with navigator.locks (falls back without it). 154 .NET tests and 8 vitest pass; 26/26 runtime checks. Open: no code splitting (365 kB), live Telegram widget unchecked.
 - 2026-11-23: T5 (Debts, Bills, Bill detail) started as worker "DebtBot T5 debts bills", id 0c8b0b8f.
 - 2026-11-23: T5 reported done (159 .NET tests, 34 vitest, 17/17 runtime) but the user gave it more changes after the report (exchange button, participants autocomplete), so the merge is on hold until its follow-up report. Note for T7: Telegram usernames are stored as "@name"; check that by-telegram accepts a name without the @.
+- 2026-11-24: T5 merged into web-ui (bd35fa0) after the round-4 follow-up (no Exchange button on Debts, PeoplePicker, FilterPerson). 159 .NET tests and 36 vitest pass, 18/18 runtime checks.
 
 **Why:** the user wants a clean context per task, control over how each view looks, and a durable record of the work.
 **How to apply:** follow this for every task in the series. Related: [[web-ui-palette]].
