@@ -87,7 +87,9 @@ export default function AdminUsers() {
   const botPill = (u: AdminUser) => (u.telegramBotEnabled ? <span className="pill-success">{t('admin.users.started')}</span> : <span className="pill-muted">{t('admin.users.placeholder')}</span>)
 
   const deleteButton = (u: AdminUser) =>
+    // Admins can't be deleted (the API refuses): make them Regular first.
     isPlaceholder(u) &&
+    u.role !== 'Admin' &&
     !isMe(u) && (
       <button type="button" className="rounded px-1.5 py-0.5 text-danger hover:bg-danger/10" title={t('admin.users.delete')} aria-label={t('admin.users.deleteNamed', { name: u.displayName })} onClick={() => setConfirm({ id: u.id, kind: 'delete' })}>
         🗑

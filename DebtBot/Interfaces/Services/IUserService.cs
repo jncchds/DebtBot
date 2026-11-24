@@ -17,7 +17,9 @@ public enum DeleteUserResult
     Deleted,
     NotFound,
     /// <summary>The user still has bills, ledger records or spendings, or is in someone else's contacts; merge them into another user instead.</summary>
-    InUse
+    InUse,
+    /// <summary>The user has the Admin role: make them Regular first.</summary>
+    IsAdmin
 }
 
 public interface IUserService

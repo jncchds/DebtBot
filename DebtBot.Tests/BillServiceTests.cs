@@ -114,7 +114,7 @@ public sealed class BillServiceTests : IDisposable
         var wine = Assert.Single(result.Value.Lines, l => l.ItemDescription == "Wine");
         Assert.Equal(3m, wine.Participants.Single(p => p.User.Id == _anna.Id).Part);
         Assert.Equal(1m, wine.Participants.Single(p => p.User.Id == _boris.Id).Part);
-        await _f.Publish.Received().Publish(Arg.Is<EnsureBillParticipant>(m => m.BillId == id && m.UserId == _boris.Id), Arg.Any<CancellationToken>());
+        Assert.True(_f.Db.BillParticipants.Any(p => p.BillId == id && p.UserId == _boris.Id));
     }
 
     [Fact]

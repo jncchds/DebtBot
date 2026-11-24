@@ -62,10 +62,7 @@ group by CreditorUserId, DebtorUserId, CurrencyCode");
         Assert.Equal(BillActionStatus.Ok, result.Status);
         _f.Clear();
 
-        // The EnsureBillParticipant consumer isn't running here: add the participants it would.
-        foreach (var userId in people.Select(p => p.Id).Append(creator.Id).Distinct())
-            _f.Db.BillParticipants.Add(new BillParticipant { BillId = result.Value, UserId = userId });
-
+        // BillService.Create writes the participants itself (creator, line people and payers).
         var bill = _f.Db.Bills.Single(b => b.Id == result.Value);
         bill.Status = status;
         _f.Db.SaveChanges();
