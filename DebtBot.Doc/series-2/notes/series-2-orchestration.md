@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: 645e1162-a1e5-44ec-8c96-df03ffb46bbe
-  modified: 2026-11-24T18:45:38.117Z
+  modified: 2026-11-24T19:31:14.178Z
 ---
 
 Series 2 of DebtBot, started 2026-11-24 after the web-ui series (PR #34) was merged to main. Run like [[web-ui-orchestration]] with the `orchestrate-tasks` skill.
@@ -46,6 +46,11 @@ Series 2 of DebtBot, started 2026-11-24 after the web-ui series (PR #34) was mer
   - 231 .NET tests and 130 vitest pass; t2check 12/12; e2e flaky on load (bus not ready before seeding, Admin 390 "Loading…", finalize 15 s timeout), handed to T3.
   - Worker a771b97d stopped and cleaned up.
 - 2026-11-24: T3 (e2e, polish, docs, PR description) started as worker "DebtBot S2 T3 e2e", id 4fbe496d. It doesn't mark the PR ready.
+- 2026-11-24: T3 merged into series-2:
+  - e2e: waits for the bus, polls finalize; likely flake cause was cdp.mjs Chrome profiles filling the 2.7 GB /tmp tmpfs, now removed on close. Runs 3–5 in a row passed API 75/75 and browser 91/91; upgrade from main 25/25.
+  - finalizeBlockers removed. 231 .NET tests and 129 vitest pass.
+  - The PR #35 body is set from `pr-description.md` via gh api PATCH. Worker 4fbe496d stopped and cleaned up.
+  - **Series complete.** The PR stays a draft until the user says to mark it ready. The receipt-parse.md questions are still open with the user.
 
 **Why:** the user wants a clean context per task, mockup approval per view, and a durable record.
 **How to apply:** follow this and the skill for every series-2 task. Related: [[web-ui-palette]].
