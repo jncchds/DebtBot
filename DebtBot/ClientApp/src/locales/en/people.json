@@ -1,0 +1,9 @@
+{
+  "add": "Add a person: type a name or @username…",
+  "locked": "On a line or a payment",
+  "more": "{{count}} more: keep typing",
+  "noMatch": "No contact matches",
+  "onBill": "People on this bill",
+  "onBillHint": "Lines and payments offer only these people.",
+  "remove": "Remove {{name}}"
+}

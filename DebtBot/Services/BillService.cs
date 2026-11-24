@@ -197,6 +197,11 @@ public class BillService : IBillService
         return _billRepository.GetForUser(userId, filterByUserId, filterByCurrencyCode, pageNumber, countPerPage, status);
     }
 
+    public PagingResult<BillListModel> GetForUser(Guid userId, BillListQuery filter)
+    {
+        return _billRepository.GetForUser(userId, filter);
+    }
+
     public bool CanChange(Guid userId, bool isAdmin, BillModel bill)
     {
         return isAdmin || bill.Creator?.Id == userId;

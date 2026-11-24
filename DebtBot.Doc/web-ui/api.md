@@ -12,6 +12,7 @@ This covers everything the UI tasks (T4–T8) call. Sign-in endpoints (`api/v1/a
 - **Access rules:**
   - **See a bill** (`HasAccess`): you're its creator, a payer or a line participant — or an admin.
   - **Change a bill** (lines, payments, finalize, cancel, exchange accept): creator or admin. Someone who can't see the bill gets 404; a participant who isn't the creator gets 403.
+- **Sorting (since T5):** paged lists take `sortBy=<Field>` and `sortOrder=Asc|Desc` next to their filters; see `mockups/shell/README.md`, "List views".
 - **Paging:** `?pageNumber=0&countPerPage=N` (page numbers start at 0; without `countPerPage` everything comes in one page). Paged responses are a `PagingResult<T>`:
 
 ```ts
@@ -65,13 +66,13 @@ interface BillListItem {               // GET Bills
 interface Debt { creditorUser: UserDisplay; debtorUser: UserDisplay; amount: number; currencyCode: string }
 ```
 
-`Debt` is seen from the creditor's side: `amount > 0` means `debtorUser` owes `creditorUser`; `amount < 0` means `creditorUser` owes `debtorUser` `-amount`. In `Debts/Own`, `creditorUser` is you (or a user whose notifications you subscribed to, confirmed), and `debtorUser.displayName` is the name in the creditor's contact list.
+`Debt` is seen from the creditor's side: `amount > 0` means `debtorUser` owes `creditorUser`; `amount < 0` means `creditorUser` owes `debtorUser` `-amount`. In `Debts/Own`, `creditorUser` is always you (since T5: no subscribed users' balances, and no settled zero balances), and `debtorUser.displayName` is the name in your contact list. The bot's `/Debts` still includes subscriptions.
 
 ## Bills (`/Bills`)
 
 | Endpoint | Access | Request | Response |
 |---|---|---|---|
-| `GET Bills` | any user | query: `withUserId?`, `currencyCode?` (payment currency, any case), `status?`, paging | `PagingResult<BillListItem>` — bills you take part in, newest first |
+| `GET Bills` | any user | query: `withUserId?`, `currencyCode?` (payment currency, any case), `status?`, `createdByMe?`, `dateFrom?`, `dateTo?` (`yyyy-mm-dd`, whole days, UTC), `search?` (description contains, ignoring case), `sortBy?` (`Date` default, `Description`, `Total`, `Status`), `sortOrder?` (`Asc`, `Desc` default), paging | `PagingResult<BillListItem>` — bills you take part in. `withUserId` (since T5) matches a ledger record between you, or a not yet finalized bill you're both in. |
 | `GET Bills/Own` | any user | paging | `PagingResult<Bill>` — bills you created |
 | `GET Bills/All` | **Admin** | paging | `PagingResult<Bill>` — all bills |
 | `GET Bills/{id}` | see the bill | – | `Bill`, or 404 |
@@ -136,7 +137,7 @@ interface Exchange { forwardBillId: string; backwardBillId: string }
 
 | Endpoint | Access | Response |
 |---|---|---|
-| `GET Debts/Own` | any user, paging | `PagingResult<Debt>` (it used to return only the items) |
+| `GET Debts/Own` | any user; query: `withUserId?`, `currencyCode?`, `direction?` (`All`, `OwedToMe`, `IOwe`), `sortBy?` (`Person` default, `Amount` signed, `Currency`), `sortOrder?` (`Asc` default, `Desc`), paging | `PagingResult<Debt>`: your own non-zero balances (since T5) |
 | `GET Debts` | **Admin**, paging | `PagingResult<Debt>`, all |
 | `GET Debts/{userId}` | **Admin**, paging | `PagingResult<Debt>` for that user |
 

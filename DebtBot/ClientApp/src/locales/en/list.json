@@ -1,0 +1,18 @@
+{
+  "all": "All",
+  "anyCurrency": "Any currency",
+  "az": "A–Z",
+  "changeOrder": "Change to {{order}}",
+  "clearFilters": "Clear filters",
+  "everyone": "Everyone",
+  "filters": "Filters",
+  "firstPage": "Go to the first page",
+  "next": "Next page",
+  "pageOf": "Page {{page}} of {{last}}",
+  "pages": "Pages",
+  "pastEnd": "This page is past the end of the list.",
+  "previous": "Previous page",
+  "range": "{{from}}–{{to}} of {{total}}",
+  "sortBy": "Sort by",
+  "za": "Z–A"
+}

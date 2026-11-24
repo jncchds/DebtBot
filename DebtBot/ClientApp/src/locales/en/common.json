@@ -1,6 +1,9 @@
 {
+  "cancel": "Cancel",
   "comingSoon": "Coming soon",
   "comingSoonHint": "This page is part of the next step of the web UI.",
   "error": "Error",
-  "loading": "Loading…"
+  "loading": "Loading…",
+  "you": "you",
+  "youNamed": "{{name}} (you)"
 }

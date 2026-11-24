@@ -13,6 +13,7 @@ public interface IBillService
     Task<BillModel?> GetAsync(Guid id, CancellationToken cancellationToken);
     PagingResult<BillModel> Get(int pageNumber = 0, int? countPerPage = null);
     PagingResult<BillListModel> GetForUser(Guid userId, Guid? filterByUserId, string? filterByCurrencyCode, int pageNumber = 0, int? countPerPage = null, ProcessingState? status = null);
+    PagingResult<BillListModel> GetForUser(Guid userId, BillListQuery filter);
     Guid Add(BillParserModel parsedBill, UserSearchModel creator);
     Task<bool> FinalizeAsync(Guid id, CancellationToken cancelationToken, bool forceSponsor = false);
     Task CancelAsync(Guid id, CancellationToken cancelationToken);

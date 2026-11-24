@@ -49,38 +49,89 @@ public class BillRepository : IBillRepository
 
     public PagingResult<BillListModel> GetForUser(Guid userId, Guid? filterByUserId, string? filterByCurrencyCode, int pageNumber = 0, int? countPerPage = null, ProcessingState? status = null)
     {
+        return GetForUser(userId, new BillListQuery
+        {
+            WithUserId = filterByUserId,
+            CurrencyCode = filterByCurrencyCode,
+            Status = status,
+            PageNumber = pageNumber,
+            CountPerPage = countPerPage,
+            WithIncludesUnfinalized = false,
+        });
+    }
+
+    public PagingResult<BillListModel> GetForUser(Guid userId, BillListQuery filter)
+    {
         var query = _debtContext
             .Bills
-            .Include(t => t.LedgerRecords)
-            .ThenInclude(t => t.CreditorUser)
-            .Include(t => t.LedgerRecords)
-            .ThenInclude(t => t.DebtorUser)
-            .OrderByDescending(q => q.Date)
             .Where(b => b
                 .BillParticipants
                 .Any(p => p.UserId == userId));
 
-        if (filterByCurrencyCode != null)
+        if (filter.CurrencyCode != null)
         {
-            query = query.Where(b => b.PaymentCurrencyCode == filterByCurrencyCode);
+            query = query.Where(b => b.PaymentCurrencyCode == filter.CurrencyCode);
         }
 
-        if (status != null)
+        if (filter.Status != null)
         {
-            query = query.Where(b => b.Status == status);
+            query = query.Where(b => b.Status == filter.Status);
         }
 
-        if (filterByUserId != null)
+        if (filter.CreatedByMe)
         {
-            query = query.Where(b => b.LedgerRecords
-                .Any(q => (q.CreditorUserId == filterByUserId && q.DebtorUserId == userId) 
-                    || (q.DebtorUserId == filterByUserId && q.CreditorUserId == userId)));
+            query = query.Where(b => b.CreatorId == userId);
         }
 
-        var bills = query.ProjectTo<BillListModel>(_mapper.ConfigurationProvider)
-            .ToPagingResult(pageNumber, countPerPage);
+        if (filter.DateFrom != null)
+        {
+            var from = filter.DateFrom.Value;
+            query = query.Where(b => b.Date >= from);
+        }
 
-        return bills;
+        if (filter.DateTo != null)
+        {
+            var before = filter.DateTo.Value.Date.AddDays(1);
+            query = query.Where(b => b.Date < before);
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.Search))
+        {
+            var search = filter.Search.Trim().ToLower();
+            query = query.Where(b => b.Description.ToLower().Contains(search));
+        }
+
+        if (filter.WithUserId != null)
+        {
+            var withUserId = filter.WithUserId.Value;
+            query = filter.WithIncludesUnfinalized
+                ? query.Where(b =>
+                    b.LedgerRecords.Any(q => (q.CreditorUserId == withUserId && q.DebtorUserId == userId)
+                        || (q.DebtorUserId == withUserId && q.CreditorUserId == userId))
+                    || (!b.LedgerRecords.Any() && b.BillParticipants.Any(p => p.UserId == withUserId)))
+                : query.Where(b =>
+                    b.LedgerRecords.Any(q => (q.CreditorUserId == withUserId && q.DebtorUserId == userId)
+                        || (q.DebtorUserId == withUserId && q.CreditorUserId == userId)));
+        }
+
+        var desc = filter.SortOrder == SortOrder.Desc;
+        // A unique last key keeps pages stable when the sort field has equal values.
+        var sorted = filter.SortBy switch
+        {
+            BillSortField.Description => (desc ? query.OrderByDescending(b => b.Description) : query.OrderBy(b => b.Description))
+                .ThenByDescending(b => b.Date),
+            // Cast for SQLite (tests), which can't order by decimal; Postgres orders the same.
+            BillSortField.Total => (desc ? query.OrderByDescending(b => (double)b.TotalWithTips) : query.OrderBy(b => (double)b.TotalWithTips))
+                .ThenByDescending(b => b.Date),
+            BillSortField.Status => (desc ? query.OrderByDescending(b => b.Status) : query.OrderBy(b => b.Status))
+                .ThenByDescending(b => b.Date),
+            _ => desc ? query.OrderByDescending(b => b.Date) : query.OrderBy(b => b.Date),
+        };
+
+        return sorted
+            .ThenBy(b => b.Id)
+            .ProjectTo<BillListModel>(_mapper.ConfigurationProvider)
+            .ToPagingResult(filter.PageNumber, filter.CountPerPage);
     }
 
     public PagingResult<BillModel> GetCreatedByUser(Guid userId, int pageNumber = 0, int? countPerPage = null)
