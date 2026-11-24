@@ -65,6 +65,8 @@ On 2026-11-23 the user set up how the DebtBot API + auth + web UI work is run.
 - 2026-11-24: the user approved "Following" (spec `mockups/following/README.md`, merged into web-ui 99d28dc), which reverses T5's "no following": Debts, Bills and Spendings get `?of=<userId>` with a "Whose" dropdown, read-only, for people you have a confirmed subscription to, and bill read access extends to those subscribers. It runs as its own task, T7b, after T7.
 - 2026-11-24: the mockup session finished: all T7, T7b and T8 views are approved and merged into web-ui (0904ff7), and the report is `reports/mockups-78.md` (backend needs split into T7, T7b and T8, plus the additions for the shell README). The T8 brief builds from `mockups/admin-users`, `admin-merge` and `admin-bills` with no mockup round.
 - 2026-11-24: T7 hit the 5-hour usage limit mid-task; I resumed it with a SendMessage after the reset. T7 merged into web-ui (9ea1b8f): Spendings filters and summary, Contact.addedAt (null for old rows), subscription/cancel, and 4 pages. 174 .NET tests, 77 vitest, 15/15 runtime.
+- 2026-11-24: T7b (Following) started as worker "DebtBot T7b following", id 8393fdd8.
+- 2026-11-24: T7b merged into web-ui (7b15eff): ofUserId on Debts/Own, Bills and Spendings (confirmed subscription in your direction, else 403), and IBillService.CanRead for GET Bills/{id} and lines only. 181 .NET tests, 87 vitest. Open: the bill page's "← Bills" goes to your own /bills (for T9).
 
 **Why:** the user wants a clean context per task, control over how each view looks, and a durable record of the work.
 **How to apply:** follow this for every task in the series. Related: [[web-ui-palette]].
