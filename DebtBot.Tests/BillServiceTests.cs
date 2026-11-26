@@ -203,7 +203,16 @@ public sealed class BillServiceTests : IDisposable
         bill.Status = ProcessingState.Cancelled;
         _f.Db.SaveChanges();
 
-        Assert.Equal(BillActionStatus.Invalid, (await _f.BillService.CancelAsync(id, _admin.Id, true, default)).Status);
+        Assert.Equal(BillActionStatus.Invalid, (await _f.BillService.CancelAsync(id, _anna.Id, false, default)).Status);
+    }
+
+    [Fact]
+    public async Task Cancel_AdminWhoIsNotTheCreatorIsForbidden()
+    {
+        var id = CreateDraft();
+
+        Assert.Equal(BillActionStatus.Forbidden, (await _f.BillService.CancelAsync(id, _admin.Id, true, default)).Status);
+        await _f.Publish.DidNotReceive().Publish(Arg.Any<BillCanceled>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

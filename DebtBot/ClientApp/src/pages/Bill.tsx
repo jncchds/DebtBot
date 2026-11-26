@@ -8,7 +8,7 @@ import { useAuth } from '../auth/AuthContext'
 import { StatusPill } from '../components/bill/bits'
 import { BillForm } from '../components/bill/BillForm'
 import { ErrorBox, Loading, Spinner } from '../components/ui'
-import { canCancel, canChange, firstLine, isEqualSplit, peopleCount, tipsUnits } from '../lib/bills'
+import { canCancel, canChange, firstLine, isCreator, isEqualSplit, peopleCount, tipsUnits } from '../lib/bills'
 import { checkNewBill, draftChanged, draftKey, formEditor, fromBill, loadDraft, store, toBillCreation, type FormEditor, type NewBillForm, type StoredDraft } from '../lib/newBill'
 import { useFormat } from '../lib/useFormat'
 import { usePeople, useNameOf, type Person } from '../lib/usePeople'
@@ -97,7 +97,7 @@ export default function Bill({ mode }: { mode?: 'add-line' | 'add-payment' | 'ed
 
   const actions: ReactNode[] = []
   // A draft you can change is the New bill form (series-2 mockups/creator-leave): Finalize is in its actions.
-  if (mine && !processing) {
+  if (isCreator(bill, user?.id) && !processing) {
     if (canCancel(bill.status))
       actions.push(
         <button key="cancel" type="button" className="btn-danger" disabled={action.isPending} onClick={() => setConfirmCancel(true)}>
@@ -416,7 +416,7 @@ function DraftForm({
             </span>
           )}
           {!busy && check.canSave && check.finalizeBlockers.length > 0 && <span className="text-[0.8rem] muted">{t(check.finalizeBlockers[0])}</span>}
-          <div className="flex flex-wrap gap-2 max-md:w-full max-md:[&>*]:flex-1">
+          <div className="flex flex-wrap gap-2">
             <button type="button" className="btn-secondary" disabled={busy || !changed} onClick={() => save(false)}>
               {t('newBill.save')}
             </button>

@@ -11,6 +11,7 @@ namespace DebtBot.Telegram.Commands;
 public class CancelBillCommand : ITelegramCommand, ITelegramCallbackQuery
 {
     public const string CommandString = "/CancelBill";
+    public const string NotAllowedText = "Only the bill's creator can cancel it";
     public string CommandName => CommandString;
 
     private readonly IBillService _billService;
@@ -33,9 +34,9 @@ public class CancelBillCommand : ITelegramCommand, ITelegramCallbackQuery
             return "bill guid not detected";
         }
 
-        if (!await _billService.CanTelegramUserChangeAsync(billId, query.From.Id, cancellationToken))
+        if (!await _billService.CanTelegramUserCancelAsync(billId, query.From.Id, cancellationToken))
         {
-            return FinalizeBillCommand.NotAllowedText;
+            return NotAllowedText;
         }
 
         await cancelAsync(billId, query.Message!.Chat.Id, query.Message!.MessageId, cancellationToken);
@@ -66,9 +67,9 @@ public class CancelBillCommand : ITelegramCommand, ITelegramCallbackQuery
             }
         }
 
-        if (!await _billService.CanTelegramUserChangeAsync(billId, processedMessage.FromId, cancellationToken))
+        if (!await _billService.CanTelegramUserCancelAsync(billId, processedMessage.FromId, cancellationToken))
         {
-            await _publishEndpoint.Publish(new TelegramMessageRequested(processedMessage.ChatId, FinalizeBillCommand.NotAllowedText));
+            await _publishEndpoint.Publish(new TelegramMessageRequested(processedMessage.ChatId, NotAllowedText));
             return;
         }
 

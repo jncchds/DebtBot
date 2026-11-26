@@ -91,6 +91,7 @@ await expectStatus(200, 'clara', 'GET', `/Bills/${bills.borisDmitry}`) // Boris'
 await expectStatus(404, 'clara', 'GET', `/Bills/${bills.dmitry}`)
 await expectStatus(404, 'clara', 'POST', `/Bills/${bills.borisDraft}/Finalize`)
 await expectStatus(404, 'clara', 'POST', `/Bills/${bills.borisDraft}/Cancel`)
+await expectStatus(403, 'anna', 'POST', `/Bills/${bills.borisDraft}/Cancel`) // only the creator cancels, not an admin
 await expectStatus(404, 'clara', 'POST', `/Bills/${bills.borisDraft}/payments`, [{ userId: ids.boris, amount: 2 }])
 await expectStatus(404, 'clara', 'POST', '/Bills/exchange/finalize', bills.exBoris)
 await expectStatus(404, 'lena', 'GET', `/Bills/${bills.draft}`) // not on it, follows nobody

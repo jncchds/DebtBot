@@ -232,6 +232,23 @@ public class BillService : IBillService
         return user is not null && CanChange(user.Id, user.Role == UserRole.Admin, bill);
     }
 
+    public bool CanCancel(Guid userId, BillModel bill)
+    {
+        return bill.Creator?.Id == userId;
+    }
+
+    public async Task<bool> CanTelegramUserCancelAsync(Guid billId, long telegramUserId, CancellationToken cancellationToken)
+    {
+        var bill = await _billRepository.GetAsync(billId, cancellationToken);
+        if (bill is null)
+        {
+            return true;
+        }
+
+        var user = _userService.FindUser(new UserSearchModel { TelegramId = telegramUserId });
+        return user is not null && CanCancel(user.Id, bill);
+    }
+
     private async Task<BillActionResult<BillModel>> getForChangeAsync(Guid billId, Guid userId, bool isAdmin, CancellationToken cancellationToken)
     {
         var bill = await _billRepository.GetAsync(billId, cancellationToken);
@@ -414,6 +431,12 @@ public class BillService : IBillService
         }
         var bill = access.Value!;
 
+        // Only the creator cancels a bill, admins included.
+        if (!CanCancel(userId, bill))
+        {
+            return BillActionResult<BillModel>.Forbidden();
+        }
+
         if (bill.Status == ProcessingState.Cancelled)
         {
             return BillActionResult<BillModel>.Invalid("The bill is already cancelled");
@@ -425,7 +448,7 @@ public class BillService : IBillService
         if (bill.ExchangeBillId is not null)
         {
             var pair = await getForChangeAsync(bill.ExchangeBillId.Value, userId, isAdmin, cancellationToken);
-            if (pair.Status == BillActionStatus.Ok && pair.Value!.Status != ProcessingState.Cancelled)
+            if (pair.Status == BillActionStatus.Ok && CanCancel(userId, pair.Value!) && pair.Value!.Status != ProcessingState.Cancelled)
             {
                 await CancelAsync(pair.Value.Id, cancellationToken);
             }

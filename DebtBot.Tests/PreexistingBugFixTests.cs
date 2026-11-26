@@ -185,6 +185,22 @@ public sealed class UserFixesTests : IDisposable
         // An unknown bill is left to the command, which reports it as before.
         Assert.True(await _f.BillService.CanTelegramUserChangeAsync(Guid.NewGuid(), 1002, default));
     }
+
+    [Fact]
+    public async Task TelegramUserCanCancel_CreatorOnly()
+    {
+        var anna = _f.AddUser("Anna", telegramId: 1001);
+        _f.AddUser("Boris", telegramId: 1002);
+        _f.AddUser("Admin", telegramId: 1003, role: UserRole.Admin);
+        var bill = AddBill(anna);
+        _f.Clear();
+
+        Assert.True(await _f.BillService.CanTelegramUserCancelAsync(bill.Id, 1001, default));
+        Assert.False(await _f.BillService.CanTelegramUserCancelAsync(bill.Id, 1002, default));
+        Assert.False(await _f.BillService.CanTelegramUserCancelAsync(bill.Id, 1003, default));
+        Assert.False(await _f.BillService.CanTelegramUserCancelAsync(bill.Id, 9999, default));
+        Assert.True(await _f.BillService.CanTelegramUserCancelAsync(Guid.NewGuid(), 1002, default));
+    }
 }
 
 /// <summary>The admin user endpoints and the subscription endpoints after the fixes.</summary>
@@ -316,6 +332,8 @@ public class BotCreatorCheckTests
     {
         _bills.CanTelegramUserChangeAsync(Arg.Any<Guid>(), Creator, Arg.Any<CancellationToken>()).Returns(true);
         _bills.CanTelegramUserChangeAsync(Arg.Any<Guid>(), Other, Arg.Any<CancellationToken>()).Returns(false);
+        _bills.CanTelegramUserCancelAsync(Arg.Any<Guid>(), Creator, Arg.Any<CancellationToken>()).Returns(true);
+        _bills.CanTelegramUserCancelAsync(Arg.Any<Guid>(), Other, Arg.Any<CancellationToken>()).Returns(false);
         _bills.FinalizeAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(true);
     }
 
@@ -389,12 +407,14 @@ public class BotCreatorCheckTests
     {
         var command = new CancelBillCommand(_bills, _publish);
 
-        Assert.Equal(FinalizeBillCommand.NotAllowedText,
+        Assert.Equal(CancelBillCommand.NotAllowedText,
             await command.ExecuteAsync(Button(CancelBillCommand.FormatCallbackData(_billId), Other), default));
         await command.ExecuteAsync(Command(Other), Substitute.For<ITelegramBotClient>(), default);
 
         await _bills.DidNotReceiveWithAnyArgs().CancelAsync(default, default);
-        AssertRefusalPublished();
+        await _publish.Received(1).Publish(
+            Arg.Is<TelegramMessageRequested>(m => m.ChatId == 555 && m.Text == CancelBillCommand.NotAllowedText),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]

@@ -251,7 +251,7 @@ public class BillsController : DebtBotControllerBase
         return FromResult(result, _ => Ok());
     }
 
-    /// <summary>Cancels a bill (creator or admin); for an exchange, its other bill too. Runs in the background.</summary>
+    /// <summary>Cancels a bill (creator only, not admins: 403 for anyone else); for an exchange, its other bill too. Runs in the background.</summary>
     [HttpPost("{id:guid}/Cancel")]
     public async Task<IActionResult> CancelAsync(Guid id, CancellationToken cancellationToken)
     {

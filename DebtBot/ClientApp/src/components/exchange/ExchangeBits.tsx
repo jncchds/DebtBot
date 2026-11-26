@@ -89,7 +89,7 @@ export function ExchangeBanner({ deal, status, actions, note }: { deal: Exchange
         </Link>
         {note && <div className="mt-1">{note}</div>}
       </div>
-      {actions && <div className="flex flex-wrap gap-2 max-md:w-full max-md:[&>*]:flex-1">{actions}</div>}
+      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
     </div>
   )
 }

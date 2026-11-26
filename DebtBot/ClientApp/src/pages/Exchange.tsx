@@ -11,7 +11,7 @@ import { FilterChoice, FilterCurrency, FilterPerson } from '../components/list/f
 import { ListView, type Column } from '../components/list/ListView'
 import { PersonSearch } from '../components/people/PersonSearch'
 import { PageTitle, Spinner } from '../components/ui'
-import { canChange } from '../lib/bills'
+import { canChange, isCreator } from '../lib/bills'
 import {
   dealFromBill,
   dealFromListItem,
@@ -351,10 +351,13 @@ function DraftPanel({ billId, onClose }: { billId: string; onClose: () => void }
       >
         ✓ {t('exchange.accept')}
       </button>,
-      <button key="cancel" type="button" className="btn-danger" onClick={() => setConfirm(true)}>
-        {t('exchange.cancel')}
-      </button>,
     )
+    if (isCreator(bill, user?.id))
+      actions.push(
+        <button key="cancel" type="button" className="btn-danger" onClick={() => setConfirm(true)}>
+          {t('exchange.cancel')}
+        </button>,
+      )
   }
   actions.push(
     <button key="close" type="button" className="btn-ghost" aria-label={t('exchange.close')} title={t('exchange.close')} onClick={onClose}>

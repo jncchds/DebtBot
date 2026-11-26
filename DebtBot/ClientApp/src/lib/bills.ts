@@ -36,6 +36,11 @@ export function canChange(bill: Pick<Bill, 'creator'>, meId: string | undefined,
   return isAdmin || bill.creator.id === meId
 }
 
+/** Who may cancel a bill: its creator only, admins included (the API checks again). */
+export function isCreator(bill: Pick<Bill, 'creator'>, meId: string | undefined): boolean {
+  return !!meId && bill.creator.id === meId
+}
+
 export const canCancel = (status: ProcessingState) => status === 'Draft' || status === 'Processed'
 
 /** A row of the Bills list: a bill, or both bills of an exchange (when both are on the page). */

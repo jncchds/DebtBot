@@ -99,7 +99,7 @@ export default function NewBill({ mode }: { mode?: 'add-line' | 'add-payment' | 
               </span>
             )}
             {!busy && check.canSave && check.finalizeBlockers.length > 0 && <span className="text-[0.8rem] muted">{t(check.finalizeBlockers[0])}</span>}
-            <div className="flex flex-wrap gap-2 max-md:w-full max-md:[&>*]:flex-1">
+            <div className="flex flex-wrap gap-2">
               <button type="button" className="btn-secondary" disabled={busy} onClick={() => submit(false)}>
                 {t('newBill.saveDraft')}
               </button>
