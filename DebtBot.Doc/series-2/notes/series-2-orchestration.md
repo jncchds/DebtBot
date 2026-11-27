@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: 645e1162-a1e5-44ec-8c96-df03ffb46bbe
-  modified: 2026-11-24T20:23:44.582Z
+  modified: 2026-11-27T21:40:23.130Z
 ---
 
 Series 2 of DebtBot, started 2026-11-24 after the web-ui series (PR #34) was merged to main. Run like [[web-ui-orchestration]] with the `orchestrate-tasks` skill.
@@ -55,8 +55,9 @@ Series 2 of DebtBot, started 2026-11-24 after the web-ui series (PR #34) was mer
     - The privacy note is OK and shown every time. Limits are 10 an hour and 30 a day per user. The OpenRouter account has $10 of credits, so about 1000 free requests a day.
     - The image is never stored. The result opens in the visual form or the bill text format, chosen by a per-user setting with a per-receipt switch.
     - The bot gets it in the same series: it replies with the bill as text plus an "Open in the web form" button.
-    - It's committed on branch `receipt-plan` (PR to main), to be built in a later series.
-  - **Series complete.** The PR stays a draft until the user says to mark it ready. The receipt-parse.md questions are still open with the user.
+    - It's committed on branch `receipt-plan`; the user merged it as PR #36 (1a65510) on 2026-11-27 and confirmed my reading of "form or text". To be built in a later series, from `DebtBot.Doc/series-2/receipt-parse.md`.
+  - **Series complete.**
+  - 2026-11-27: the user asked for a new orchestrator to build the receipt feature. Its handoff is `DebtBot.Doc/series-2/handoff-receipts-series.md` on branch `receipts-handoff`, and it was started as "DebtBot orchestrator 3". 2026-11-27: at the user's request PR #36 (receipt-plan) was marked ready and merged into main (1a65510, merge commit). The receipt-parse.md questions are still open with the user.
 
 **Why:** the user wants a clean context per task, mockup approval per view, and a durable record.
 **How to apply:** follow this and the skill for every series-2 task. Related: [[web-ui-palette]].
