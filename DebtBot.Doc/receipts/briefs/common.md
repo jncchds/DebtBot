@@ -54,7 +54,7 @@ This task is one of a series (T1 to Tn) of receipts tasks. An orchestrator sessi
 ## Receipts: secrets and the LLM
 - **The OpenRouter API key is a secret. Never commit it**, never log it, never put it in a report, screenshot or message. Tests and CI use the fake `ILlmClient`; no test calls the real API.
 - The image is never stored, and neither is the raw model output. Logs carry only timing, model, outcome and token counts.
-- <KEY HANDLING: filled in once the user decides>
+- **There is no API key on the machine before T4** (user decision). T1 to T3 work with the fake client only and never ask for a key. In T4 the user pastes the key to the worker for the one manual run. Keep it only in the shell environment of the commands that need it (never in a file, `.env`, compose file, commit, log, transcript summary, report or screenshot), and drop it afterwards.
 
 ## Mockups first (UI tasks)
 **Mockups first, every UI view.** Before implementing any view:
