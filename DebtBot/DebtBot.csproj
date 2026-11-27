@@ -20,6 +20,7 @@
     <PackageReference Include="AutoMapper" Version="14.0.0" />
     <PackageReference Include="AutoMapper.Collection" Version="11.0.0" />
     <PackageReference Include="EPPlus" Version="7.7.4" />
+    <PackageReference Include="JsonSchema.Net" Version="9.7.0" />
     <PackageReference Include="MassTransit.RabbitMQ" Version="8.5.12" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="11.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="11.0.0">
@@ -42,6 +43,11 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="DebtBot.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Receipt fixtures for FakeLlmClient (Llm:Provider=Fake, Development only); the tests use the same files. -->
+    <EmbeddedResource Include="..\DebtBot.Tests\Fixtures\receipts\*.json" LogicalName="DebtBot.ReceiptFixtures.%(Filename)%(Extension)" />
   </ItemGroup>
 
 </Project>

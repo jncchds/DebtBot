@@ -1,0 +1,21 @@
+{
+  "isReceipt": true,
+  "merchant": "FreshMart",
+  "date": "2026-11-21",
+  "currency": null,
+  "currencySymbol": "€",
+  "items": [
+    { "name": "Milk 1L", "quantity": "1", "amount": "1.29" },
+    { "name": "Rye bread", "quantity": "1", "amount": "2.49" },
+    { "name": "Gouda cheese", "quantity": "1", "amount": "5.59" },
+    { "name": "Apples", "quantity": "1.235", "amount": "3.69" },
+    { "name": "Loyalty discount", "quantity": null, "amount": "-1.00" }
+  ],
+  "tips": null,
+  "tipsIncluded": null,
+  "serviceCharge": null,
+  "serviceChargeIncluded": null,
+  "tax": null,
+  "taxIncluded": null,
+  "total": "12.06"
+}

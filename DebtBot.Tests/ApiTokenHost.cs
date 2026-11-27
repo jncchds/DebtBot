@@ -5,6 +5,7 @@ using DebtBot.Interfaces;
 using DebtBot.Interfaces.Services;
 using DebtBot.Models.Enums;
 using DebtBot.Models.User;
+using DebtBot.Receipts;
 using DebtBot.Services;
 using DebtBot.Telegram;
 using Microsoft.AspNetCore.Builder;
@@ -36,7 +37,11 @@ public sealed class ApiTokenHost : IAsyncDisposable
     public IdentityService Identity { get; }
     public HttpClient Client { get; }
 
-    private ApiTokenHost(int rateLimitPerMinute)
+    /// <summary>The fake LLM client, when the host runs with <c>Llm:Provider=Fake</c>.</summary>
+    public FakeLlmClient? Fake => _app.Services.GetService<FakeLlmClient>();
+    public IServiceProvider Services => _app.Services;
+
+    private ApiTokenHost(int rateLimitPerMinute, IDictionary<string, string?>? extraSettings)
     {
         var settings = new Dictionary<string, string?>
         {
@@ -47,6 +52,10 @@ public sealed class ApiTokenHost : IAsyncDisposable
             ["DebtBot:ApiTokens:RateLimitPerMinute"] = rateLimitPerMinute.ToString(),
             ["DebtBot:ApiTokens:MaxActivePerUser"] = "20",
         };
+        foreach (var (key, value) in extraSettings ?? new Dictionary<string, string?>())
+        {
+            settings[key] = value;
+        }
 
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions
         {
@@ -75,6 +84,7 @@ public sealed class ApiTokenHost : IAsyncDisposable
         s.AddSingleton(Substitute.For<IDebtService>());
         s.AddSingleton(Substitute.For<IBudgetService>());
         s.AddSingleton<TelegramBotInfoProvider>();
+        s.AddDebtBotReceipts(builder.Configuration);
         s.AddControllers()
             .AddApplicationPart(typeof(BillService).Assembly)
             .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
@@ -88,7 +98,7 @@ public sealed class ApiTokenHost : IAsyncDisposable
         Client = _app.GetTestClient();
     }
 
-    public static ApiTokenHost Start(int rateLimitPerMinute = 10_000) => new(rateLimitPerMinute);
+    public static ApiTokenHost Start(int rateLimitPerMinute = 10_000, IDictionary<string, string?>? settings = null) => new(rateLimitPerMinute, settings);
 
     public string Jwt(User user) => Identity.GenerateJwtToken(new UserModel
     {

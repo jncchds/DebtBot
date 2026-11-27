@@ -8,6 +8,7 @@ using DebtBot.Interfaces;
 using DebtBot.Interfaces.Services;
 using DebtBot.Interfaces.Telegram;
 using DebtBot.Models.Enums;
+using DebtBot.Receipts;
 using DebtBot.Repositories;
 using DebtBot.Services;
 using DebtBot.Telegram;
@@ -55,6 +56,7 @@ builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddSingleton<LoginThrottle>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddMemoryCache();
+builder.Services.AddDebtBotReceipts(builder.Configuration);
 
 // telegram
 builder.Services.AddScoped<UpdateHandler>();
@@ -152,6 +154,7 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Debt Bot", Version = "v1" });
 
     c.OperationFilter<RawTextRequestOperationFilter>();
+    c.OperationFilter<ImageUploadRequestOperationFilter>();
 
     // Set the comments path for the Swagger JSON and UI.
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
@@ -191,6 +194,7 @@ var app = builder.Build();
 var debtBotConfig = app.Services.GetRequiredService<IOptions<DebtBotConfiguration>>().Value;
 
 WarnAboutInsecureConfiguration(app, debtBotConfig);
+app.LogReceiptStatus();
 
 ApplyDatabaseMigrations(app.Services, debtBotConfig);
 

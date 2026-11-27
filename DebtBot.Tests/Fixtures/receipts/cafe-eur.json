@@ -1,0 +1,20 @@
+{
+  "isReceipt": true,
+  "merchant": "Corner Café",
+  "date": "2026-11-20T19:42",
+  "currency": "EUR",
+  "currencySymbol": "€",
+  "items": [
+    { "name": "Borscht", "quantity": "2", "amount": "13.80" },
+    { "name": "Pelmeni", "quantity": "1", "amount": "12.50" },
+    { "name": "Kvass", "quantity": "2", "amount": "7.00" },
+    { "name": "Napoleon cake", "quantity": "1", "amount": "6.20" }
+  ],
+  "tips": null,
+  "tipsIncluded": null,
+  "serviceCharge": null,
+  "serviceChargeIncluded": null,
+  "tax": "6.31",
+  "taxIncluded": true,
+  "total": "39.50"
+}

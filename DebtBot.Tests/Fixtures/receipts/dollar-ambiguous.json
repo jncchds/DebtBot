@@ -1,0 +1,19 @@
+{
+  "isReceipt": true,
+  "merchant": "Joe's Diner",
+  "date": "2026-11-22T13:10",
+  "currency": null,
+  "currencySymbol": "$",
+  "items": [
+    { "name": "Burger", "quantity": "1", "amount": "12.00" },
+    { "name": "Fries", "quantity": "1", "amount": "4.50" },
+    { "name": "Soda", "quantity": "1", "amount": "2.50" }
+  ],
+  "tips": null,
+  "tipsIncluded": null,
+  "serviceCharge": null,
+  "serviceChargeIncluded": null,
+  "tax": "1.62",
+  "taxIncluded": false,
+  "total": "20.62"
+}
