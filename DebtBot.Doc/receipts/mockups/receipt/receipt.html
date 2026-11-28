@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DebtBot receipt mockup</title>
+<link rel="stylesheet" href="../../../web-ui/mockups/common/mock.css">
+<style>
+  .hint { margin: .35rem 0 0; font-size: .76rem; color: var(--text-muted); }
+  .pchip { display: inline-flex; align-items: center; gap: .25rem; border-radius: 4px; padding: .125rem .25rem .125rem .5rem; font-size: .8rem; color: var(--accent); background: var(--accent-faint); }
+  .pchip .x { padding: 0 .25rem; opacity: .8; }
+  .pchip .lock { padding: 0 .25rem; opacity: .5; }
+  .prow { display: flex; align-items: baseline; gap: .5rem; padding: .625rem 1rem; border-top: 1px solid var(--border); font-size: .9rem; }
+  .card-head + .prow { border-top: 0; }
+  .lrow { display: flex; align-items: flex-start; gap: 1rem; padding: .75rem 1rem; border-top: 1px solid var(--border); }
+  .card-head + .lrow { border-top: 0; }
+  .lrow .grow { flex: 1; min-width: 0; }
+  .parts { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .35rem; }
+  .x-btn { color: var(--text-muted); font-size: .85rem; padding: 0 .25rem; }
+  .grid-bill { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr); gap: .875rem 1rem; }
+  .grid-bill .wide { grid-column: 1 / -1; }
+  .phone .grid-bill { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .phone .grid-bill .wide, .phone .grid-bill .half { grid-column: 1 / -1; }
+  textarea.input { resize: vertical; line-height: 1.45; }
+  .card-head { flex-wrap: wrap; }
+  .actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; padding: .875rem 1rem; }
+  .phone .actions .btn:not(.btn-sm) { flex: 1 1 100%; }
+  .phone .actions .spacer { display: none; }
+  .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+  .phone .two { grid-template-columns: 1fr; }
+  .two > * { min-width: 0; }
+  .mono { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; }
+  textarea.mono { font-size: .82rem; line-height: 1.55; }
+  .paste { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 1rem; align-items: start; }
+  .phone .paste { grid-template-columns: 1fr; }
+  pre.help { margin: 0; padding: .875rem 1rem; font-size: .82rem; line-height: 1.55; overflow-x: auto; }
+  .help-notes { margin: 0; padding: 0 1rem .875rem 2rem; font-size: .8rem; }
+  .res { display: inline-flex; align-items: baseline; gap: .25rem; font-size: .8rem; }
+  .res .arrow { color: var(--text-muted); }
+  /* The receipt panel */
+  .rcpt { border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+  .drop { border: 1.5px dashed color-mix(in srgb, var(--accent) 45%, var(--border)); border-radius: 8px; background: var(--surface-2); padding: 1.4rem 1rem; text-align: center; }
+  .drop .big { font-size: 1.6rem; line-height: 1; margin-bottom: .5rem; }
+  .drop p { margin: .45rem 0 0; font-size: .8rem; color: var(--text-muted); }
+  .busy { display: flex; align-items: center; gap: .75rem; border-radius: 8px; background: var(--surface-2); padding: 1rem; }
+  .busy .spin { width: 20px; height: 20px; }
+  .busy .grow { flex: 1; min-width: 0; }
+  .busy .f { font-size: .8rem; color: var(--text-muted); overflow-wrap: anywhere; }
+  .phone .busy { flex-wrap: wrap; }
+  .phone .busy .btn { flex: 1 1 100%; }
+  .openin { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; margin-top: .875rem; }
+  .openin .label { margin: 0; }
+  .privacy { margin: .75rem 0 0; font-size: .78rem; color: var(--text-muted); display: flex; gap: .4rem; }
+  .confirm { border-radius: 8px; border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); background: var(--accent-faint); padding: .75rem .875rem; font-size: .875rem; }
+  .confirm .row { margin-top: .625rem; }
+  .phone .confirm .row .btn { flex: 1 1 100%; }
+  .warn { display: flex; align-items: flex-start; gap: .5rem; margin: .75rem 1rem 0; border-radius: 6px; border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); background: var(--accent-faint); padding: .5rem .5rem .5rem .75rem; font-size: .84rem; }
+  .warn .grow { flex: 1; min-width: 0; }
+  .warn + .lrow { border-top: 0; margin-top: .25rem; }
+  .from { display: flex; align-items: flex-start; gap: .5rem; }
+  .from .grow { flex: 1; min-width: 0; }
+  /* Profile */
+  .form { max-width: 34rem; }
+  .field + .field { margin-top: 1rem; }
+  .field .help { margin-top: .3rem; font-size: .8rem; color: var(--text-muted); }
+  .foot { display: flex; align-items: center; gap: .75rem; margin-top: 1.25rem; flex-wrap: wrap; }
+  .ok { color: var(--success); font-size: .875rem; }
+  .mb { margin-bottom: 1rem; }
+  .choices { display: grid; gap: .5rem; }
+  .choice { display: flex; gap: .6rem; align-items: flex-start; border: 1px solid var(--border); border-radius: 8px; padding: .6rem .75rem; }
+  .choice.on { border-color: color-mix(in srgb, var(--accent) 45%, transparent); background: var(--accent-faint); }
+  .choice .dot { flex: none; width: .95rem; height: .95rem; margin-top: .15rem; border-radius: 999px; border: 1.5px solid var(--text-muted); }
+  .choice.on .dot { border: 4.5px solid var(--accent); }
+  .choice b { display: block; font-size: .9rem; }
+  .choice span { font-size: .8rem; color: var(--text-muted); }
+</style>
+</head>
+<body>
+<script>
+  // state (each one is the real page, every section once):
+  //  form-receipt  /bills/new/receipt              the panel, idle, over an empty form (Open in: Form from Profile)
+  //  form-busy     /bills/new/receipt              reading supermarket-discount.jpg, with Cancel
+  //  paste-error   /bills/new/paste/receipt           the panel on Paste text after a `busy` answer
+  //  form-replace  /bills/new/receipt              read; the form already has content: "Replace the form?"
+  //  form-filled   /bills/new                      the prefilled form, with the discount warning above the lines
+  //  paste-filled  /bills/new/paste?preview=1      the prefilled text, with the hint and its preview
+  //  profile       /profile                        the Receipts card under Details
+  const MODEL = 'nvidia/nemotron-3.5-super-vl:free'
+  const ME = 'Anna Petrova (you)'
+  // The supermarket-discount fixture after the server folded its loyalty discount (receipts T2).
+  const LINES = [['Milk 1L', '1.19'], ['Rye bread', '2.30'], ['Gouda cheese', '5.16'], ['Apples ×1.235', '3.41']]
+  const WARN = 'The discount “Loyalty discount” (1.00 EUR) was spread over all lines.'
+  const TEXT = `FreshMart 2026-11-21
+
+12.06
+EUR
+
+12.06 @anna_p
+
+${LINES.map(([n, a]) => `${n}\n${a}\n1 @anna_p`).join('\n\n')}`
+
+  const chip = (n, x) => `<span class="pchip">${n}${x === 'lock' ? '<span class="lock">•</span>' : '<span class="x">×</span>'}</span>`
+  const pchips = (xs) => `<div class="parts">${xs.map((n) => `<span class="chip">${n}</span>`).join('')}</div>`
+  const fromButton = `<span class="spacer"></span><a class="btn btn-secondary">🧾 From a receipt</a>`
+
+  // The receipt panel (/bills/new/receipt on the form, /bills/new/paste/receipt on Paste text).
+  function panel(s, phone, openIn) {
+    // No Form/Text switch (user, round 1): the panel fills the page it was opened on.
+    const seg = `<p class="hint" style="margin-top:.75rem">${openIn === 'form' ? 'It fills this form: description, date, currency, total and lines.' : 'It fills the bill text below, with you as the payer and on every line.'}</p>`
+    const drop = `<div class="drop"><div class="big">📷</div>
+      <a class="btn btn-primary">${phone ? 'Take or choose a photo' : 'Choose a photo'}</a>
+      <p>${phone ? 'JPEG, PNG, WebP or HEIC.' : 'or drop it here · JPEG, PNG, WebP or HEIC.'} It’s shrunk to about 1 MB before sending.</p></div>`
+    const privacy = `<p class="privacy"><span>🔒</span><span>The receipt is sent to an AI service (OpenRouter, model <span class="mono" style="font-size:.95em">${MODEL}</span>) to read it. Don’t send receipts with personal data you don’t want to share.</span></p>`
+    let body
+    if (s === 'form-busy')
+      body = `<div class="busy" role="status"><span class="spin"></span><div class="grow"><b>Reading the receipt…</b><div class="f">supermarket-discount.jpg · 412 KB · this can take up to 45 seconds</div></div><a class="btn btn-secondary">Cancel</a></div>`
+    else if (s === 'form-replace')
+      body = `<div class="confirm"><b>Replace the form?</b> The receipt <span class="muted">(FreshMart 2026-11-21, 4 lines, 12.06 EUR)</span> replaces the description, date, currency, total, lines and payments. The people on the bill stay.
+        <div class="row"><a class="btn btn-primary">Replace</a><a class="btn btn-ghost">Keep my form</a></div></div>`
+    else if (s === 'paste-error')
+      body = `<div class="alert-danger" role="alert" style="margin-bottom:.75rem">The free AI service is busy or out of quota. Try later or fill the bill in by hand.</div>${drop}`
+    else body = drop
+    return `<div class="card rcpt mb"><div class="card-head"><h2 class="grow">🧾 From a receipt</h2><a class="x-btn" title="Close">✕</a></div>
+      <div class="card-body">${body}${s === 'form-busy' || s === 'form-replace' ? '' : seg}${privacy}</div></div>`
+  }
+
+  // ---- The New bill form (series-2 mockups/creator-leave) ----
+  function billCard(s) {
+    const filled = s === 'form-filled'
+    const old = s === 'form-replace'
+    const desc = filled ? 'FreshMart 2026-11-21' : old ? 'Groceries' : ''
+    const date = filled ? '21.11.2026, 12:00' : old ? '20.11.2026, 18:30' : '28.11.2026, 10:05'
+    const cur = filled || old ? 'EUR' : ''
+    const total = filled ? '12.06' : ''
+    return `<div class="card">
+      <div class="card-head"><h2 class="grow">Bill</h2></div>
+      <div class="card-body grid-bill">
+        <div class="wide"><label class="label">Description</label><textarea class="input" rows="2" placeholder="What was it? The first line is the title.">${desc}</textarea><p class="hint">Several lines are fine; the first one is the bill’s title.</p></div>
+        <div class="half"><label class="label">Date and time</label><input class="input num" value="${date}"></div>
+        <div><label class="label">Bill currency</label><input class="input num" value="${cur}" placeholder="EUR"><p class="hint">Lines are in this currency.</p></div>
+        <div><label class="label">Paid in</label><input class="input num" value="" placeholder="${cur || 'EUR'}"><p class="hint">What people paid with. Same as the bill if empty.</p></div>
+        <div class="half"><label class="label">Total with tips${cur ? `, ${cur}` : ''}</label><input class="input num" value="${total}" placeholder="${old ? '15.00' : ''}" style="text-align:right"><p class="hint">${filled ? 'Lines 12.06 + tips 0.00.' : old ? 'Empty: the lines’ total, 15.00 EUR.' : 'Empty: the lines’ total.'}</p></div>
+      </div>
+    </div>`
+  }
+
+  function peopleCard(s) {
+    const full = s === 'form-filled' || s === 'form-replace'
+    const chips = full ? [chip(ME), chip('Boris', s === 'form-replace' ? 'lock' : 'x'), chip('Dmitry')] : [chip(ME)]
+    return `<div class="card"><div class="card-body">
+      <label class="label">People on this bill</label>
+      <div class="row" style="gap:.375rem">${chips.join('')}</div>
+      <input class="input" style="margin-top:.5rem" placeholder="Add a person: type a name or @username">
+      <p class="hint">Lines and payments offer only these people. Anyone who paid, is on a by-parts line or is alone on a line stays (•).</p>
+    </div></div>`
+  }
+
+  function linesCard(s) {
+    const filled = s === 'form-filled'
+    const rows = filled ? LINES.map(([n, a]) => [n, `${a} EUR`, ['Anna (you)', 'Boris', 'Dmitry']])
+      : s === 'form-replace' ? [['Groceries', '15.00 EUR', ['Anna (you)', 'Boris', 'Dmitry']]] : []
+    const sum = filled ? '12.06 EUR' : s === 'form-replace' ? '15.00 EUR' : ''
+    return `<div class="card">
+      <div class="card-head"><h2 class="grow">Lines</h2>${sum ? `<span class="muted num" style="font-size:.85rem">${sum}</span>` : ''}<a class="btn btn-secondary btn-sm">＋ Add line</a></div>
+      ${filled ? `<div class="warn"><span>⚠️</span><span class="grow">${WARN}</span><a class="x-btn" title="Dismiss">✕</a></div>` : ''}
+      ${rows.length ? rows.map(([n, a, ch]) => `<div class="lrow"><div class="grow"><b>${n}</b> <span class="muted" style="font-size:.8rem">split equally</span>${pchips(ch)}</div><span class="num" style="font-weight:600">${a}</span><a class="x-btn" title="Edit line">✎</a><a class="x-btn">✕</a></div>`).join('')
+        : '<div class="prow muted" style="font-size:.875rem">No lines yet.</div>'}
+    </div>`
+  }
+
+  function paymentsCard(s) {
+    const old = s === 'form-replace'
+    return `<div class="card">
+      <div class="card-head"><h2 class="grow">Payments</h2>${old ? '<span class="muted num" style="font-size:.85rem">15.00 EUR</span>' : ''}<a class="btn btn-secondary btn-sm">＋ Add payment</a></div>
+      ${old ? '<div class="prow"><span style="flex:1">Boris</span><span class="num" style="font-weight:600">15.00 EUR</span><a class="x-btn">✕</a></div>' : '<div class="prow muted" style="font-size:.875rem">No payments yet. Add who paid.</div>'}
+    </div>`
+  }
+
+  function oweCard(s) {
+    const old = s === 'form-replace'
+    return `<div class="card">
+      <div class="card-head"><h2 class="grow">Who owes whom</h2><span class="pill pill-muted">preview</span></div>
+      ${old ? '<div class="prow"><span style="flex:1">You owe Boris</span><span class="num neg" style="font-weight:700">5.00 EUR</span></div><div class="prow"><span style="flex:1">Dmitry owes Boris</span><span class="num" style="font-weight:700">5.00 EUR</span></div>'
+        : '<div class="prow muted" style="font-size:.875rem">Add lines and a payment to see the debts.</div>'}
+    </div>`
+  }
+
+  function actionsCard() {
+    return `<div class="card"><div class="actions">
+        <span class="muted" style="font-size:.8rem">Kept in this tab until you create the bill.</span><a class="btn btn-ghost btn-sm">Clear form</a>
+        <span class="spacer"></span><a class="btn btn-secondary">Save as draft</a><a class="btn btn-primary">✓ Create and finalize</a>
+      </div></div>`
+  }
+
+  function formView(s, phone) {
+    const open = s === 'form-receipt' || s === 'form-busy' || s === 'form-replace'
+    const head = `<div class="title-row"><h1>New bill</h1>${open ? '' : fromButton}</div><p class="sub muted">Pick the people first, then add lines and who paid.</p>`
+    return head + (open ? panel(s, phone, 'form') : '') +
+      `<div class="stack">${billCard(s)}${peopleCard(s)}${linesCard(s)}<div class="two">${paymentsCard(s)}${oweCard(s)}</div>${actionsCard()}</div>`
+  }
+
+  // ---- Paste text (web-ui mockups/new-bill) ----
+  const HELP = `Description
+(more lines of description)
+
+Total with tips
+Bill currency [payment currency]
+
+Amount Who paid
+Amount Who paid
+
+Item
+Subtotal
+Part Who
+Part Who`
+
+  function pasteView(s, phone) {
+    const filled = s === 'paste-filled'
+    const help = `<div class="card">
+        <div class="card-head"><h2 class="grow">Format</h2><span class="muted" style="font-size:.8rem">same as the bot’s /AddBill</span></div>
+        <pre class="help mono">${HELP}</pre>
+        <ul class="help-notes muted">
+          <li>Sections are separated by one empty line.</li>
+          <li>People: @username, a contact’s name, a phone or an email.</li>
+          <li>Parts split a line: “2 @boris” pays twice as much as “1 @anna”.</li>
+        </ul>
+      </div>`
+    const from = filled ? `<div class="alert-info mb" style="display:block">
+        <div class="from"><span>🧾</span><span class="grow"><b>Filled from a receipt.</b> People and payers are you for now; change them before saving.</span></div>
+        <div class="from" style="margin-top:.4rem"><span>⚠️</span><span class="grow">${WARN}</span><a class="x-btn" title="Dismiss">✕</a></div></div>` : ''
+    const area = `<div class="card">
+        <div class="card-head"><h2 class="grow">Bill text</h2>${phone ? '' : '<a class="btn btn-ghost btn-sm">Insert example</a>'}</div>
+        <div class="card-body">
+          <textarea class="input mono" rows="${filled ? (phone ? 16 : 24) : 10}" placeholder="Paste the bill text here…">${filled ? TEXT : ''}</textarea>
+          <div class="row" style="margin-top:.75rem"><a class="btn ${filled ? 'btn-secondary' : 'btn-primary'}">👁 Preview</a><span class="muted" style="font-size:.8rem">Nothing is saved until you create the bill.</span></div>
+        </div>
+      </div>`
+    let result = ''
+    if (filled) {
+      const who = `<span class="res"><span class="mono">@anna_p</span><span class="arrow">→</span><b>${ME}</b></span>`
+      result = `<div class="card">
+        <div class="card-head"><h2 class="grow">Preview</h2><span class="pill pill-success">Looks good</span></div>
+        <div class="card-body" style="padding-bottom:.5rem">
+          <div style="font-weight:700;font-size:1.05rem">FreshMart 2026-11-21</div>
+          <div class="row" style="margin-top:.5rem;gap:1.25rem;font-size:.875rem"><span><span class="muted">Total</span> <b class="num">12.06 EUR</b></span><span><span class="muted">Paid in</span> <b>EUR</b></span><span><span class="muted">Tips</span> <b class="num">—</b></span></div>
+        </div>
+        ${LINES.map(([n, a]) => `<div class="lrow"><div class="grow"><b>${n}</b> <span class="muted" style="font-size:.8rem">split equally</span><div class="parts">${who}</div></div><span class="num" style="font-weight:600">${a} EUR</span></div>`).join('')}
+        <div class="prow"><span class="muted" style="width:5.5rem">Paid</span><span style="flex:1">${who}</span><span class="num" style="font-weight:600">12.06 EUR</span></div>
+        <div class="actions" style="border-top:1px solid var(--border)">
+          <span class="muted" style="font-size:.8rem">Names are matched when the bill is created; unknown ones become new people.</span>
+          <span class="spacer"></span><a class="btn btn-secondary">Save as draft</a><a class="btn btn-primary">✓ Create and finalize</a></div>
+      </div>`
+    }
+    const left = (s === 'paste-error' ? panel(s, phone, 'text') : '') + from + area + (result ? `<div style="margin-top:1rem">${result}</div>` : '')
+    const head = `<div class="title-row"><h1>New bill</h1>${s === 'paste-error' ? '' : fromButton}</div><p class="sub muted">Paste a bill in the bot’s text format, check the preview, then create it.</p>`
+    if (phone) return head + left + `<div style="margin-top:1rem">${help}</div>`
+    return head + `<div class="paste"><div>${left}</div>${help}</div>`
+  }
+
+  // ---- Profile (web-ui mockups/profile): the Receipts card under Details ----
+  function profileView() {
+    const field = (label, value, o = {}) => `<div class="field"><label class="label">${label}</label><input class="input" value="${value}" placeholder="${o.ph ?? ''}">${o.help ? `<div class="help">${o.help}</div>` : ''}</div>`
+    const choice = (on, title, text) => `<div class="choice${on ? ' on' : ''}"><span class="dot"></span><div><b>${title}</b><span>${text}</span></div></div>`
+    return `<div class="title-row"><h1>Profile</h1></div><p class="sub muted">How you appear to people you share bills with.</p>
+      <div class="card form mb"><div class="card-head"><h2>🪪 Details</h2></div><div class="card-body">
+        ${field('Display name', 'Anna Petrova', { help: 'Contacts see their own name for you; this is the default.' })}
+        ${field('Phone', '+48 600 123 456', { ph: 'optional' })}
+        ${field('Email', 'anna@example.com', { ph: 'optional' })}
+        <div class="foot"><a class="btn btn-primary">Save</a><a class="btn btn-ghost">Reset</a></div>
+      </div></div>
+      <div class="card form"><div class="card-head"><h2>➕ New bill</h2></div><div class="card-body">
+        <div class="field"><label class="label">New bill opens</label><div class="choices">
+          ${choice(false, '📝 Form', 'Lines, people and payments, with a receipt’s lines ticked for everyone on the bill.')}
+          ${choice(true, '📋 Paste text', 'The bot’s bill format, to edit and preview as text.')}
+        </div><div class="help">Where ➕ New bill in the sidebar and the bot’s “Open in the web form” take you. The other mode is always one click away under Mode.</div></div>
+        <div class="foot"><a class="btn btn-primary">Save</a><span class="ok">✓ Saved</span></div>
+      </div></div>`
+  }
+
+  window.MOCK = {
+    ctxFor: (s) => s === 'profile'
+      ? ['S:Sections', { i: '🪪', t: 'Details', s: 'Name, contacts, New bill', a: true }, { i: '🔑', t: 'Login &amp; password', s: 'Web sign-in' }, { i: '✈️', t: 'Telegram', s: 'Account and bot' }, { i: '🗝️', t: 'API tokens', s: 'Scripts and apps' }]
+      : ['S:Mode',
+        { i: '📝', t: 'Form', s: 'Lines, people and payments', a: s.startsWith('form') },
+        { i: '📋', t: 'Paste text', s: 'The bot’s bill format', a: s.startsWith('paste') },
+        'S:Continue a draft',
+        { i: '✏️', t: 'Bowling night', s: '23 Nov · 36.00 EUR' },
+        { i: '✏️', t: 'Ski pass', s: '14 Nov · no lines yet' }],
+    render: (s, phone) => s === 'profile' ? profileView() : s.startsWith('paste') ? pasteView(s, phone) : formView(s, phone),
+  }
+  const st = new URLSearchParams(location.search).get('state') ?? 'form-receipt'
+  window.MOCK.page = st === 'profile' ? 'profile' : 'new'
+</script>
+<script src="../../../web-ui/mockups/common/shell.js"></script>
+</body>
+</html>
