@@ -16,7 +16,7 @@ partial class DebtContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261127215906_ReceiptOpenIn";
+    public override string LastMigrationId => "20261128143732_TelegramChatStates";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -354,6 +354,19 @@ partial class DebtContextModelSnapshot : ModelSnapshot
                 b.HasIndex("UserId");
 
                 b.ToTable("Spendings");
+            });
+
+        modelBuilder.Entity("DebtBot.DB.Entities.TelegramChatState", b =>
+            {
+                b.Property<long>("ChatId")
+                    .HasColumnType("bigint");
+
+                b.Property<DateTime?>("ReceiptNoteShownAt")
+                    .HasColumnType("timestamp with time zone");
+
+                b.HasKey("ChatId");
+
+                b.ToTable("TelegramChatStates");
             });
 
         modelBuilder.Entity("DebtBot.DB.Entities.User", b =>

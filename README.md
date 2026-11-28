@@ -62,11 +62,18 @@ OpenAI-compatible API). It's off until a key is set:
 | `DebtBot_DebtBot__Llm__ResponseFormat` | `json_schema` | `json_object` for APIs without structured output |
 | `DebtBot_DebtBot__Llm__TimeoutSeconds` | `45` | |
 | `DebtBot_DebtBot__Llm__UserHourlyLimit`, `__UserDailyLimit` | `10`, `30` | receipts per user, web, API tokens and bot together |
+| `DebtBot_DebtBot__WebUrl` | (empty) | the site's public URL, e.g. `https://debts.example.com`, for the bot's "Open in the web form" button; empty (or a link Telegram refuses, such as `localhost`) leaves the button out |
 
 Free OpenRouter models allow 20 requests a minute, and 50 a day, or 1000 a day once $10 of credits has been bought
 (checked 2026-11-27). Free models may log prompts, depending on the provider: check the data policy setting in your
 OpenRouter account. The photo is never stored, and neither is the model's answer; a parsed draft is kept 15 minutes.
 For development without a key, `DebtBot_DebtBot__Llm__Provider=Fake` answers with test fixtures (Development only).
+
+**In the bot:** send a receipt photo (or an image file) in a private chat, or in a group with the bot mentioned in
+the caption (`@<botname>`; other group photos are ignored). The bot answers with the bill in the `/AddBill` text format
+in a code block: copy it, change the people and payers (they're you for now), and send it back. Discounts are already
+folded into the lines. The first photo in a chat gets the privacy note; later replies a short footer. `/Format` says
+the same.
 
 ## Calling the API
 Scripts and apps call the REST API with a personal API token. Make one on 👤 Profile › API tokens: give it a name,

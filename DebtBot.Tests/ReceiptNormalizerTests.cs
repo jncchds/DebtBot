@@ -171,12 +171,16 @@ public class ReceiptNormalizerTests
         Assert.Equal(new DateTime(2026, 11, 21, 12, 0, 0, DateTimeKind.Utc), draft.Date);
         Assert.Equal("EUR", draft.CurrencyCode); // from the sign
         Assert.Equal("Apples ×1.235", draft.Lines[3].Description);
-        Assert.Equal(-1.00m, draft.Lines[4].Subtotal); // kept as printed, never "fixed"
+        // The loyalty discount is spread over the four lines in proportion; the sum stays the total.
+        Assert.Equal(["Milk 1L", "Rye bread", "Gouda cheese", "Apples ×1.235"], draft.Lines.Select(l => l.Description));
+        Assert.Equal([1.19m, 2.30m, 5.16m, 3.41m], draft.Lines.Select(l => l.Subtotal));
         Assert.Equal(12.06m, draft.TotalWithTips);
+        Assert.Equal(12.06m, draft.Lines.Sum(l => l.Subtotal));
         var discount = Assert.Single(draft.Warnings);
-        Assert.Equal(ReceiptWarnings.DiscountLine, discount.Code);
-        Assert.Equal("5", discount.Params["line"]);
+        Assert.Equal(ReceiptWarnings.DiscountSpread, discount.Code);
+        Assert.Equal("Loyalty discount", discount.Params["name"]);
         Assert.Equal("1.00", discount.Params["amount"]);
+        Assert.Equal("The discount “Loyalty discount” (1.00 EUR) was spread over all lines.", discount.Message);
     }
 
     [Fact]
@@ -376,6 +380,7 @@ public class ReceiptNormalizerTests
         Assert.Equal(draft.Lines.Select(l => ((string?)l.Description, (decimal?)l.Subtotal)), bill.Lines.Select(l => (l.ItemDescription, l.Subtotal)));
         Assert.All(bill.Lines, l =>
         {
+            Assert.True(l.Subtotal > 0, $"{l.ItemDescription}: {l.Subtotal}"); // no discount line reaches the text
             var p = Assert.Single(l.Participants);
             Assert.Equal(1m, p.Part);
             Assert.Equal("@anna", p.User.QueryString);

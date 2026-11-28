@@ -11,6 +11,11 @@
         public ForwardedHeadersConfiguration ForwardedHeaders { get; set; } = new();
         public ApiTokenConfiguration ApiTokens { get; set; } = new();
         public LlmConfiguration Llm { get; set; } = new();
+        /// <summary>
+        /// The site's public URL (for example <c>https://debts.example.com</c>), for the bot's "Open in the web form"
+        /// button. Empty leaves the button out.
+        /// </summary>
+        public string WebUrl { get; set; } = "";
     }
 
     /// <summary>

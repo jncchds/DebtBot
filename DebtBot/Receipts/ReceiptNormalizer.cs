@@ -22,8 +22,12 @@ public static class ReceiptWarnings
     public const string TipsAdded = "tipsAdded";
     /// <summary><c>amount</c>: a service charge printed outside the total was added to it.</summary>
     public const string ServiceChargeAdded = "serviceChargeAdded";
-    /// <summary><c>line</c> (1-based), <c>amount</c>: a negative line, kept as a discount line. The form needs positive lines, so it has to be spread or removed before saving.</summary>
-    public const string DiscountLine = "discountLine";
+    /// <summary><c>name</c>, <c>item</c>, <c>amount</c>: a discount printed right under an item, subtracted from that item.</summary>
+    public const string DiscountFolded = "discountFolded";
+    /// <summary><c>name</c>, <c>amount</c>: a whole-receipt discount (or one as big as the item above it), spread over all lines in proportion to their amounts.</summary>
+    public const string DiscountSpread = "discountSpread";
+    /// <summary><c>name</c>, <c>amount</c>: a discount as big as all the lines together, left out (the lines then don't match the total).</summary>
+    public const string DiscountSkipped = "discountSkipped";
     /// <summary><c>field</c> (total, tips, serviceCharge, tax): a negative amount outside the lines, ignored.</summary>
     public const string NegativeAmountIgnored = "negativeAmountIgnored";
     /// <summary><c>name</c>: an item without a readable amount, left out.</summary>
@@ -108,12 +112,10 @@ public static class ReceiptNormalizer
                 line.Description = line.Description[..MaxLineDescriptionLength].TrimEnd();
                 warnings.Add(new(ReceiptWarnings.NameTruncated, ("line", Int(i + 1))));
             }
-
-            if (line.Subtotal < 0)
-            {
-                warnings.Add(new(ReceiptWarnings.DiscountLine, ("line", Int(i + 1)), ("amount", Amount(-line.Subtotal, currency))));
-            }
         }
+
+        // Negative lines are discounts: folded into the item above, or spread over all lines (the sum is kept).
+        draft.Lines = ReceiptDiscounts.Fold(draft.Lines, currency, warnings);
 
         // Totals. Negative totals, tips, service charges and taxes mean nothing here.
         decimal? Field(string field)
@@ -201,6 +203,10 @@ public static class ReceiptNormalizer
         }
 
         draft.Description = merchant.Length > MaxDescriptionLength ? merchant[..MaxDescriptionLength].TrimEnd() : merchant;
+        foreach (var warning in warnings)
+        {
+            warning.Message = ReceiptWarningText.Describe(warning, currency);
+        }
         return draft;
     }
 
@@ -351,7 +357,7 @@ public static class ReceiptNormalizer
     public static string Amount(decimal value, string? currency) =>
         Currencies.Round(value, currency).ToString("F" + Currencies.MinorUnits(currency), CultureInfo.InvariantCulture);
 
-    private static decimal MinorUnit(string? currency) => Currencies.MinorUnits(currency) switch
+    internal static decimal MinorUnit(string? currency) => Currencies.MinorUnits(currency) switch
     {
         0 => 1m,
         3 => 0.001m,

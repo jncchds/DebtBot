@@ -35,6 +35,8 @@ public class ReceiptWarning
 {
     public string Code { get; set; } = "";
     public Dictionary<string, string> Params { get; set; } = [];
+    /// <summary>The warning in English, as the bot sends it (<c>ReceiptWarningText</c>), for the web to show as is.</summary>
+    public string Message { get; set; } = "";
 
     public ReceiptWarning()
     {

@@ -19,6 +19,7 @@ public class DebtContext : DbContext
     public DbSet<NotificationSubscription> NotificationSubscriptions { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<ApiToken> ApiTokens { get; set; }
+    public DbSet<TelegramChatState> TelegramChatStates { get; set; }
 
     public DebtContext(DbContextOptions<DebtContext> options) : base(options)
     {

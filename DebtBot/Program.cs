@@ -60,6 +60,7 @@ builder.Services.AddDebtBotReceipts(builder.Configuration);
 
 // telegram
 builder.Services.AddScoped<UpdateHandler>();
+builder.Services.AddScoped<ReceiptPhotoHandler>();
 builder.Services.AddScoped<ReceiverService>();
 builder.Services.AddHostedService<PollingService>();
 builder.Services.AddHostedService<RefreshTokenPurgeService>();
