@@ -193,14 +193,77 @@ interface Profile {
   telegramId: number | null; telegramUserName: string | null;
   telegramBotEnabled: boolean;     // the user has started the bot
   role: UserRole; login: string | null; hasPassword: boolean;
+  receiptOpenIn: ReceiptOpenIn;    // receipts T1: where a read receipt opens on the web
 }
-interface ProfileUpdate { displayName: string; phone?: string | null; email?: string | null }
+type ReceiptOpenIn = "Form" | "Text"; // default Form
+interface ProfileUpdate { displayName: string; phone?: string | null; email?: string | null; receiptOpenIn?: ReceiptOpenIn | null }
 ```
 - `PUT` replaces all three fields. An empty or missing phone or email clears it.
+- `receiptOpenIn` (receipts T1) is stored on the user, so it follows them across devices. Left out or null keeps the current value, so the older Profile form doesn't reset it; any other value than `Form` or `Text` is 400.
 - Limits: display name 1–100 characters, phone ≤ 32, email ≤ 254 and must contain `@`.
 - Telegram fields, login and role are never changed here. Extra fields in the body are ignored.
 - Login and password are changed with `PUT auth/password`.
 - `GET Users/own` (admin-only, old) is removed.
+
+## Receipts (receipts series, T1)
+A receipt photo becomes a bill draft: the New bill form's fields, plus the same bill in the bill text format. Nothing is saved as a bill, and the image and the model's raw answer are never stored. The feature is on only when `DebtBot:Llm:ApiKey` is set (`GET auth/config` → `receiptParse`), or with the fake provider in Development.
+
+| Endpoint | Who | Body / query | Returns |
+|---|---|---|---|
+| `POST Bills/receipt` | any user; **not a read-only API token** (403, the global scope check) | `multipart/form-data`, one file field `image`: JPEG, PNG or WebP (checked by content), at most 5 MB | `ReceiptDraft`, kept 15 minutes |
+| `GET Bills/receipt/{id}` | the draft's owner (a read-only token may read it) | – | `ReceiptDraft`; **404** `{ code: "notFound" }` for anyone else, an unknown id, or after 15 minutes |
+
+```ts
+interface ReceiptDraft {
+  id: string;                    // for GET Bills/receipt/{id} and the web prefill /bills/new?receipt=<id>
+  description: string;           // the merchant (or "Receipt"), plus the date when no time is printed
+  date: string | null;           // as printed, treated as UTC; 12:00 when only a date is printed
+  currencyCode: string | null;   // ISO 4217, or null when unknown or ambiguous (see warnings)
+  totalWithTips: number | null;  // the printed total, plus tips or service charge printed outside it; null if none printed
+  lines: { description: string; subtotal: number }[]; // the line totals as printed; a negative line is a discount
+  warnings: { code: string; params: Record<string, string> }[]; // amounts in params are invariant strings, e.g. "41.50"
+  model: string;                 // the model that answered
+  text: string;                  // the bill text format, with you as the stand-in payer and line participant
+  expiresAt: string;
+}
+```
+- **`text`:** description; the total and currency (`XXX` when unknown); one payment `<total> <you>`; each line as `<name>`, `<subtotal>`, `1 <you>`. "You" is your Telegram username as stored (usually `@name`), else your Telegram id. It parses on `POST Bills/text/preview` (tested for every fixture). The people and payers have to be changed before saving.
+- **Lines** arrive in printed order, at most 100, names on one line and at most 200 characters, `×<quantity>` added when the quantity isn't 1. Amounts are rounded to the currency's minor units and never "fixed".
+- **Warnings** (codes and params):
+
+| Code | Params | Meaning |
+|---|---|---|
+| `linesTotalMismatch` | `linesSum`, `total`, `difference` | the lines don't add up to the total (less tips, service and tax printed inside it) within 1% |
+| `currencyAmbiguous` | `symbol` | `$`, `¥` or `kr` fits several currencies and your last bill's currency isn't one of them: `currencyCode` is null |
+| `currencyFromLastBill` | `symbol`, `currency` | an ambiguous sign was read as the currency of your latest bill |
+| `currencyMissing` | `symbol`? | no currency could be read |
+| `totalMissing` | – | no total printed; `totalWithTips` is null |
+| `tipsAdded` / `serviceChargeAdded` | `amount` | printed outside the total, so added to `totalWithTips` |
+| `discountLine` | `line` (1-based), `amount` | a negative line, kept as printed; the form needs positive lines, so it has to be spread or removed before saving |
+| `negativeAmountIgnored` | `field` | a negative total, tips, service charge or tax, ignored |
+| `itemSkipped` | `name` | an item without a readable amount, left out |
+| `tooManyItems` | `count`, `kept` | over 100 items; the first 100 are kept |
+| `nameTruncated` | `line` | a name cut to 200 characters |
+| `dateUnreadable` | `value` | the printed date couldn't be read |
+
+- **Errors** are `{ code, message }` (`message` in English, the same as the bot's):
+
+| Status | `code` | When |
+|---|---|---|
+| 400 | `noImage` | no `image` file, or not a multipart form |
+| 413 | `tooLarge` | the image is over 5 MB, or the request over 5 MB + 64 KB |
+| 415 | `unsupportedType` | not JPEG, PNG or WebP |
+| 415 | `heicNotSupported` | a HEIC/HEIF photo (the web client converts to JPEG first) |
+| 422 | `notAReceipt` | the model says it isn't a receipt |
+| 422 | `unreadable` | the answer wasn't valid JSON for the schema, twice |
+| 429 | `rateLimited` | also `window: "hour" \| "day"`, `retryAfterSeconds`, and a `Retry-After` header |
+| 502 | `upstreamError` | the AI service failed (5xx twice, or an error a retry won't fix) |
+| 503 | `receiptUnavailable` | the feature is off (no API key) |
+| 503 | `busy` | the AI service is busy or out of quota (its 429 or 402) |
+| 504 | `timeout` | no answer in `Llm:TimeoutSeconds` (45 s), twice |
+
+- **Limits:** per user, `Llm:UserHourlyLimit` (10) in a rolling hour and `Llm:UserDailyLimit` (30) in a rolling day, counted together for the web, API tokens and the bot. Every call that reaches the model counts, failed or not; calls refused before that (feature off, bad image, read-only token) don't. The counts are in memory, so a restart resets them. API tokens also keep their per-token limit.
+- **Retries:** the server asks the model at most twice: once more on invalid JSON, an answer off the schema, a 5xx or a timeout. Busy (429/402) and not-a-receipt aren't retried.
 
 ## API tokens (series 2, T2)
 Personal access tokens let a script or an app call the API as the user, with every access rule above applying unchanged.
@@ -331,4 +394,4 @@ It runs in one transaction. The old user's data moves to the kept user (`newUser
 interface SessionUser { id: string; displayName: string; telegramUserName: string | null; isAdmin: boolean }
 interface Session { user: SessionUser; accessToken: string; accessTokenExpiresAt: string }
 ```
-`GET auth/config` → `{ telegramBotUsername: string | null }` (anonymous) · `POST auth/telegram` (widget payload) → `Session` · `POST auth/login { login, password }` → `Session` · `POST auth/refresh` (cookie) → `Session` · `POST auth/logout` → 204 · `GET auth/me` → `SessionUser` · `PUT auth/password { login?, currentPassword?, newPassword? }` → 204. Errors here are `{ message }` only. Details are in `web-sign-in.md`.
+`GET auth/config` → `{ telegramBotUsername: string | null, receiptParse: boolean, receiptModel: string | null }` (anonymous; `receiptParse` and `receiptModel`, the model for the privacy note, since receipts T1) · `POST auth/telegram` (widget payload) → `Session` · `POST auth/login { login, password }` → `Session` · `POST auth/refresh` (cookie) → `Session` · `POST auth/logout` → 204 · `GET auth/me` → `SessionUser` · `PUT auth/password { login?, currentPassword?, newPassword? }` → 204. Errors here are `{ message }` only. Details are in `web-sign-in.md`.

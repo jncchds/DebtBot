@@ -10,6 +10,60 @@
         public TelegramConfiguration Telegram { get; set; }
         public ForwardedHeadersConfiguration ForwardedHeaders { get; set; } = new();
         public ApiTokenConfiguration ApiTokens { get; set; } = new();
+        public LlmConfiguration Llm { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Receipt reading through an OpenAI-compatible chat API (OpenRouter by default). The feature is on only when
+    /// <see cref="ApiKey"/> is set, or with the <c>Fake</c> provider in Development.
+    /// </summary>
+    /// <remarks>
+    /// Free models checked on 2026-11-27 (OpenRouter <c>/api/v1/models</c>, image input and <c>:free</c>):
+    /// <c>nvidia/nemotron-3.5-super-vl:free</c> (structured outputs), <c>particle-ai/particle-1:free</c> (structured
+    /// outputs, new in October 2026), <c>google/gemma-4-31b-it:free</c> and <c>google/gemma-4-26b-a4b-it:free</c>
+    /// (<c>response_format</c> only, so <c>json_object</c>), and the <c>openrouter/free</c> router.
+    /// <c>inclusionai/ling-3.2-flash</c> no longer has a free variant. Free limits on that date: 20 requests a
+    /// minute, and 50 a day (under $10 of credits ever bought) or 1000 a day (at least $10).
+    /// </remarks>
+    public class LlmConfiguration
+    {
+        public const string OpenRouterProvider = "OpenRouter";
+        public const string FakeProvider = "Fake";
+
+        /// <summary><c>OpenRouter</c> (any OpenAI-compatible API), or <c>Fake</c> (fixtures, Development only).</summary>
+        public string Provider { get; set; } = OpenRouterProvider;
+        /// <summary>The API base; <c>/chat/completions</c> is added. A local Ollama or vLLM works too.</summary>
+        public string BaseUrl { get; set; } = "https://openrouter.ai/api/v1";
+        /// <summary>Must take images and, ideally, structured output (see the remarks for the 2026-11-27 list).</summary>
+        public string Model { get; set; } = "nvidia/nemotron-3.5-super-vl:free";
+        /// <summary>Comma-separated, sent after <see cref="Model"/> as OpenRouter's <c>models</c> fallback list.</summary>
+        public string? FallbackModels { get; set; } = "google/gemma-4-31b-it:free";
+        /// <summary>Secret: an environment variable (<c>DebtBot_DebtBot__Llm__ApiKey</c>) or user secrets, never appsettings. Empty turns the feature off.</summary>
+        public string? ApiKey { get; set; }
+        /// <summary><c>json_schema</c> (strict structured output) or <c>json_object</c>, for APIs and models without structured output. The schema is in the prompt either way.</summary>
+        public string ResponseFormat { get; set; } = JsonSchemaFormat;
+        /// <summary>Optional <c>HTTP-Referer</c> header (OpenRouter shows it as the app's site).</summary>
+        public string? Referer { get; set; }
+        public int TimeoutSeconds { get; set; } = 45;
+        /// <summary>Receipts a user may parse in a rolling hour (web, API token and bot together).</summary>
+        public int UserHourlyLimit { get; set; } = 10;
+        /// <summary>Receipts a user may parse in a rolling day.</summary>
+        public int UserDailyLimit { get; set; } = 30;
+        /// <summary>The largest image accepted, in bytes.</summary>
+        public int MaxImageBytes { get; set; } = 5 * 1024 * 1024;
+
+        public const string JsonSchemaFormat = "json_schema";
+        public const string JsonObjectFormat = "json_object";
+
+        public bool IsFake => string.Equals(Provider, FakeProvider, StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>[primary, ...fallbacks], without blanks or repeats.</summary>
+        public List<string> AllModels() =>
+            new[] { Model }
+                .Concat((FallbackModels ?? "").Split([',', ';', ' '], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                .Where(m => !string.IsNullOrWhiteSpace(m))
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
     }
 
     /// <summary>Personal API tokens (<c>dbt_…</c>).</summary>

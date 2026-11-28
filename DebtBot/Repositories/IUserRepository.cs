@@ -17,7 +17,7 @@ public interface IUserRepository
     IEnumerable<UserModel> GetUsers();
     bool MergeUsers(Guid oldUserId, Guid newUserId);
     ProfileModel? GetProfile(Guid id);
-    bool UpdateProfile(Guid id, string displayName, string? phone, string? email);
+    bool UpdateProfile(Guid id, string displayName, string? phone, string? email, ReceiptOpenIn? receiptOpenIn = null);
     PagingResult<AdminUserModel> GetAdminUsers(string? search, UserRole? role, int pageNumber = 0, int? countPerPage = null);
     AdminUserModel? GetAdminUser(Guid id);
     List<AdminUserModel> GetAdminUsersWithTelegram();

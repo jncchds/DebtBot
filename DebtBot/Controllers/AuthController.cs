@@ -1,6 +1,7 @@
 ﻿using DebtBot.Identity;
 using DebtBot.Interfaces.Services;
 using DebtBot.Models.Auth;
+using DebtBot.Receipts;
 using DebtBot.Services;
 using DebtBot.Telegram;
 using Microsoft.AspNetCore.Authorization;
@@ -26,16 +27,21 @@ public class AuthController : DebtBotControllerBase
     private readonly IUserService _userService;
     private readonly TelegramBotInfoProvider _botInfo;
     private readonly IWebHostEnvironment _environment;
+    private readonly ReceiptFeature _receipts;
 
-    public AuthController(IAuthService authService, IUserService userService, TelegramBotInfoProvider botInfo, IWebHostEnvironment environment)
+    public AuthController(IAuthService authService, IUserService userService, TelegramBotInfoProvider botInfo, IWebHostEnvironment environment, ReceiptFeature receipts)
     {
+        _receipts = receipts;
         _authService = authService;
         _userService = userService;
         _botInfo = botInfo;
         _environment = environment;
     }
 
-    /// <summary>What the sign-in page needs: the bot username for the Telegram Login Widget, or null to hide it.</summary>
+    /// <summary>
+    /// What the UI needs before sign-in: the bot username for the Telegram Login Widget (null hides it), and whether
+    /// receipts can be read (<c>receiptParse</c>) with which model (<c>receiptModel</c>).
+    /// </summary>
     [AllowAnonymous]
     [HttpGet("config")]
     public async Task<ActionResult<AuthConfigModel>> GetConfig(CancellationToken cancellationToken)
@@ -43,6 +49,8 @@ public class AuthController : DebtBotControllerBase
         return new AuthConfigModel
         {
             TelegramBotUsername = await _botInfo.GetBotUsernameAsync(cancellationToken),
+            ReceiptParse = _receipts.IsEnabled,
+            ReceiptModel = _receipts.IsEnabled ? _receipts.Model : null,
         };
     }
 

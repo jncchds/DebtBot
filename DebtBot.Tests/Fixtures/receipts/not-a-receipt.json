@@ -1,0 +1,15 @@
+{
+  "isReceipt": false,
+  "merchant": null,
+  "date": null,
+  "currency": null,
+  "currencySymbol": null,
+  "items": [],
+  "tips": null,
+  "tipsIncluded": null,
+  "serviceCharge": null,
+  "serviceChargeIncluded": null,
+  "tax": null,
+  "taxIncluded": null,
+  "total": null
+}

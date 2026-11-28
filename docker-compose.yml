@@ -19,6 +19,8 @@ services:
       - DebtBot_DebtBot__Telegram__LogBotToken=
       - DebtBot_DebtBot__Telegram__LogChatId=
       - DebtBot_DebtBot__Telegram__LogLevel__Default=
+      # OpenRouter API key for reading receipt photos (a secret). When empty, "From a receipt" is hidden.
+      # - DebtBot_DebtBot__Llm__ApiKey=
     # Start only when Postgres and RabbitMQ accept connections, so a cold `up` doesn't fail the migrations.
     depends_on:
       db:

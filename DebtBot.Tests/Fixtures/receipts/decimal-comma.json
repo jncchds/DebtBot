@@ -1,0 +1,19 @@
+{
+  "isReceipt": true,
+  "merchant": "Ресторан «Пушкин»",
+  "date": "2026-11-18T21:05",
+  "currency": "руб",
+  "currencySymbol": "₽",
+  "items": [
+    { "name": "Стейк рибай", "quantity": "1", "amount": "2.450,00" },
+    { "name": "Вино красное", "quantity": "1", "amount": "1.234,50" },
+    { "name": "Салат", "quantity": "2", "amount": "890,00" }
+  ],
+  "tips": null,
+  "tipsIncluded": null,
+  "serviceCharge": "457,45",
+  "serviceChargeIncluded": false,
+  "tax": null,
+  "taxIncluded": null,
+  "total": "4 574,50"
+}

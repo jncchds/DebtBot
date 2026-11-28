@@ -22,6 +22,8 @@ public class User
     public string? Login { get; set; }
     /// <summary>ASP.NET Core Identity password hash; null when the user has no password.</summary>
     public string? PasswordHash { get; set; }
+    /// <summary>Where a read receipt opens on the web (Profile).</summary>
+    public ReceiptOpenIn ReceiptOpenIn { get; set; } = ReceiptOpenIn.Form;
 
     [InverseProperty(nameof(UserContactLink.User))]
     public virtual ICollection<UserContactLink> UserContacts { get; set; }

@@ -1,0 +1,19 @@
+{
+  "isReceipt": true,
+  "merchant": "Trattoria Roma",
+  "date": "2026-11-23T20:30",
+  "currency": "EUR",
+  "currencySymbol": "€",
+  "items": [
+    { "name": "Pizza Margherita", "quantity": "1", "amount": "11.00" },
+    { "name": "Tagliatelle", "quantity": "1", "amount": "13.50" },
+    { "name": "Tiramisu", "quantity": "1", "amount": "6.50" }
+  ],
+  "tips": "4.00",
+  "tipsIncluded": false,
+  "serviceCharge": null,
+  "serviceChargeIncluded": null,
+  "tax": null,
+  "taxIncluded": null,
+  "total": "31.00"
+}

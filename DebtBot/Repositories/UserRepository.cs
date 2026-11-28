@@ -419,12 +419,13 @@ public class UserRepository : IUserRepository
                 TelegramBotEnabled = u.TelegramBotEnabled,
                 Role = u.Role,
                 Login = u.Login,
-                HasPassword = u.PasswordHash != null
+                HasPassword = u.PasswordHash != null,
+                ReceiptOpenIn = u.ReceiptOpenIn
             })
             .FirstOrDefault();
     }
 
-    public bool UpdateProfile(Guid id, string displayName, string? phone, string? email)
+    public bool UpdateProfile(Guid id, string displayName, string? phone, string? email, ReceiptOpenIn? receiptOpenIn = null)
     {
         var user = _debtContext.Users.FirstOrDefault(u => u.Id == id);
         if (user is null)
@@ -435,6 +436,10 @@ public class UserRepository : IUserRepository
         user.DisplayName = displayName;
         user.Phone = phone;
         user.Email = email;
+        if (receiptOpenIn is not null)
+        {
+            user.ReceiptOpenIn = receiptOpenIn.Value;
+        }
         _debtContext.SaveChanges();
 
         return true;

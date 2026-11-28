@@ -17,6 +17,8 @@ public class ProfileModel
     /// <summary>Web sign-in login, or null.</summary>
     public string? Login { get; set; }
     public bool HasPassword { get; set; }
+    /// <summary>Where a read receipt opens on the web: Form (default) or Text.</summary>
+    public ReceiptOpenIn ReceiptOpenIn { get; set; }
 }
 
 /// <summary>
@@ -28,4 +30,6 @@ public class ProfileUpdateModel
     public string DisplayName { get; set; } = "";
     public string? Phone { get; set; }
     public string? Email { get; set; }
+    /// <summary>Form or Text; left out (null) keeps the current setting.</summary>
+    public ReceiptOpenIn? ReceiptOpenIn { get; set; }
 }

@@ -103,8 +103,10 @@ public class UserService : IUserService
             errors.Add($"The phone can be at most {MaxPhoneLength} characters");
         if (email is not null && (email.Length > MaxEmailLength || !email.Contains('@')))
             errors.Add("The email doesn't look right");
+        if (model.ReceiptOpenIn is not null && !Enum.IsDefined(model.ReceiptOpenIn.Value))
+            errors.Add("Receipts open in Form or Text");
 
-        if (errors.Count == 0 && !_userRepository.UpdateProfile(id, displayName!, phone, email))
+        if (errors.Count == 0 && !_userRepository.UpdateProfile(id, displayName!, phone, email, model.ReceiptOpenIn))
         {
             errors.Add("User not found");
         }

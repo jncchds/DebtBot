@@ -46,6 +46,10 @@ public class AuthConfigModel
 {
     /// <summary>The bot's username for the Telegram Login Widget, or null when the bot isn't configured.</summary>
     public string? TelegramBotUsername { get; set; }
+    /// <summary>True when receipts can be read (<c>POST Bills/receipt</c>): an LLM API key is set.</summary>
+    public bool ReceiptParse { get; set; }
+    /// <summary>The model receipts are sent to, for the privacy note; null when receipts are off.</summary>
+    public string? ReceiptModel { get; set; }
 }
 
 public enum PasswordChangeResult

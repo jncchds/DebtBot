@@ -16,7 +16,7 @@ partial class DebtContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261124165718_ApiTokens";
+    public override string LastMigrationId => "20261127215906_ReceiptOpenIn";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -384,6 +384,9 @@ partial class DebtContextModelSnapshot : ModelSnapshot
 
                 b.Property<string>("Phone")
                     .HasColumnType("text");
+
+                b.Property<int>("ReceiptOpenIn")
+                    .HasColumnType("integer");
 
                 b.Property<byte>("Role")
                     .HasColumnType("smallint");
