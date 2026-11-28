@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { ApiError } from '../api/client'
 import type { ReceiptDraft } from '../api/types'
-import { emptyNewBill, localDateTime, type NewBillForm } from './newBill'
+import { emptyNewBill, type NewBillForm } from './newBill'
 import {
   draftToForm,
   failureText,
@@ -52,7 +52,8 @@ describe('the draft into the form', () => {
     const before: NewBillForm = { ...emptyNewBill('me', now), people: ['me', 'boris', 'dmitry'] }
     const f = draftToForm(SUPERMARKET, before, 'me')
     expect(f.description).toBe('FreshMart 2026-11-21')
-    expect(f.date).toBe(localDateTime(new Date('2026-11-21T12:00:00Z')))
+    // The printed time, whatever the browser's time zone.
+    expect(f.date).toBe('2026-11-21T12:00')
     expect(f.currency).toBe('EUR')
     expect(f.paymentCurrency).toBe('')
     expect(f.total).toBe('12.06')

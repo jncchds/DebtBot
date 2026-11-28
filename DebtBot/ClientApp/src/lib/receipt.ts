@@ -31,7 +31,8 @@ export function draftToForm(draft: ReceiptDraft, f: NewBillForm, meId: string | 
   return {
     ...f,
     description: draft.description ?? '',
-    date: date && !Number.isNaN(date.getTime()) ? localDateTime(date) : f.date,
+    // The server keeps the printed time as is, marked UTC (receipts T1): it's the wall-clock time on the receipt.
+    date: date && !Number.isNaN(date.getTime()) ? printedTime(date) : f.date,
     currency: draft.currencyCode ?? '',
     paymentCurrency: '',
     total: draft.totalWithTips != null ? String(draft.totalWithTips) : '',
@@ -39,6 +40,11 @@ export function draftToForm(draft: ReceiptDraft, f: NewBillForm, meId: string | 
     lines,
     payments: [],
   }
+}
+
+/** The receipt's printed time (its UTC fields) as a datetime-local value, so 12:00 on the receipt is 12:00 in the form. */
+export function printedTime(d: Date): string {
+  return localDateTime(new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), d.getUTCHours(), d.getUTCMinutes()))
 }
 
 /** Warnings are shown above the lines (or the text); each can be dismissed. */
