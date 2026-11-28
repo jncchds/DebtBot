@@ -4,7 +4,7 @@ import clsx from 'clsx'
 import { ApiError } from '../api/client'
 import { useAuthConfig, useProfile } from '../api/hooks'
 import { useSaveProfile, useSetPassword } from '../api/people'
-import type { ApiErrorBody, Profile as ProfileData } from '../api/types'
+import type { ApiErrorBody, Profile as ProfileData, ReceiptOpenIn } from '../api/types'
 import { Card, Field } from '../components/profile/bits'
 import { inputProps } from '../components/profile/inputProps'
 import { ErrorBox, Loading, PageTitle } from '../components/ui'
@@ -14,6 +14,7 @@ import {
   checkPassword,
   detailsRequest,
   detailsServerErrors,
+  newBillOpensRequest,
   passwordRequest,
   type DetailsErrors,
   type DetailsForm,
@@ -40,7 +41,10 @@ export default function Profile({ section }: { section: ProfileSection }) {
         ) : profile.error || !profile.data ? (
           <ErrorBox error={profile.error} />
         ) : section === 'details' ? (
-          <Details key={profile.data.id} profile={profile.data} />
+          <>
+            <Details key={profile.data.id} profile={profile.data} />
+            <NewBillOpens profile={profile.data} />
+          </>
         ) : section === 'password' ? (
           <Password key={profile.data.id} profile={profile.data} />
         ) : (
@@ -118,6 +122,77 @@ function Details({ profile }: { profile: ProfileData }) {
             }}
           >
             {t('profile.reset')}
+          </button>
+          {saved && (
+            <span className="text-sm font-semibold text-success" role="status">
+              ✓ {t('profile.saved')}
+            </span>
+          )}
+        </div>
+      </form>
+    </Card>
+  )
+}
+
+/** ➕ New bill (receipts T3, receipts/mockups/receipt): where ➕ New bill and the bot's receipt link open. */
+function NewBillOpens({ profile }: { profile: ProfileData }) {
+  const { t } = useTranslation()
+  const save = useSaveProfile()
+  const stored = profile.receiptOpenIn ?? 'Form'
+  const [choice, setChoice] = useState<ReceiptOpenIn>(stored)
+  const [saved, setSaved] = useState(false)
+  const [failure, setFailure] = useState<string>()
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault()
+    setFailure(undefined)
+    save.mutate(newBillOpensRequest(profile, choice), {
+      onSuccess: (p) => {
+        setChoice(p.receiptOpenIn ?? choice)
+        setSaved(true)
+      },
+      onError: (err) => setFailure(err instanceof ApiError && err.serverMessage ? err.serverMessage : t('profile.saveFailed')),
+    })
+  }
+
+  const option = (value: ReceiptOpenIn, title: string, help: string) => (
+    <label className={clsx('flex cursor-pointer items-start gap-2.5 rounded-lg border px-3 py-2.5', choice === value ? 'border-accent/45 bg-accent-faint' : 'border-line hover:border-accent/30')}>
+      <input
+        type="radio"
+        name="new-bill-opens"
+        className="mt-1 accent-[var(--accent)]"
+        checked={choice === value}
+        onChange={() => {
+          setChoice(value)
+          setSaved(false)
+        }}
+      />
+      <span>
+        <span className="block text-sm font-semibold">{title}</span>
+        <span className="block text-[0.8rem] muted">{help}</span>
+      </span>
+    </label>
+  )
+
+  return (
+    <Card title={`➕ ${t('profile.newBill')}`}>
+      <form onSubmit={submit} noValidate>
+        {failure && (
+          <div className="alert-danger mb-4" role="alert">
+            {failure}
+          </div>
+        )}
+        <fieldset className="mb-5">
+          <legend className="label">{t('profile.newBillOpens')}</legend>
+          <div className="grid gap-2">
+            {option('Form', `📝 ${t('profile.openForm')}`, t('profile.openFormHelp'))}
+            {option('Text', `📋 ${t('profile.openText')}`, t('profile.openTextHelp'))}
+          </div>
+          <p className="mt-1.5 text-[0.8rem] muted">{t('profile.newBillOpensHelp')}</p>
+        </fieldset>
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="submit" className="btn-primary" disabled={save.isPending}>
+            {t('profile.save')}
           </button>
           {saved && (
             <span className="text-sm font-semibold text-success" role="status">

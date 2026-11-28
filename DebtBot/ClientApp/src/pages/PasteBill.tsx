@@ -1,14 +1,19 @@
 import { useEffect, useId, useState, type ReactNode } from 'react'
-import { useNavigate, useSearchParams } from 'react-router'
-import { useTranslation } from 'react-i18next'
+import { Navigate, useNavigate, useSearchParams } from 'react-router'
+import { Trans, useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { previewBillText, useCreateBillFromText } from '../api/bills'
 import { ApiError } from '../api/client'
-import type { ParsedBill, UserSearch } from '../api/types'
+import { useAuthConfig } from '../api/hooks'
+import type { ParsedBill, ReceiptDraft, ReceiptWarning, UserSearch } from '../api/types'
+import { ReceiptLinkNotice } from '../components/receipt/ReceiptLinkNotice'
+import { FromReceiptButton, ReceiptPanel, ReceiptWarnings } from '../components/receipt/Receipt'
+import { useReceiptLink } from '../components/receipt/useReceiptLink'
 import { PageTitle, Spinner } from '../components/ui'
 import { isEqualSplit } from '../lib/bills'
 import { sumUnits, toUnits } from '../lib/money'
 import { loadStored, store } from '../lib/newBill'
+import { fromReceiptTarget, withoutWarning } from '../lib/receipt'
 import { useFormat } from '../lib/useFormat'
 import { matchTextPerson, usePeople } from '../lib/usePeople'
 
@@ -18,6 +23,9 @@ interface PasteState {
   text: string
   /** The text the preview below belongs to. */
   previewed: string
+  /** The text came from a receipt (receipts T3): the hint and its warnings show above it. */
+  fromReceipt?: boolean
+  warnings?: ReceiptWarning[]
 }
 
 /** The bot's /AddBill format, shown as help (FormatCommand). */
@@ -40,8 +48,10 @@ Tiramisu
 /**
  * ➕ New bill, paste-text mode: /bills/new/paste, `?preview=1` once previewed (mockups/new-bill).
  * Preview parses the text on the server without saving it; create sends the same text.
+ * Receipts (receipts T3): /bills/new/paste/receipt opens the 🧾 From a receipt panel, and `?receipt=<id>` (the bot's
+ * link, with Profile's "New bill opens: Paste text") loads a read receipt; either fills the text and previews it.
  */
-export default function PasteBill() {
+export default function PasteBill({ receipt }: { receipt?: boolean }) {
   const { t } = useTranslation()
   const id = useId()
   const navigate = useNavigate()
@@ -51,8 +61,21 @@ export default function PasteBill() {
   const preview = useQuery({ queryKey: ['bills', 'textPreview', state.previewed], queryFn: () => previewBillText(state.previewed), enabled: showPreview, staleTime: Infinity })
   const create = useCreateBillFromText()
   const [error, setError] = useState<string>()
+  const config = useAuthConfig()
+  const receiptsOn = !!config.data?.receiptParse
+  const fromButton = fromReceiptTarget(config.data, 'text', !!receipt)
+  const [pending, setPending] = useState<ReceiptDraft>()
 
   useEffect(() => store(PASTE_KEY, state), [state])
+
+  const fill = (draft: ReceiptDraft) => {
+    setError(undefined)
+    setPending(undefined)
+    setState({ text: draft.text, previewed: draft.text, fromReceipt: true, warnings: draft.warnings })
+    navigate('/bills/new/paste?preview=1', { replace: true })
+  }
+  const onRead = (draft: ReceiptDraft) => (state.text.trim() && state.text !== draft.text ? setPending(draft) : fill(draft))
+  const [link, clearLink] = useReceiptLink('text', onRead)
 
   const runPreview = () => {
     setError(undefined)
@@ -94,7 +117,7 @@ export default function PasteBill() {
           spellCheck={false}
           placeholder={t('paste.placeholder')}
           value={state.text}
-          onChange={(e) => setState((s) => ({ ...s, text: e.target.value }))}
+          onChange={(e) => setState((s) => ({ ...s, text: e.target.value, ...(e.target.value.trim() ? {} : { fromReceipt: false, warnings: [] }) }))}
         />
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <button type="button" className={showPreview && !changed ? 'btn-secondary' : 'btn-primary'} disabled={!state.text.trim() || preview.isFetching} onClick={runPreview}>
@@ -156,11 +179,33 @@ export default function PasteBill() {
       )
   }
 
+  if (receipt && config.data && !receiptsOn) return <Navigate to="/bills/new/paste" replace />
+
+  const fromReceipt = state.fromReceipt && (
+    <div className="alert-info block space-y-1.5">
+      <div className="flex items-start gap-2">
+        <span aria-hidden>🧾</span>
+        <span className="min-w-0 flex-1">
+          <Trans i18nKey="receipt.filledText" components={{ b: <b /> }} />
+        </span>
+      </div>
+      <ReceiptWarnings warnings={state.warnings ?? []} onDismiss={(i) => setState((s) => ({ ...s, warnings: withoutWarning(s.warnings ?? [], i) }))} />
+    </div>
+  )
+
   return (
     <>
-      <PageTitle subtitle={t('paste.subtitle')}>{t('pages.newBill.title')}</PageTitle>
+      <PageTitle subtitle={t('paste.subtitle')} actionsEnd actions={fromButton && <FromReceiptButton to={fromButton} />}>
+        {t('pages.newBill.title')}
+      </PageTitle>
       <div className="grid items-start gap-4 lg:grid-cols-[3fr_2fr] [&>*]:min-w-0">
         <div className="space-y-4">
+          {receipt && receiptsOn ? (
+            <ReceiptPanel target="text" model={config.data?.receiptModel} closeTo="/bills/new/paste" onRead={onRead} pending={pending} onReplace={() => fill(pending!)} onKeep={() => setPending(undefined)} className="" />
+          ) : (
+            <ReceiptLinkNotice target="text" link={link} onDismiss={clearLink} pending={pending} onReplace={() => fill(pending!)} onKeep={() => setPending(undefined)} className="" />
+          )}
+          {fromReceipt}
           {textCard}
           {result}
         </div>

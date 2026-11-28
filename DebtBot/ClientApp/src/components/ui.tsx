@@ -26,12 +26,13 @@ export function ErrorBox({ error }: { error: unknown }) {
   )
 }
 
-export function PageTitle({ children, actions, subtitle }: { children: ReactNode; actions?: ReactNode; subtitle?: ReactNode }) {
+/** `actionsEnd` puts the actions at the right end of the title row. */
+export function PageTitle({ children, actions, actionsEnd, subtitle }: { children: ReactNode; actions?: ReactNode; actionsEnd?: boolean; subtitle?: ReactNode }) {
   return (
     <div className="mb-6">
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="min-w-0 text-[1.4rem] font-bold">{children}</h1>
-        {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+        {actions && <div className={clsx('flex flex-wrap items-center gap-2', actionsEnd && 'ml-auto')}>{actions}</div>}
       </div>
       {subtitle && <p className="mt-1 text-sm muted">{subtitle}</p>}
     </div>

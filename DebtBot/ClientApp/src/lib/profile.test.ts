@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { checkDetails, checkPassword, detailsRequest, detailsServerErrors, passwordRequest } from './profile'
+import { checkDetails, checkPassword, detailsRequest, detailsServerErrors, newBillOpensRequest, passwordRequest } from './profile'
 
 describe('profile details', () => {
   it('checks the name, phone and email like the API', () => {
@@ -14,6 +14,14 @@ describe('profile details', () => {
 
   it('sends trimmed values, and empty phone or email as null', () => {
     expect(detailsRequest({ displayName: ' Anna ', phone: ' ', email: 'a@b.c ' })).toEqual({ displayName: 'Anna', phone: null, email: 'a@b.c' })
+  })
+
+  it('New bill opens: sends the saved details unchanged with the choice (receipts T3)', () => {
+    const saved = { displayName: 'Anna Petrova', phone: '+48 600 123 456', email: null }
+    expect(newBillOpensRequest(saved, 'Text')).toEqual({ displayName: 'Anna Petrova', phone: '+48 600 123 456', email: null, receiptOpenIn: 'Text' })
+    expect(newBillOpensRequest(saved, 'Form').receiptOpenIn).toBe('Form')
+    // The Details form leaves it out, so saving the details keeps the choice.
+    expect(detailsRequest({ displayName: 'Anna', phone: '', email: '' })).not.toHaveProperty('receiptOpenIn')
   })
 
   it('places the API errors under their fields', () => {

@@ -53,6 +53,45 @@ export interface Session {
 
 export interface AuthConfig {
   telegramBotUsername: string | null
+  /** Reading receipts is on (receipts T1). */
+  receiptParse?: boolean
+  /** The model named in the privacy note; null when receipts are off. */
+  receiptModel?: string | null
+}
+
+/** Where ➕ New bill and the bot's receipt link open (receipts T3; stored as `receiptOpenIn`). */
+export type ReceiptOpenIn = 'Form' | 'Text'
+
+// Receipts (api/v1/Bills/receipt, receipts T1/T2)
+
+export interface ReceiptWarning {
+  code: string
+  params: Record<string, string>
+  /** The English wording, the same one the bot sends. */
+  message: string
+}
+
+export interface ReceiptDraft {
+  id: string
+  description: string
+  date: string | null
+  currencyCode: string | null
+  totalWithTips: number | null
+  /** Always above zero (discounts are folded in on the server). */
+  lines: { description: string; subtotal: number }[]
+  warnings: ReceiptWarning[]
+  model: string
+  /** The bill text format, with you as the stand-in payer and line participant. */
+  text: string
+  expiresAt: string
+}
+
+/** Errors of `POST Bills/receipt` and `GET Bills/receipt/{id}`. */
+export interface ReceiptErrorBody {
+  code: string
+  message?: string
+  window?: 'hour' | 'day'
+  retryAfterSeconds?: number
 }
 
 export interface LoginRequest {
@@ -91,12 +130,16 @@ export interface Profile {
   role: UserRole
   login: string | null
   hasPassword: boolean
+  /** Where ➕ New bill and the bot's receipt link open (receipts T1, T3). */
+  receiptOpenIn?: ReceiptOpenIn
 }
 
 export interface ProfileUpdate {
   displayName: string
   phone?: string | null
   email?: string | null
+  /** Left out or null keeps the stored value. */
+  receiptOpenIn?: ReceiptOpenIn | null
 }
 
 // Lists: every paged list takes `sortBy` and `sortOrder` next to its filters (mockups/shell/README.md, "List views").

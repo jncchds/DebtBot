@@ -46,7 +46,7 @@
   },
   "profile": {
     "details": "Details",
-    "detailsHint": "Name, phone, email",
+    "detailsHint": "Name, contacts, New bill",
     "password": "Login & password",
     "passwordHint": "Web sign-in",
     "telegram": "Telegram",
