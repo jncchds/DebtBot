@@ -38,7 +38,9 @@ Subtotal2
 Ratio1_2 User1_2
 Ratio2_2 User2_2...
 
-...</code>";
+...</code>
+
+Or send a photo of a receipt (in a group, mention the bot in the caption): the bot answers with this text filled in, ready to edit and send back.";
 
         await _publishEndpoint.Publish(new TelegramMessageRequested(processedMessage.ChatId, message));
     }

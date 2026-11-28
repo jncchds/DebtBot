@@ -205,7 +205,7 @@ interface ProfileUpdate { displayName: string; phone?: string | null; email?: st
 - Login and password are changed with `PUT auth/password`.
 - `GET Users/own` (admin-only, old) is removed.
 
-## Receipts (receipts series, T1)
+## Receipts (receipts series, T1, T2)
 A receipt photo becomes a bill draft: the New bill form's fields, plus the same bill in the bill text format. Nothing is saved as a bill, and the image and the model's raw answer are never stored. The feature is on only when `DebtBot:Llm:ApiKey` is set (`GET auth/config` → `receiptParse`), or with the fake provider in Development.
 
 | Endpoint | Who | Body / query | Returns |
@@ -220,8 +220,8 @@ interface ReceiptDraft {
   date: string | null;           // as printed, treated as UTC; 12:00 when only a date is printed
   currencyCode: string | null;   // ISO 4217, or null when unknown or ambiguous (see warnings)
   totalWithTips: number | null;  // the printed total, plus tips or service charge printed outside it; null if none printed
-  lines: { description: string; subtotal: number }[]; // the line totals as printed; a negative line is a discount
-  warnings: { code: string; params: Record<string, string> }[]; // amounts in params are invariant strings, e.g. "41.50"
+  lines: { description: string; subtotal: number }[]; // the line totals, always above zero (discounts are folded in)
+  warnings: { code: string; params: Record<string, string>; message: string }[]; // amounts in params are invariant strings, e.g. "41.50"
   model: string;                 // the model that answered
   text: string;                  // the bill text format, with you as the stand-in payer and line participant
   expiresAt: string;
@@ -229,6 +229,11 @@ interface ReceiptDraft {
 ```
 - **`text`:** description; the total and currency (`XXX` when unknown); one payment `<total> <you>`; each line as `<name>`, `<subtotal>`, `1 <you>`. "You" is your Telegram username as stored (usually `@name`), else your Telegram id. It parses on `POST Bills/text/preview` (tested for every fixture). The people and payers have to be changed before saving.
 - **Lines** arrive in printed order, at most 100, names on one line and at most 200 characters, `×<quantity>` added when the quantity isn't 1. Amounts are rounded to the currency's minor units and never "fixed".
+- **Discounts** (receipts T2): a negative line never reaches the draft, the text or the form, and the lines' sum (so the total) is unchanged:
+  - one right under an item is subtracted from that item (`discountFolded`);
+  - one with no item above it, or that reads as a whole-receipt discount (loyalty, coupon, card, bonus, promo, voucher… in several languages, or a plain "Discount" after the last item), is spread over all lines in proportion to their amounts, rounded to the currency's minor units, with the remainder on the largest line (`discountSpread`). So is one that would take its item to zero or below;
+  - discounts as big as all the lines together are left out (`discountSkipped`, and then `linesTotalMismatch`).
+- **`message`** on each warning is its English wording, the same one the bot sends (`ReceiptWarningText`); the web can show it as is.
 - **Warnings** (codes and params):
 
 | Code | Params | Meaning |
@@ -239,7 +244,9 @@ interface ReceiptDraft {
 | `currencyMissing` | `symbol`? | no currency could be read |
 | `totalMissing` | – | no total printed; `totalWithTips` is null |
 | `tipsAdded` / `serviceChargeAdded` | `amount` | printed outside the total, so added to `totalWithTips` |
-| `discountLine` | `line` (1-based), `amount` | a negative line, kept as printed; the form needs positive lines, so it has to be spread or removed before saving |
+| `discountFolded` | `name`, `item`, `amount` | the discount `name` was taken off the item above it, `item` |
+| `discountSpread` | `name`, `amount` | a whole-receipt discount (or one as big as its item) spread over all lines |
+| `discountSkipped` | `name`, `amount` | a discount as big as all the lines, left out |
 | `negativeAmountIgnored` | `field` | a negative total, tips, service charge or tax, ignored |
 | `itemSkipped` | `name` | an item without a readable amount, left out |
 | `tooManyItems` | `count`, `kept` | over 100 items; the first 100 are kept |

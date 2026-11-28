@@ -17,6 +17,7 @@ public class UpdateHandler : IUpdateHandler
     private readonly IEnumerable<ITelegramCallbackQuery> _callbackQueries;
     private readonly ITelegramService _telegramService;
     private readonly MassTransit.IPublishEndpoint _publishEndpoint;
+    private readonly ReceiptPhotoHandler? _receiptPhotos;
 
     public UpdateHandler(
         ITelegramBotClient botClient,
@@ -24,7 +25,8 @@ public class UpdateHandler : IUpdateHandler
         IEnumerable<ITelegramCommand> commands,
         IEnumerable<ITelegramCallbackQuery> callbackQueries, 
         ITelegramService telegramService,
-        MassTransit.IPublishEndpoint publishEndpoint)
+        MassTransit.IPublishEndpoint publishEndpoint,
+        ReceiptPhotoHandler? receiptPhotos = null)
     {
         _botClient = botClient;
         _logger = logger;
@@ -32,6 +34,7 @@ public class UpdateHandler : IUpdateHandler
         _callbackQueries = callbackQueries;
         _telegramService = telegramService;
         _publishEndpoint = publishEndpoint;
+        _receiptPhotos = receiptPhotos;
     }
     public async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, HandleErrorSource source, CancellationToken cancellationToken)
     {
@@ -119,6 +122,12 @@ public class UpdateHandler : IUpdateHandler
         }
 
         _telegramService.Actualize(message.From!);
+
+        // A receipt photo (private chat, or a group caption that mentions the bot).
+        if (_receiptPhotos is not null && await _receiptPhotos.HandleAsync(_botClient, message, cancellationToken))
+        {
+            return;
+        }
         
         var preprocessedMessage = _telegramService.ProcessMessage(message, _botClient.BotId);
         if (preprocessedMessage is not null && !string.IsNullOrEmpty(preprocessedMessage.BotCommand))

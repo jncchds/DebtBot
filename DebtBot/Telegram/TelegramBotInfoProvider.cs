@@ -26,7 +26,7 @@ public class TelegramBotInfoProvider
         _logger = logger;
     }
 
-    public async Task<string?> GetBotUsernameAsync(CancellationToken cancellationToken = default)
+    public virtual async Task<string?> GetBotUsernameAsync(CancellationToken cancellationToken = default)
     {
         if (_telegramConfig?.IsBotConfigured != true)
         {

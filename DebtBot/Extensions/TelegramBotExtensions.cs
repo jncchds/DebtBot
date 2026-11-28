@@ -1,5 +1,6 @@
 ﻿using DebtBot.Messages;
 using Telegram.Bot;
+using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
@@ -9,9 +10,28 @@ public static class TelegramBotExtensions
 {
     public static async Task SendOrUpdateTelegramMessage(this ITelegramBotClient botClient, TelegramMessageRequested message, CancellationToken cancellationToken)
     {
+        try
+        {
+            await SendOrUpdate(botClient, message, cancellationToken);
+        }
+        catch (ApiRequestException e) when (e.ErrorCode == 400 && message.InlineKeyboard?.Any(row => row.Any(b => b.url is not null)) == true)
+        {
+            // Telegram refuses some link buttons (localhost, a bare host name…): send the message without them.
+            var rows = message.InlineKeyboard!
+                .Select(row => row.Where(b => b.url is null).ToList())
+                .Where(row => row.Count > 0)
+                .ToList();
+            await SendOrUpdate(botClient, message with { InlineKeyboard = rows.Count > 0 ? rows : null }, cancellationToken);
+        }
+    }
+
+    private static async Task SendOrUpdate(ITelegramBotClient botClient, TelegramMessageRequested message, CancellationToken cancellationToken)
+    {
         var inlineButtons = message.InlineKeyboard?.Select(
             row => row.Select(
-                button => InlineKeyboardButton.WithCallbackData(button.text, button.data)
+                button => button.url is not null
+                    ? InlineKeyboardButton.WithUrl(button.text, button.url)
+                    : InlineKeyboardButton.WithCallbackData(button.text, button.data)
             ).ToList()
         ).ToList();
 

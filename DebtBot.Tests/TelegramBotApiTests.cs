@@ -82,6 +82,44 @@ public class TelegramBotApiTests
     }
 
     [Fact]
+    public async Task LinkButton_IsSentAsUrl()
+    {
+        var message = new TelegramMessageRequested(1, "<pre>bill</pre>",
+            InlineKeyboard: [[new InlineButtonRecord("Open in the web form", "", "https://debts.example.com/bills/new?receipt=1")]]);
+
+        await _bot.SendOrUpdateTelegramMessage(message, default);
+
+        var request = Assert.IsType<SendMessageRequest>(Assert.Single(_requests));
+        var button = Assert.IsType<InlineKeyboardMarkup>(request.ReplyMarkup).InlineKeyboard.Single().Single();
+        Assert.Equal("https://debts.example.com/bills/new?receipt=1", button.Url);
+        Assert.Null(button.CallbackData);
+    }
+
+    [Fact]
+    public async Task RefusedLinkButton_IsLeftOutAndTheMessageStillSent()
+    {
+        var attempts = new List<SendMessageRequest>();
+        _bot.SendRequest(Arg.Any<IRequest<Message>>(), Arg.Any<CancellationToken>()).Returns(call =>
+        {
+            var request = (SendMessageRequest)call.Arg<IRequest<Message>>();
+            attempts.Add(request);
+            if (request.ReplyMarkup is InlineKeyboardMarkup markup && markup.InlineKeyboard.SelectMany(r => r).Any(b => b.Url is not null))
+            {
+                throw new Telegram.Bot.Exceptions.ApiRequestException("Bad Request: BUTTON_URL_INVALID", 400);
+            }
+            return new Message();
+        });
+        var message = new TelegramMessageRequested(1, "<pre>bill</pre>",
+            InlineKeyboard: [[new InlineButtonRecord("Open in the web form", "", "http://debtbot/bills/new?receipt=1")]]);
+
+        await _bot.SendOrUpdateTelegramMessage(message, default);
+
+        Assert.Equal(2, attempts.Count);
+        Assert.Equal("<pre>bill</pre>", attempts[1].Text);
+        Assert.Null(attempts[1].ReplyMarkup);
+    }
+
+    [Fact]
     public async Task MessageWithId_IsEdited()
     {
         var message = new TelegramMessageRequested(9, "page 2", InlineKeyboard: [[new InlineButtonRecord(">", "/Debts 2")]],
