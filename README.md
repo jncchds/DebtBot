@@ -34,6 +34,7 @@ waits for healthy Postgres and RabbitMQ and applies the database migrations on s
 | `DebtBot_DebtBot__ForwardedHeaders__Enabled` (and `__KnownProxies`, `__KnownNetworks`) | Behind a reverse proxy: take the client IP and scheme from `X-Forwarded-For`/`X-Forwarded-Proto`, so the per-IP sign-in limit sees real clients. Off by default. |
 | `DebtBot_DebtBot__ApiTokens__RateLimitPerMinute`, `__MaxActivePerUser` | Optional: requests a minute per API token (120; 0 turns the limit off) and active tokens per user (20). See "Calling the API". |
 | `DebtBot_DebtBot__Telegram__LogBotToken`, `__LogChatId` | Optional: send error logs to a Telegram chat. |
+| `DebtBot_DebtBot__Llm__ApiKey` | Optional, a secret: turns on reading receipt photos. See "Receipts (optional)". |
 
 **Telegram sign-in on the web** needs, besides the bot token:
 1. BotFather `/setdomain` for the bot, set to the domain the web app is served from. The widget only works there.
@@ -47,6 +48,25 @@ There is no open sign-up: every web user is someone DebtBot knows from Telegram.
 
 More: [`DebtBot.Doc/web-ui/web-sign-in.md`](DebtBot.Doc/web-ui/web-sign-in.md) (sessions, the proxy setting, the
 widget) and [`DebtBot.Doc/web-ui/api.md`](DebtBot.Doc/web-ui/api.md) (the REST API).
+
+## Receipts (optional)
+DebtBot can read a receipt photo into a bill draft through an AI model on [OpenRouter](https://openrouter.ai) (or any
+OpenAI-compatible API). It's off until a key is set:
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `DebtBot_DebtBot__Llm__ApiKey` | (empty) | **A secret.** Set it as an environment variable (or user secrets), never in `appsettings.json` or a committed file. Empty turns the feature off. |
+| `DebtBot_DebtBot__Llm__Model` | `nvidia/nemotron-3.5-super-vl:free` | must take images; ideally structured output |
+| `DebtBot_DebtBot__Llm__FallbackModels` | `google/gemma-4-31b-it:free` | comma-separated, tried by OpenRouter when the first fails |
+| `DebtBot_DebtBot__Llm__BaseUrl` | `https://openrouter.ai/api/v1` | e.g. a local Ollama's `http://host:11434/v1` |
+| `DebtBot_DebtBot__Llm__ResponseFormat` | `json_schema` | `json_object` for APIs without structured output |
+| `DebtBot_DebtBot__Llm__TimeoutSeconds` | `45` | |
+| `DebtBot_DebtBot__Llm__UserHourlyLimit`, `__UserDailyLimit` | `10`, `30` | receipts per user, web, API tokens and bot together |
+
+Free OpenRouter models allow 20 requests a minute, and 50 a day, or 1000 a day once $10 of credits has been bought
+(checked 2026-11-27). Free models may log prompts, depending on the provider: check the data policy setting in your
+OpenRouter account. The photo is never stored, and neither is the model's answer; a parsed draft is kept 15 minutes.
+For development without a key, `DebtBot_DebtBot__Llm__Provider=Fake` answers with test fixtures (Development only).
 
 ## Calling the API
 Scripts and apps call the REST API with a personal API token. Make one on 👤 Profile › API tokens: give it a name,
