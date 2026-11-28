@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: 2d61b037-4fe9-4bda-b282-d89cc71bca09
-  modified: 2026-11-28T08:53:13.949Z
+  modified: 2026-11-28T14:31:16.411Z
 ---
 
 The receipts series of DebtBot, started 2026-11-27 after series 2 (PR #35) and the receipt plan (PR #36) were merged to main. Run like [[series-2-orchestration]] and [[web-ui-orchestration]] with the `orchestrate-tasks` skill.
@@ -29,6 +29,8 @@ The receipts series of DebtBot, started 2026-11-27 after series 2 (PR #35) and t
 - 2026-11-27: user answered (key only at T4, worker-only manual run); T1 brief committed; T1 (receipt backend) started as worker "DebtBot R T1 receipt backend", id bd813e8f.
 - 2026-11-27: at the user's request (via session "DebtBot"), merged local main b34bff7 (build versioning, PR #37, not yet pushed to origin/main) into receipts. Keep the Dockerfile's VERSION/COMMIT ARGs and /p:Version /p:SourceRevisionId flags.
 - 2026-11-27: T1 stopped on the usage limit, WIP 86c2b67 pushed (359/360 tests; models rechecked: nemotron default, gemma fallback stay). 2026-11-28 after a machine restart: resumed bd813e8f to fix the 413 test, docs, runtime check, report.
+- 2026-11-28: T1 merged into receipts: OpenRouterClient, ReceiptService (JsonSchema.Net), normaliser, text builder, in-memory 15-min drafts, POST/GET Bills/receipt (413 via [DisableFormValueModelBinding]), in-memory per-user limiter, auth/config receiptParse+receiptModel, Profile receiptOpenIn (migration), Fake provider (Development only, fixture by file name). 360 .NET tests (I reran: 360/360); t1check 19/19. Worker bd813e8f stopped, worktree and branch removed. Notes: a browser over 5 MB may see a network error, treat as tooLarge; particle-1:free could replace the gemma fallback; limiter and drafts are per process.
+- 2026-11-28 (user): discount lines are folded into lines server-side (item discount into the item above, whole-receipt discount spread in proportion; totals exact; a warning). Given to T2. My default: a `WebUrl` setting for the bot's web button, none → no button.
 
 **Why:** the user wants a clean context per task, mockup approval per view, and a durable record.
 **How to apply:** follow this and the skill for every receipts task. Related: [[web-ui-palette]].

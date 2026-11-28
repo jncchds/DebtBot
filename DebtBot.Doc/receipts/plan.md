@@ -17,6 +17,8 @@ From the design (2026-11-24):
 For this series (2026-11-27):
 - **The API key:** no key is on the machine before T4. The user pastes it to the T4 worker for the manual run only, and it isn't kept afterwards: not in a file, a commit, a log or a report. T1 to T3 use the fake client only. Prod is the user's to set (`docker-compose.yml` gets a commented line for it, like the bot token's).
 - **The manual run** (T4) is done by the worker alone: the web flow on the local stack with real receipt photos and the real key, and the bot path through the real receipt service driven by a fake Telegram update. Nobody sends a real Telegram photo.
+- **Discounts** (2026-11-28): folded into the lines on the server. A discount right under an item is subtracted from it; a whole-receipt discount is spread over the lines in proportion. Totals stay exact, and a warning says what was done. No negative line reaches the draft (T2 does it).
+- Orchestrator's default: the bot's "Open in the web form" button needs the site's public URL, so T2 adds a `WebUrl` setting; without it the button is left out.
 - Orchestrator's default: the Profile "Receipts open in" setting is stored on the user server-side (T1 adds it), so it follows the user across devices.
 
 ## Task series
