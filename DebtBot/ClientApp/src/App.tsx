@@ -47,7 +47,9 @@ export default function App() {
           <Route path="new/add-line" element={page(<NewBill key="form" mode="add-line" />)} />
           <Route path="new/add-payment" element={page(<NewBill key="form" mode="add-payment" />)} />
           <Route path="new/edit-line/:n" element={page(<NewBill key="form" mode="edit-line" />)} />
-          <Route path="new/paste" element={page(<PasteBill />)} />
+          <Route path="new/receipt" element={page(<NewBill key="form" receipt />)} />
+          <Route path="new/paste" element={page(<PasteBill key="paste" />)} />
+          <Route path="new/paste/receipt" element={page(<PasteBill key="paste" receipt />)} />
           <Route path=":id" element={page(<Bill key="view" />)} />
           <Route path=":id/add-line" element={page(<Bill key="view" mode="add-line" />)} />
           <Route path=":id/add-payment" element={page(<Bill key="view" mode="add-payment" />)} />

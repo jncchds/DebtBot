@@ -77,9 +77,9 @@ export function NewBillSubNav() {
   return (
     <>
       <SidebarSection>{t('subnav.newBill.mode')}</SidebarSection>
-      {/* The form's editors (/bills/new/add-line, /add-payment) belong to Form too. */}
-      <SidebarEntry to="/bills/new" end={false} icon="📝" title={t('subnav.newBill.form')} subtitle={t('subnav.newBill.formHint')} active={pathname !== '/bills/new/paste'} />
-      <SidebarEntry to="/bills/new/paste" icon="📋" title={t('subnav.newBill.paste')} subtitle={t('subnav.newBill.pasteHint')} />
+      {/* The form's editors (/bills/new/add-line, /add-payment) and its receipt panel belong to Form too. */}
+      <SidebarEntry to="/bills/new" end={false} icon="📝" title={t('subnav.newBill.form')} subtitle={t('subnav.newBill.formHint')} active={!pathname.startsWith('/bills/new/paste')} />
+      <SidebarEntry to="/bills/new/paste" end={false} icon="📋" title={t('subnav.newBill.paste')} subtitle={t('subnav.newBill.pasteHint')} />
       {mine.length > 0 && <SidebarSection>{t('subnav.newBill.drafts')}</SidebarSection>}
       {mine.map((b) => (
         <SidebarEntry

@@ -42,6 +42,8 @@ export interface BillFormProps {
   personOf: (id: string) => Person
   /** Router state kept on the editor links (the list a bill was opened from). */
   linkState?: unknown
+  /** Shown at the top of the Lines card (a receipt's warnings). */
+  linesNotice?: ReactNode
   /** The actions card at the end. */
   children: ReactNode
 }
@@ -51,7 +53,7 @@ export interface BillFormProps {
  * series-2 mockups/creator-leave). New bill and a draft bill both use it; the caller owns the state and saving.
  * Everything here changes the form only.
  */
-export function BillForm({ form, setForm, base, editor, tried, people, personOf, linkState, children }: BillFormProps) {
+export function BillForm({ form, setForm, base, editor, tried, people, personOf, linkState, linesNotice, children }: BillFormProps) {
   const { t, i18n } = useTranslation()
   const f = useFormat()
   const navigate = useNavigate()
@@ -179,6 +181,7 @@ export function BillForm({ form, setForm, base, editor, tried, people, personOf,
               </Link>
             )}
           </div>
+          {linesNotice}
           {form.lines.length === 0 && editor?.kind !== 'add-line' && <p className="px-4 py-3.5 text-sm muted">{t('bill.noLines')}</p>}
           <ul className="divide-y divide-line">
             {form.lines.map((l, i) => {

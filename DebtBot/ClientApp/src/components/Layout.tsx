@@ -3,8 +3,10 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import { useContacts } from '../api/bills'
+import { useProfile } from '../api/hooks'
 import { useAuth } from '../auth/AuthContext'
 import { pendingRequestCount } from '../lib/contacts'
+import { newBillPath } from '../lib/receipt'
 import { THEMES, useTheme } from '../hooks/useTheme'
 import { Icon, Label, SidebarDivider } from './Sidebar'
 import { subNavFor } from './subnav'
@@ -37,7 +39,8 @@ interface NavItem {
 const NAV: NavItem[] = [
   { to: '/', icon: '💸', labelKey: 'nav.debts', isActive: (p) => p === '/' },
   { to: '/bills', icon: '🧾', labelKey: 'nav.bills', isActive: (p) => p.startsWith('/bills') && !p.startsWith('/bills/new') },
-  { to: '/bills/new', icon: '➕', labelKey: 'nav.newBill' },
+  // Goes to Form or Paste text, as Profile's "New bill opens" says (receipts T3).
+  { to: '/bills/new', icon: '➕', labelKey: 'nav.newBill', isActive: (p) => p.startsWith('/bills/new') },
   { to: '/exchange', icon: '🔁', labelKey: 'nav.exchange' },
   { to: '/spendings', icon: '📊', labelKey: 'nav.spendings' },
   { to: '/contacts', icon: '👥', labelKey: 'nav.contacts' },
@@ -57,6 +60,7 @@ export function Layout() {
   const subNav = subNavFor(pathname)
   // People waiting for you to confirm a subscription (the 🔔 Subscriptions badge).
   const requests = pendingRequestCount(useContacts().data)
+  const profile = useProfile()
   const [shownPath, setShownPath] = useState(pathname)
 
   useEffect(() => {
@@ -113,7 +117,7 @@ export function Layout() {
             return (
               <NavLink
                 key={n.to}
-                to={n.to}
+                to={n.to === '/bills/new' ? newBillPath(profile.data?.receiptOpenIn) : n.to}
                 end={n.to === '/bills/new'}
                 title={label}
                 className={({ isActive }) => clsx('sidebar-btn', (n.isActive ? n.isActive(pathname) : isActive) && 'bg-accent-faint text-accent')}

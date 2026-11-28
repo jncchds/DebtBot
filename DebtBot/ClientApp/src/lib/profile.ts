@@ -1,4 +1,4 @@
-import type { PasswordChange, ProfileUpdate } from '../api/types'
+import type { PasswordChange, Profile, ProfileUpdate, ReceiptOpenIn } from '../api/types'
 
 /** Profile form checks, the same limits as the API (UserService.UpdateProfile, AuthService). Values are i18n keys. */
 
@@ -29,6 +29,14 @@ export function checkDetails(f: DetailsForm): DetailsErrors {
 /** `PUT profile`: empty phone or email clears it. */
 export function detailsRequest(f: DetailsForm): ProfileUpdate {
   return { displayName: f.displayName.trim(), phone: f.phone.trim() || null, email: f.email.trim() || null }
+}
+
+/**
+ * `PUT profile` for "New bill opens" (receipts T3): the saved details as they are, plus the choice. The API needs
+ * the name and replaces the phone and email, so they're sent unchanged.
+ */
+export function newBillOpensRequest(p: Pick<Profile, 'displayName' | 'phone' | 'email'>, openIn: ReceiptOpenIn): ProfileUpdate {
+  return { displayName: p.displayName, phone: p.phone, email: p.email, receiptOpenIn: openIn }
 }
 
 /** The API's 400 `errors` (plain sentences) placed under their fields. */

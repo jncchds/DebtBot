@@ -10,12 +10,12 @@ The HTML and PNGs here are the spec for the app shell. `sections.html` shows the
 |---|---|---|
 | Debts | Balances per person (green "owes you", red "you owe"); each opens `/bills?with=<id>`. Then **Following** (below) | T5, T7b |
 | Bills / a bill | Drafts, Recent bills (last 5), … All bills. Then **Following** | T5, T7b |
-| New bill | Mode: Form / Paste text; Continue a draft | T4 (modes), T6 (drafts) |
+| New bill | Mode: Form / Paste text; Continue a draft. The ➕ New bill entry above the divider goes to Form or Paste text, as Profile's "New bill opens" says (receipts T3) | T4 (modes), T6 (drafts) |
 | Exchange | Waiting to accept, Recent exchanges | T6 |
 | Spendings | This month (one entry per bill currency, opening that month's spendings in it), … All spendings. Then **Following** | T7, T7b |
 | Contacts | Recently added (the 3 newest), … All contacts | T7 |
 | Subscriptions | Summary: Requests, Get your bills and debts, Your subscriptions (each scrolls to its card; none highlighted) | T7 |
-| Profile | Sections: Details, Login & password, Telegram, API tokens | T4, pages T7, API tokens series 2 T2 |
+| Profile | Sections: Details (with the "➕ New bill" card since receipts T3), Login & password, Telegram, API tokens | T4, pages T7, API tokens series 2 T2 |
 | Admin | Users, Merge users (badge with the suggestion count, `GET Users/merge/suggestions`; none at 0), All bills | T4 (links), T8 (badge) |
 
 - **Following (T7b, `mockups/following/`)** on Debts, Bills and Spendings: up to 5 people you have a confirmed subscription to (🔔, your name for them, "see <Name>'s debts|bills|spendings", or "showing now" highlighted for the one you're viewing), then "… All subscriptions" → `/subscriptions`. Hidden when you have none. While you view someone (`?of=`), the page's own section shows their data instead ("<Name>'s balances", "<Name>'s drafts" / "<Name>'s recent bills", "<Name> this month"), without its "… All x".
@@ -27,7 +27,7 @@ The HTML and PNGs here are the spec for the app shell. `sections.html` shows the
 | Debts | `/?of=&with=&currency=&dir=owed\|owe&sort=person\|amount\|currency&order=asc\|desc&page=` |
 | Bills | `/bills?of=&q=&with=&currency=&from=&to=&status=draft\|processing\|finalized\|cancelled&mine=1&sort=date\|description\|total\|status&order=&page=` |
 | Bill | `/bills/<id>`. A draft you can change is the New bill form (series-2 T1, `series-2/mockups/creator-leave/`), with its editors at `/bills/<id>/add-line`, `/bills/<id>/add-payment` and `/bills/<id>/edit-line/<n>` (1-based). Unsaved changes are kept in sessionStorage (per bill, with the saved version they're based on) until Save. The `?people=` list of T5 is gone. |
-| New bill | `/bills/new`, `/bills/new/add-line`, `/bills/new/add-payment`, `/bills/new/edit-line/<n>` (series-2 T1; the form itself is kept in sessionStorage), `/bills/new/paste` (`?preview=1` once previewed) |
+| New bill | `/bills/new`, `/bills/new/add-line`, `/bills/new/add-payment`, `/bills/new/edit-line/<n>` (series-2 T1; the form itself is kept in sessionStorage), `/bills/new/paste` (`?preview=1` once previewed). Receipts T3 (`receipts/mockups/receipt/`): `/bills/new/receipt` and `/bills/new/paste/receipt` open 🧾 From a receipt above the form or the text (only when `receiptParse` is on; ✕ goes back to the page's own URL); the bot's link `/bills/new?receipt=<id>` fills the form, or moves on to `/bills/new/paste?receipt=<id>` when Profile says Paste text, and `receipt` leaves the URL once it's loaded |
 | Exchange | `/exchange?with=<id>&rate=give\|get&draft=<billId>&person=&currency=&status=waiting\|accepted\|cancelled&sort=date\|amount&order=&page=` (`with`, `rate` and `draft` are the form; the rest is the list) |
 | Spendings | `/spendings?of=&currency=&from=&to=&cancelled=1&sort=date\|amount&order=asc\|desc&page=` |
 | Contacts | `/contacts?q=` (the search; typing replaces the history entry) |
