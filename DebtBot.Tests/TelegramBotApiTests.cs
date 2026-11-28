@@ -105,7 +105,7 @@ public class TelegramBotApiTests
             attempts.Add(request);
             if (request.ReplyMarkup is InlineKeyboardMarkup markup && markup.InlineKeyboard.SelectMany(r => r).Any(b => b.Url is not null))
             {
-                throw new Telegram.Bot.Exceptions.ApiRequestException("Bad Request: BUTTON_URL_INVALID", 400);
+                throw new global::Telegram.Bot.Exceptions.ApiRequestException("Bad Request: BUTTON_URL_INVALID", 400);
             }
             return new Message();
         });
