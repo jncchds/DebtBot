@@ -373,7 +373,7 @@ public class ReceiptNormalizerTests
         var payment = Assert.Single(bill.Payments);
         Assert.Equal(total, payment.Amount);
         Assert.Equal("@anna", payment.User.QueryString);
-        Assert.Equal(draft.Lines.Select(l => (l.Description, (decimal?)l.Subtotal)), bill.Lines.Select(l => (l.ItemDescription, l.Subtotal)));
+        Assert.Equal(draft.Lines.Select(l => ((string?)l.Description, (decimal?)l.Subtotal)), bill.Lines.Select(l => (l.ItemDescription, l.Subtotal)));
         Assert.All(bill.Lines, l =>
         {
             var p = Assert.Single(l.Participants);

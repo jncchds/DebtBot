@@ -44,6 +44,7 @@ public class BillReceiptController : DebtBotControllerBase
     /// <response code="504">timeout</response>
     [HttpPost]
     [ImageUploadRequest]
+    [DisableFormValueModelBinding]
     [RequestSizeLimit(MaxRequestBytes)]
     [RequestFormLimits(MultipartBodyLengthLimit = MaxRequestBytes)]
     [ProducesResponseType<ReceiptDraft>(StatusCodes.Status200OK)]
