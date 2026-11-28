@@ -241,8 +241,8 @@ function PreviewResult({ errors, bill, actions }: { errors: string[]; bill: Pars
     const q = u.queryString ?? u.telegramUserName ?? u.displayName ?? ''
     const p = matchTextPerson(q, people)
     return (
-      <span key={q} className="inline-flex items-baseline gap-1 text-[0.8rem]">
-        <span className="font-mono">{q}</span>
+      <span key={q} className="inline-flex max-w-full flex-wrap items-baseline gap-x-1 text-[0.8rem]">
+        <span className="font-mono break-all">{q}</span>
         <span className="muted">→</span>
         {p ? <b>{p.name}</b> : <i className="muted">{t('paste.newPerson')}</i>}
       </span>

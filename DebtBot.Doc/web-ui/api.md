@@ -193,13 +193,13 @@ interface Profile {
   telegramId: number | null; telegramUserName: string | null;
   telegramBotEnabled: boolean;     // the user has started the bot
   role: UserRole; login: string | null; hasPassword: boolean;
-  receiptOpenIn: ReceiptOpenIn;    // receipts T1: where a read receipt opens on the web
+  receiptOpenIn: ReceiptOpenIn;    // receipts T1, T3: where ➕ New bill and the bot's receipt link open (Form | Text)
 }
 type ReceiptOpenIn = "Form" | "Text"; // default Form
 interface ProfileUpdate { displayName: string; phone?: string | null; email?: string | null; receiptOpenIn?: ReceiptOpenIn | null }
 ```
 - `PUT` replaces all three fields. An empty or missing phone or email clears it.
-- `receiptOpenIn` (receipts T1) is stored on the user, so it follows them across devices. Left out or null keeps the current value, so the older Profile form doesn't reset it; any other value than `Form` or `Text` is 400.
+- `receiptOpenIn` (receipts T1) is stored on the user, so it follows them across devices. Since receipts T3 the web uses it as Profile's "New bill opens: Form / Paste text" (user decision): it picks where ➕ New bill and the bot's link `/bills/new?receipt=<id>` open. A receipt read on the web fills the page it was read on, whatever the setting. The setting is shown whether receipts are on or not. The web sends it with the saved name, phone and email (the API needs `displayName` and replaces the other two). Left out or null keeps the current value, so the older Profile form doesn't reset it; any other value than `Form` or `Text` is 400.
 - Limits: display name 1–100 characters, phone ≤ 32, email ≤ 254 and must contain `@`.
 - Telegram fields, login and role are never changed here. Extra fields in the body are ignored.
 - Login and password are changed with `PUT auth/password`.
