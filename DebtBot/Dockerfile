@@ -15,15 +15,18 @@ COPY DebtBot/ClientApp/ ./
 RUN npm run build
 
 FROM mcr.microsoft.com/dotnet/sdk:11.0 AS build
+# Set by the publish workflow; local builds get 1.0.0.
+ARG VERSION=1.0.0
+ARG COMMIT=local
 WORKDIR /src
 COPY ["DebtBot/DebtBot.csproj", "DebtBot/"]
 RUN dotnet restore "DebtBot/DebtBot.csproj"
 COPY . .
 WORKDIR "/src/DebtBot"
-RUN dotnet build "DebtBot.csproj" -c Release -o /app/build
+RUN dotnet build "DebtBot.csproj" -c Release -o /app/build /p:Version=$VERSION /p:SourceRevisionId=$COMMIT
 
 FROM build AS publish
-RUN dotnet publish "DebtBot.csproj" -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "DebtBot.csproj" -c Release -o /app/publish /p:UseAppHost=false /p:Version=$VERSION /p:SourceRevisionId=$COMMIT
 
 FROM base AS final
 WORKDIR /app
