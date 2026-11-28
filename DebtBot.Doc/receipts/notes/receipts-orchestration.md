@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: 2d61b037-4fe9-4bda-b282-d89cc71bca09
-  modified: 2026-11-28T14:52:33.580Z
+  modified: 2026-11-28T14:52:49.019Z
 ---
 
 The receipts series of DebtBot, started 2026-11-27 after series 2 (PR #35) and the receipt plan (PR #36) were merged to main. Run like [[series-2-orchestration]] and [[web-ui-orchestration]] with the `orchestrate-tasks` skill.
@@ -33,6 +33,7 @@ The receipts series of DebtBot, started 2026-11-27 after series 2 (PR #35) and t
 - 2026-11-28 (user): discount lines are folded into lines server-side (item discount into the item above, whole-receipt discount spread in proportion; totals exact; a warning). Given to T2. My default: a `WebUrl` setting for the bot's web button, none → no button.
 - 2026-11-28: T2 (receipt bot, plus discount folding) started as worker "DebtBot R T2 receipt bot", id c182b3bc.
 - 2026-11-28: T2 merged into receipts: ReceiptDiscounts (discountFolded/Spread/Skipped, no negative lines), warning text on the server (`warning.message`), ReceiptPhotoHandler (private photos and image documents; groups only with a mention; /AddBill + text in <pre>, people hint, warnings, privacy note once per chat via TelegramChatStates migration), `DebtBot:WebUrl` for the button (localhost dropped), Development+admin-only `POST api/v1/dev/telegram/update` for T4's bot run. 425 .NET tests (I reran: 425/425); t2check 24/24. Worker c182b3bc stopped, cleaned up. Open for T4: how real models name discounts; WebUrl isn't in docker-compose.yml (add a commented line).
+- 2026-11-28: T3 (receipt UI, mockups first) started as worker "DebtBot R T3 receipt UI", id 3b5c0327.
 
 **Why:** the user wants a clean context per task, mockup approval per view, and a durable record.
 **How to apply:** follow this and the skill for every receipts task. Related: [[web-ui-palette]].
